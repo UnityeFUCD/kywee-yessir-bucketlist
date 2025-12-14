@@ -1,79 +1,73 @@
-// netlify/functions/room.js
-// Stores/loads the shared state in Supabase (server-side key stays secret in Netlify env)
-
-const TABLE = "bucket_rooms";
-
-function json(statusCode, body) {
-  return {
-    statusCode,
-    headers: {
-      "Content-Type": "application/json",
-      "Cache-Control": "no-store",
-      "Access-Control-Allow-Origin": "*",
-      "Access-Control-Allow-Headers": "Content-Type, x-room-secret",
-      "Access-Control-Allow-Methods": "GET, POST, OPTIONS",
-    },
-    body: JSON.stringify(body),
-  };
-}
-
-exports.handler = async (event) => {
-  if (event.httpMethod === "OPTIONS") return json(200, { ok: true });
-
-  const COUPLE_ROOM_SECRET = (process.env.COUPLE_ROOM_SECRET || "").trim();
-  const providedSecret = (event.headers["x-room-secret"] || "").trim();
-
-  if (!COUPLE_ROOM_SECRET || providedSecret !== COUPLE_ROOM_SECRET) {
-    return json(401, { error: "unauthorized" });
-  }
-
-  const SUPABASE_URL = (process.env.SUPABASE_URL || "").trim();
-  const SERVICE_KEY = (process.env.SUPABASE_SERVICE_ROLE_KEY || "").trim();
-
-  if (!SUPABASE_URL || !SERVICE_KEY) {
-    return json(500, { error: "missing SUPABASE env vars" });
-  }
-
+export async function handler(event) {
+  // CORS (same-origin Netlify is fine, but this keeps it safe)
   const headers = {
-    apikey: SERVICE_KEY,
-    Authorization: `Bearer ${SERVICE_KEY}`,
+    "Access-Control-Allow-Origin": "*",
+    "Access-Control-Allow-Headers": "Content-Type, Authorization",
+    "Access-Control-Allow-Methods": "GET, POST, OPTIONS",
     "Content-Type": "application/json",
   };
+
+  if (event.httpMethod === "OPTIONS") {
+    return { statusCode: 200, headers, body: JSON.stringify({ ok: true }) };
+  }
+
+  const SUPABASE_URL = process.env.SUPABASE_URL;
+  const SERVICE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY;
+  const TABLE = process.env.SUPABASE_TABLE || "bucket_rooms";
+
+  if (!SUPABASE_URL || !SERVICE_KEY) {
+    return {
+      statusCode: 500,
+      headers,
+      body: JSON.stringify({ error: "Missing SUPABASE_URL or SUPABASE_SERVICE_ROLE_KEY env vars" }),
+    };
+  }
+
+  const restBase = `${SUPABASE_URL}/rest/v1/${TABLE}`;
 
   try {
     if (event.httpMethod === "GET") {
       const room = (event.queryStringParameters?.room || "").trim();
-      if (!room) return json(400, { error: "room required" });
+      if (!room) {
+        return { statusCode: 400, headers, body: JSON.stringify({ error: "room required" }) };
+      }
 
-      const url =
-        `${SUPABASE_URL}/rest/v1/${TABLE}` +
-        `?select=payload,updated_at&room=eq.${encodeURIComponent(room)}&limit=1`;
-
-      const r = await fetch(url, { headers });
-      if (!r.ok) return json(500, { error: "supabase read failed" });
-
-      const rows = await r.json();
-      const first = rows?.[0] || null;
-
-      return json(200, {
-        payload: first?.payload || {},
-        updated_at: first?.updated_at || null,
+      const url = `${restBase}?room=eq.${encodeURIComponent(room)}&select=payload`;
+      const res = await fetch(url, {
+        method: "GET",
+        headers: {
+          apikey: SERVICE_KEY,
+          Authorization: `Bearer ${SERVICE_KEY}`,
+        },
       });
+
+      if (!res.ok) {
+        const t = await res.text();
+        return { statusCode: 500, headers, body: JSON.stringify({ error: "Supabase GET failed", detail: t }) };
+      }
+
+      const data = await res.json();
+      const payload = data?.[0]?.payload ?? null;
+      return { statusCode: 200, headers, body: JSON.stringify({ payload }) };
     }
 
     if (event.httpMethod === "POST") {
       const body = JSON.parse(event.body || "{}");
       const room = (body.room || "").trim();
-      const payload = body.payload || {};
+      const payload = body.payload;
 
-      if (!room) return json(400, { error: "room required" });
+      if (!room || !payload) {
+        return { statusCode: 400, headers, body: JSON.stringify({ error: "room and payload required" }) };
+      }
 
-      const url = `${SUPABASE_URL}/rest/v1/${TABLE}?on_conflict=room`;
-
-      const r = await fetch(url, {
+      // upsert
+      const url = `${restBase}?on_conflict=room`;
+      const res = await fetch(url, {
         method: "POST",
         headers: {
-          ...headers,
+          apikey: SERVICE_KEY,
+          Authorization: `Bearer ${SERVICE_KEY}`,
+          "Content-Type": "application/json",
           Prefer: "resolution=merge-duplicates,return=representation",
         },
         body: JSON.stringify({
@@ -83,13 +77,18 @@ exports.handler = async (event) => {
         }),
       });
 
-      if (!r.ok) return json(500, { error: "supabase write failed" });
+      if (!res.ok) {
+        const t = await res.text();
+        return { statusCode: 500, headers, body: JSON.stringify({ error: "Supabase UPSERT failed", detail: t }) };
+      }
 
-      return json(200, { ok: true });
+      const data = await res.json();
+      const savedPayload = data?.[0]?.payload ?? payload;
+      return { statusCode: 200, headers, body: JSON.stringify({ payload: savedPayload }) };
     }
 
-    return json(405, { error: "method not allowed" });
-  } catch (e) {
-    return json(500, { error: "server error" });
+    return { statusCode: 405, headers, body: JSON.stringify({ error: "Method not allowed" }) };
+  } catch (err) {
+    return { statusCode: 500, headers, body: JSON.stringify({ error: "Server error", detail: String(err) }) };
   }
-};
+}
