@@ -1475,7 +1475,7 @@
   const KEY_THEME = "bucketlist_2026_theme";
   const KEY_SYSTEM_MESSAGE = "bucketlist_2026_system_message";
 
-  // ✅ FORCE “LOGIN” EACH LAUNCH (session-only)
+  // ✅ session user (per-tab). persists on refresh, new tab asks again.
   const SESSION_USER_KEY = "bucketlist_2026_session_user";
 
   // ✅ per-user "read" tracking (local only)
@@ -1483,7 +1483,7 @@
     return `bucketlist_2026_lastread_${String(user || "").toLowerCase()}`;
   }
 
-  // ✅ shared room code (no pair code UI)
+  // ✅ shared room code
   const ROOM_CODE = "yasir-kylee";
 
   const $ = (id) => document.getElementById(id);
@@ -1493,6 +1493,10 @@
 
   let selectedSavedMissions = [];
   let currentTheme = "system";
+
+  // ✅ SMART POLLING state
+  let lastRemoteUpdatedAt = null;
+  let pollTimer = null;
 
   // ---------- helpers ----------
   function escapeHtml(str) {
@@ -1510,6 +1514,10 @@
     toast.textContent = message;
     document.body.appendChild(toast);
     setTimeout(() => toast.remove(), 3000);
+  }
+
+  function normalizeNewlines(str) {
+    return String(str ?? "").replace(/\r\n/g, "\n");
   }
 
   function formatDT(dt) {
@@ -1554,6 +1562,13 @@
     localStorage.setItem(keyLastRead(u), String(n));
   }
 
+  function clampLastReadToMessagesLen(len) {
+    const u = loadUser();
+    if (!u) return;
+    const cur = loadLastRead();
+    if (cur > len - 1) saveLastRead(len - 1);
+  }
+
   // ---------- local storage state ----------
   function loadArray(key) {
     try {
@@ -1591,8 +1606,24 @@
   }
 
   function renderSystemMessage(msg) {
-    $("herName").textContent = String(msg).toUpperCase();
-    $("loveNote").textContent = `// SYSTEM MESSAGE: ${String(msg).toUpperCase()}`;
+    const v = String(msg || "My Love");
+    $("herName").textContent = v.toUpperCase();
+    $("loveNote").textContent = `// SYSTEM MESSAGE: ${v.toUpperCase()}`;
+  }
+
+  // ✅ Fix blank letter permanently: sanitize messages (drop empty content / missing from)
+  function sanitizeMessages(arr) {
+    if (!Array.isArray(arr)) return [];
+    const cleaned = [];
+    for (const m of arr) {
+      const from = String(m?.from || "").trim();
+      const timestamp = String(m?.timestamp || "").trim();
+      const content = normalizeNewlines(m?.content ?? "").trim();
+      if (!from) continue;
+      if (!content) continue; // 🔥 removes blank letters forever
+      cleaned.push({ from, timestamp, content });
+    }
+    return cleaned;
   }
 
   // ---------- Sync indicator ----------
@@ -1605,10 +1636,35 @@
   function setSyncStatus(mode) {
     // mode: off | pulling | saving | on | error
     const dot = $("syncDot");
-    if (mode === "pulling" || mode === "saving") setDot(dot, "yellow", true);
-    else if (mode === "on") setDot(dot, "green", false);
-    else if (mode === "error") setDot(dot, "red", false);
-    else setDot(dot, "gray", false);
+    const label = $("syncPill")?.querySelector("span:last-child"); // no HTML change needed
+
+    if (mode === "pulling") {
+      setDot(dot, "yellow", true);
+      if (label) label.textContent = "PULL";
+      $("syncPill").title = "Pulling updates…";
+      return;
+    }
+    if (mode === "saving") {
+      setDot(dot, "yellow", true);
+      if (label) label.textContent = "SAVE";
+      $("syncPill").title = "Saving updates…";
+      return;
+    }
+    if (mode === "on") {
+      setDot(dot, "green", false);
+      if (label) label.textContent = "SYNC";
+      $("syncPill").title = "Synced";
+      return;
+    }
+    if (mode === "error") {
+      setDot(dot, "red", false);
+      if (label) label.textContent = "ERR";
+      $("syncPill").title = "Sync error";
+      return;
+    }
+    setDot(dot, "gray", false);
+    if (label) label.textContent = "OFF";
+    $("syncPill").title = "Sync off";
   }
 
   // ---------- Presence (duo online) ----------
@@ -1630,10 +1686,8 @@
     $("duoText").textContent = user ? `DUO: ${duo.toUpperCase()}` : "DUO: --";
     $("envelopeLabel").textContent = user ? `DUO: ${duo.toUpperCase()}` : "DUO";
 
-    // user dot always green when user is set
     setDot($("userDot"), user ? "green" : "gray", false);
 
-    // duo dot based on presence timestamps
     if (!user || !lastPresence) {
       setDot($("duoDot"), "gray", false);
       return;
@@ -1648,7 +1702,6 @@
 
     const t = new Date(ts).getTime();
     const age = Date.now() - t;
-    // if duo pinged within last 45 seconds => online
     if (Number.isFinite(age) && age <= 45000) setDot($("duoDot"), "green", false);
     else setDot($("duoDot"), "gray", false);
   }
@@ -1662,7 +1715,7 @@
         updateUserDuoPills();
       }
     } catch {
-      // ignore presence errors (doesn't break site)
+      // ignore
     }
   }
 
@@ -1726,7 +1779,6 @@
       return;
     }
 
-    // show only DUO messages in dropdown (clean)
     const userLower = loadUser().trim().toLowerCase();
     const duoMsgs = messages
       .map((m, i) => ({ m, i }))
@@ -1785,8 +1837,7 @@
         renderMessages();
         updateNotifications();
         showToast("Deleted");
-        // push immediately (not just debounce) so both devices see delete fast
-        await pushRemoteState();
+        await pushRemoteState(); // immediate
       });
 
       list.appendChild(item);
@@ -1798,12 +1849,18 @@
     const msg = messages[index];
     if (!msg) return;
 
+    const safeContent = normalizeNewlines(msg.content ?? "").trim();
+    if (!safeContent) {
+      // ✅ never open blank letters again
+      showToast("That letter is empty (cleaned)");
+      return;
+    }
+
     const displayName = msg.from || "Unknown";
     $("letterFrom").textContent = displayName.toUpperCase();
     $("letterTimestamp").textContent = msg.timestamp || "";
-    $("letterContent").textContent = msg.content || "";
+    $("letterContent").textContent = safeContent;
 
-    // mark read ONLY if it's from DUO (local read tracking)
     const userLower = loadUser().trim().toLowerCase();
     const fromLower = String(msg.from || "").trim().toLowerCase();
     if (userLower && fromLower && fromLower !== userLower) {
@@ -1819,7 +1876,6 @@
     const userLower = loadUser().trim().toLowerCase();
     if (!userLower) return;
 
-    // mark read to latest DUO message index
     let lastDuo = -1;
     for (let i = 0; i < messages.length; i++) {
       const from = String(messages[i]?.from || "").trim().toLowerCase();
@@ -1927,7 +1983,10 @@
     });
   }
 
-  function renderMessages() {
+  let lastMsgCount = 0;
+
+  function renderMessages(opts = {}) {
+    const { autoScroll = false } = opts;
     const messages = loadMessages();
     const container = $("messageLog");
     container.innerHTML = "";
@@ -1946,9 +2005,14 @@
       container.appendChild(el);
     });
 
-    // ✅ only scroll after 3 messages
     if (messages.length > 3) container.classList.add("scroll");
     else container.classList.remove("scroll");
+
+    // only auto-scroll when YOU send a message (not on remote pulls)
+    if (autoScroll || messages.length > lastMsgCount) {
+      if (container.classList.contains("scroll")) container.scrollTop = container.scrollHeight;
+    }
+    lastMsgCount = messages.length;
   }
 
   function ensureCustomTagsInSelect() {
@@ -2058,35 +2122,60 @@
   let syncDebounce = null;
 
   function getLocalState() {
+    // ✅ always sanitize before pushing (prevents blank letters from ever syncing)
+    const cleanedMessages = sanitizeMessages(loadMessages());
+    if (cleanedMessages.length !== loadMessages().length) {
+      localStorage.setItem(KEY_MESSAGES, JSON.stringify(cleanedMessages));
+      clampLastReadToMessagesLen(cleanedMessages.length);
+    }
+
     return {
       active: loadActive(),
       saved: loadSaved(),
       completed: loadCompleted(),
-      messages: loadMessages(),
+      messages: cleanedMessages,
       customTags: loadCustomTags(),
       systemMessage: loadSystemMessage(),
     };
   }
 
   function applyStateToLocal(state) {
-    if (!state || typeof state !== "object") return;
+    if (!state || typeof state !== "object") return { cleaned: false };
+
+    let cleaned = false;
 
     suppressSync = true;
+
     if (Array.isArray(state.active)) localStorage.setItem(KEY_ACTIVE, JSON.stringify(state.active));
     if (Array.isArray(state.saved)) localStorage.setItem(KEY_SAVED, JSON.stringify(state.saved));
     if (Array.isArray(state.completed)) localStorage.setItem(KEY_COMPLETED, JSON.stringify(state.completed));
-    if (Array.isArray(state.messages)) localStorage.setItem(KEY_MESSAGES, JSON.stringify(state.messages));
     if (Array.isArray(state.customTags)) localStorage.setItem(KEY_CUSTOM_TAGS, JSON.stringify(state.customTags));
     if (typeof state.systemMessage === "string") localStorage.setItem(KEY_SYSTEM_MESSAGE, state.systemMessage);
+
+    // ✅ sanitize messages from remote too
+    if (Array.isArray(state.messages)) {
+      const clean = sanitizeMessages(state.messages);
+      if (clean.length !== state.messages.length) cleaned = true;
+      localStorage.setItem(KEY_MESSAGES, JSON.stringify(clean));
+      clampLastReadToMessagesLen(clean.length);
+    }
+
     suppressSync = false;
+
+    return { cleaned };
   }
 
   async function remoteGetState() {
     const res = await fetch(`/.netlify/functions/room?room=${encodeURIComponent(ROOM_CODE)}`);
     if (!res.ok) throw new Error("Remote get failed");
     const data = await res.json();
+
     lastPresence = data?.presence || lastPresence;
-    return data.payload || null;
+
+    return {
+      payload: data.payload || null,
+      updated_at: data.updated_at || null
+    };
   }
 
   async function remoteSetState(payload) {
@@ -2098,7 +2187,7 @@
     if (!res.ok) throw new Error("Remote set failed");
     const data = await res.json();
     lastPresence = data?.presence || lastPresence;
-    return true;
+    return data; // { ok, payload, presence, updated_at }
   }
 
   async function remotePatchPresence(userName) {
@@ -2112,21 +2201,43 @@
     return data;
   }
 
-  async function pullRemoteState() {
+  async function pullRemoteState(opts = {}) {
+    const silent = !!opts.silent;
+
     try {
-      setSyncStatus("pulling");
       const remote = await remoteGetState();
-      if (remote && Object.keys(remote).length) {
-        applyStateToLocal(remote);
-        ensureCustomTagsInSelect();
-        renderSystemMessage(loadSystemMessage());
-        renderActive();
-        renderCompleted();
-        renderMessages();
-        updateNotifications();
+      if (!remote || !remote.payload) {
+        if (!silent) setSyncStatus("on");
+        return;
       }
-      setSyncStatus("on");
+
+      // 🔒 Skip if nothing changed (no UI spam)
+      if (remote.updated_at && remote.updated_at === lastRemoteUpdatedAt) {
+        if (!silent) setSyncStatus("on");
+        return;
+      }
+
+      // only show "pull" if something ACTUALLY changed (seamless)
+      setSyncStatus("pulling");
+
+      lastRemoteUpdatedAt = remote.updated_at;
+
+      const { cleaned } = applyStateToLocal(remote.payload);
+
+      ensureCustomTagsInSelect();
+      renderSystemMessage(loadSystemMessage());
+      renderActive();
+      renderCompleted();
+      renderMessages(); // do NOT autoscroll on remote updates
+      updateNotifications();
       updateUserDuoPills();
+
+      setSyncStatus("on");
+
+      // ✅ if we cleaned blank letters, push once to make the room clean forever
+      if (cleaned) {
+        schedulePush();
+      }
     } catch {
       setSyncStatus("error");
     }
@@ -2136,7 +2247,11 @@
     if (suppressSync) return;
     try {
       setSyncStatus("saving");
-      await remoteSetState(getLocalState());
+      const data = await remoteSetState(getLocalState());
+
+      // ✅ update local poll version so we don't re-apply our own push
+      if (data?.updated_at) lastRemoteUpdatedAt = data.updated_at;
+
       setSyncStatus("on");
       updateUserDuoPills();
     } catch {
@@ -2147,7 +2262,17 @@
   function schedulePush() {
     if (suppressSync) return;
     clearTimeout(syncDebounce);
-    syncDebounce = setTimeout(pushRemoteState, 600);
+    syncDebounce = setTimeout(pushRemoteState, 350); // faster + still stable
+  }
+
+  // ✅ SMART polling loop
+  function startSmartPolling() {
+    if (pollTimer) return;
+
+    pollTimer = setInterval(() => {
+      if (document.visibilityState !== "visible") return;
+      pullRemoteState({ silent: true });
+    }, 2500); // 2.5s = fast + battery-friendly
   }
 
   // ---------- Who modal ----------
@@ -2165,15 +2290,14 @@
   async function setUserAndStart(name) {
     saveUser(name);
 
-    // after first selection, allow closing the modal in the future
     $("closeWhoModal").classList.remove("hidden");
-
     closeWhoModal();
+
     updateUserDuoPills();
 
-    // start sync + presence
     setSyncStatus("pulling");
-    await pullRemoteState();
+    await pullRemoteState({ silent: false });
+
     startPresence();
     showToast(`USER SET: ${String(name).toUpperCase()}`);
   }
@@ -2183,6 +2307,7 @@
     stopPresence();
     updateUserDuoPills();
     openWhoModal();
+    $("closeWhoModal").classList.add("hidden");
     showToast("LOGGED OFF");
   }
 
@@ -2194,15 +2319,10 @@
     const msg = prompt("Edit system message:", loadSystemMessage());
     if (msg !== null && msg.trim()) {
       const trimmed = msg.trim();
-
-      // progress feedback you asked for
       showToast("Updating...");
       saveSystemMessageLocalOnly(trimmed);
       renderSystemMessage(trimmed);
-
-      // push immediately so other devices get it fast
       await pushRemoteState();
-
       showToast("Message updated");
     }
   });
@@ -2375,22 +2495,30 @@
   $("btnSaveNote").addEventListener("click", () => {
     if (!hasUser()) { showToast("Pick USER first"); return; }
 
-    const content = $("customNote").value.trim();
-    if (!content) return alert("Write a message first");
+    const content = normalizeNewlines($("customNote").value).trim();
+    if (!content) {
+      showToast("Can't send a blank letter");
+      return;
+    }
 
     const from = loadUser().trim();
-    const timestamp = new Date().toLocaleString();
+    if (!from) { showToast("Pick USER first"); return; }
+
+    const timestamp = formatDT(new Date());
     const messages = loadMessages();
     messages.push({ from, timestamp, content });
-    saveMessages(messages);
+
+    // ✅ sanitize immediately (prevents any empty record)
+    const cleaned = sanitizeMessages(messages);
+    localStorage.setItem(KEY_MESSAGES, JSON.stringify(cleaned));
 
     $("customNote").value = "";
-    renderMessages();
+    renderMessages({ autoScroll: true });
     updateNotifications();
     showToast("Letter sent");
+    schedulePush();
   });
 
-  // ✅ open latest letter from DUO (not your own)
   $("envelopeBtn").addEventListener("click", () => {
     if (!hasUser()) { showToast("Pick USER first"); return; }
 
@@ -2400,11 +2528,12 @@
     let idx = -1;
     for (let i = messages.length - 1; i >= 0; i--) {
       const fromLower = String(messages[i]?.from || "").trim().toLowerCase();
-      if (fromLower && fromLower !== userLower) { idx = i; break; }
+      const c = normalizeNewlines(messages[i]?.content ?? "").trim();
+      if (fromLower && fromLower !== userLower && c) { idx = i; break; }
     }
 
     if (idx >= 0) openMessage(idx);
-    else alert("No letters from your DUO yet!");
+    else showToast("No duo letters yet");
   });
 
   $("notificationBell").addEventListener("click", () => {
@@ -2420,7 +2549,6 @@
     $("letterModal").classList.remove("active");
   });
 
-  // ✅ export kept exactly same behavior as you liked
   $("btnDownloadText").addEventListener("click", () => {
     const active = loadActive();
     const completed = loadCompleted().filter(c => !c.isExample);
@@ -2467,9 +2595,14 @@ ${completed.map(i => `[X] ${i.title} — ${i.desc} (#${i.tag})`).join("\n")}
     }
   });
 
-  // Pull on focus (so duo changes show up fast)
+  // Pull on focus (fast)
   window.addEventListener("focus", () => {
-    pullRemoteState();
+    pullRemoteState({ silent: false });
+  });
+
+  // when coming back visible, do a quick pull
+  document.addEventListener("visibilitychange", () => {
+    if (document.visibilityState === "visible") pullRemoteState({ silent: false });
   });
 
   // ---------- Init ----------
@@ -2487,15 +2620,27 @@ ${completed.map(i => `[X] ${i.title} — ${i.desc} (#${i.tag})`).join("\n")}
     updateTracker();
     setInterval(updateTracker, 1000);
 
-    // start pulling even before user picks
-    pullRemoteState();
+    // start polling always (cover + main stay synced)
+    startSmartPolling();
 
-    // ✅ FORCE LOGIN MODAL ON EVERY LAUNCH
-    stopPresence();
-    openWhoModal();
-    $("closeWhoModal").classList.add("hidden");
+    // pull once on load
+    pullRemoteState({ silent: false });
+
+    // ✅ IMPORTANT: remember user on refresh (no re-asking)
+    // - if sessionStorage has user: don't show modal
+    // - if fresh tab/device: modal opens
+    if (!hasUser()) {
+      stopPresence();
+      openWhoModal();
+      $("closeWhoModal").classList.add("hidden");
+    } else {
+      $("closeWhoModal").classList.remove("hidden");
+      startPresence();
+      updateUserDuoPills();
+    }
   })();
 </script>
+
 
 </body>
 </html>

@@ -66,7 +66,13 @@ exports.handler = async (event) => {
     }
 
     if (event.httpMethod === "POST") {
-      const body = JSON.parse(event.body || "{}");
+      let body = {};
+      try {
+        body = JSON.parse(event.body || "{}");
+      } catch {
+        body = {};
+      }
+
       const room = (body.room || "").trim();
       const payloadIn = body.payload || null;
       const presenceIn = body.presence || null;
@@ -76,19 +82,24 @@ exports.handler = async (event) => {
       // Read existing row so presence-patch doesn't overwrite data
       const getUrl =
         `${SUPABASE_URL}/rest/v1/${TABLE}` +
-        `?select=payload&room=eq.${encodeURIComponent(room)}&limit=1`;
+        `?select=payload,updated_at&room=eq.${encodeURIComponent(room)}&limit=1`;
 
       let existingPayload = {};
+      let existingUpdatedAt = null;
+
       const getR = await fetch(getUrl, { headers });
       if (getR.ok) {
         const rows = await getR.json();
         existingPayload = rows?.[0]?.payload || {};
+        existingUpdatedAt = rows?.[0]?.updated_at || null;
       }
 
       let merged = { ...(existingPayload || {}) };
 
+      const isPayloadWrite = !!(payloadIn && typeof payloadIn === "object");
+
       // Merge main payload if provided
-      if (payloadIn && typeof payloadIn === "object") {
+      if (isPayloadWrite) {
         merged = { ...merged, ...payloadIn };
       }
 
@@ -102,6 +113,12 @@ exports.handler = async (event) => {
         }
       }
 
+      // ✅ IMPORTANT:
+      // - Only bump updated_at when payload changes (not presence pings)
+      let nextUpdatedAt = existingUpdatedAt;
+      if (isPayloadWrite) nextUpdatedAt = new Date().toISOString();
+      if (!nextUpdatedAt) nextUpdatedAt = new Date().toISOString(); // first create
+
       const upsertUrl = `${SUPABASE_URL}/rest/v1/${TABLE}?on_conflict=room`;
 
       const r = await fetch(upsertUrl, {
@@ -113,13 +130,18 @@ exports.handler = async (event) => {
         body: JSON.stringify({
           room,
           payload: merged,
-          updated_at: new Date().toISOString(),
+          updated_at: nextUpdatedAt,
         }),
       });
 
       if (!r.ok) return json(500, { error: "supabase write failed" });
 
-      return json(200, { ok: true, payload: merged, presence: merged.presence || {} });
+      return json(200, {
+        ok: true,
+        payload: merged,
+        presence: merged.presence || {},
+        updated_at: nextUpdatedAt,
+      });
     }
 
     return json(405, { error: "method not allowed" });
