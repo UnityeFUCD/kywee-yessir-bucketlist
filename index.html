@@ -4,37 +4,47 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width,initial-scale=1" />
   <title>kywee + yessir bucket list</title>
+
   <style>
     @import url('https://fonts.googleapis.com/css2?family=Roboto+Mono:wght@400;500;700&display=swap');
 
     :root {
-      --bg: #000;
-      --bg-card: #0a0a0a;
+      --bg: #0a0a0a;
+      --bg-card: #141414;
       --text: #ffffff;
-      --muted: #94a3a3;
-      --accent: #d4ff00;
-      --accent-dim: #9ac000;
-      --accent-secondary: #00ffd5;
-      --border: #223;
-      --border-bright: #d4ff00;
-      --shadow: 0 0 40px rgba(212,255,0,.12);
-      --danger: #ff4d4d;
-      --ok: #4dff9a;
+      --muted: #999999;
+      --accent: #ff6b9d;
+      --accent-dim: #d4587e;
+      --accent-secondary: #7b68ee;
+      --border: #333333;
+      --border-bright: #555555;
+      --shadow: 0 0 40px rgba(255,107,157,.15);
     }
 
     [data-theme="light"] {
       --bg: #f5f5f5;
       --bg-card: #ffffff;
       --text: #1a1a1a;
-      --muted: #666;
-      --accent: #111;
-      --accent-dim: #333;
-      --accent-secondary: #555;
-      --border: #ddd;
-      --border-bright: #aaa;
+      --muted: #666666;
+      --accent: #e91e63;
+      --accent-dim: #c2185b;
+      --accent-secondary: #673ab7;
+      --border: #e0e0e0;
+      --border-bright: #bdbdbd;
       --shadow: 0 2px 15px rgba(0,0,0,.1);
-      --danger: #c91f1f;
-      --ok: #128a52;
+    }
+
+    [data-theme="dark"] {
+      --bg: #000000;
+      --bg-card: #0a0a0a;
+      --text: #ffffff;
+      --muted: #999999;
+      --accent: #d4ff00;
+      --accent-dim: #8fb300;
+      --accent-secondary: #d4ff00;
+      --border: #333333;
+      --border-bright: #d4ff00;
+      --shadow: 0 0 40px rgba(212,255,0,.15);
     }
 
     [data-theme="christmas"] {
@@ -48,653 +58,1032 @@
       --border: #2d4a35;
       --border-bright: #4a7c59;
       --shadow: 0 4px 20px rgba(231,76,60,.2);
-      --danger: #ff6a5f;
-      --ok: #5dffb3;
     }
 
-    *{ box-sizing:border-box; }
-    body{
-      margin:0;
-      font-family:'Roboto Mono', monospace;
-      color:var(--text);
-      background:var(--bg);
-      min-height:100vh;
-      overflow-x:hidden;
-      transition: background-color .25s ease, color .25s ease;
+    * { box-sizing: border-box; }
+
+    body {
+      margin: 0;
+      font-family: 'Roboto Mono', monospace;
+      color: var(--text);
+      min-height: 100vh;
+      background: var(--bg);
+      overflow-x: hidden;
+      position: relative;
+      transition: background-color 0.3s ease, color 0.3s ease;
     }
 
-    body::before{
-      content:"";
-      position:fixed; inset:0;
+    body::before {
+      content: "";
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
       background: repeating-linear-gradient(
         0deg,
-        rgba(0,0,0,.12),
-        rgba(0,0,0,.12) 1px,
+        rgba(0, 0, 0, 0.1),
+        rgba(0, 0, 0, 0.1) 1px,
         transparent 1px,
         transparent 2px
       );
-      pointer-events:none;
-      z-index:999;
-      opacity:0;
-      transition: opacity .2s ease;
-    }
-    [data-theme="christmas"] body::before,
-    :root body::before { opacity:.14; }
-    [data-theme="light"] body::before { opacity:0; }
-
-    .wrap{ width:min(1100px,94vw); margin:0 auto; padding:20px 0 80px; position:relative; z-index:2; }
-
-    /* Topbar */
-    .topbar{
-      display:flex; justify-content:space-between; align-items:center; gap:14px;
-      padding:16px 20px;
-      border:2px solid var(--border-bright);
-      background:var(--bg);
-      box-shadow:var(--shadow);
-      position:sticky; top:14px;
-      z-index:60;
-      text-transform:uppercase;
-      font-weight:700;
-      letter-spacing:1px;
-    }
-    .brand{ display:flex; align-items:center; gap:12px; flex-wrap:wrap; font-size:13px; }
-    .topbar-right{ display:flex; align-items:center; gap:10px; flex-wrap:wrap; justify-content:flex-end; }
-
-    .pill{
-      font-size:11px;
-      padding:6px 12px;
-      border:1px solid var(--border-bright);
-      color:var(--accent);
-      background:var(--bg);
-      display:inline-flex; align-items:center; gap:8px;
-    }
-    .syncDot{ width:8px; height:8px; border-radius:999px; background:var(--danger); box-shadow:0 0 12px rgba(255,77,77,.35); }
-    .syncDot.on{ background:var(--ok); box-shadow:0 0 12px rgba(77,255,154,.35); }
-
-    /* Buttons */
-    .btn{
-      border:2px solid var(--border);
-      background:var(--bg);
-      color:var(--text);
-      padding:10px 16px;
-      cursor:pointer;
-      font-weight:700;
-      text-transform:uppercase;
-      font-size:11px;
-      letter-spacing:1px;
-      transition:.15s ease;
-      font-family:'Roboto Mono', monospace;
-    }
-    .btn:hover{ border-color:var(--accent); color:var(--accent); box-shadow:0 0 18px rgba(255,255,255,.06); }
-    .btn.primary{ background:var(--accent); border-color:var(--accent); color:#000; }
-    .btn.primary:hover{ background:var(--accent-dim); border-color:var(--accent-dim); color:#000; }
-
-    .hidden{ display:none !important; }
-
-    /* Theme switcher */
-    .theme-switcher{ position:relative; display:inline-block; }
-    .theme-dropdown{
-      position:absolute; top:calc(100% + 8px); right:0;
-      background:var(--bg-card);
-      border:2px solid var(--border-bright);
-      box-shadow:var(--shadow);
-      min-width:180px;
-      z-index:120;
-      display:none;
-      overflow:hidden;
-    }
-    .theme-dropdown.active{ display:block; }
-    .theme-option{
-      padding:12px 16px;
-      cursor:pointer;
-      border-bottom:1px solid var(--border);
-      font-size:11px;
-      transition:.15s ease;
-    }
-    .theme-option:last-child{ border-bottom:none; }
-    .theme-option:hover{ background:var(--accent); color:#000; }
-    .theme-option.active{ background:rgba(255,255,255,.06); color:var(--accent); font-weight:700; }
-
-    /* Bell + dropdown */
-    .notificationWrap{ position:relative; }
-    .notification-bell{
-      width:26px; height:26px;
-      display:inline-flex; align-items:center; justify-content:center;
-      cursor:pointer;
-      border:2px solid var(--border);
-      background:var(--bg);
-      transition:.15s ease;
-    }
-    .notification-bell:hover{ border-color:var(--accent); }
-    .notification-bell svg{ width:18px; height:18px; fill:var(--text); }
-    .notification-bell:hover svg{ fill:var(--accent); }
-    .notification-badge{
-      position:absolute;
-      top:-6px; right:-6px;
-      background:var(--accent);
-      color:#000;
-      font-size:9px;
-      font-weight:700;
-      padding:2px 6px;
-      border-radius:12px;
-      min-width:18px;
-      text-align:center;
-      border:2px solid var(--bg);
-    }
-    .notification-dropdown{
-      position:absolute; top:calc(100% + 8px); right:0;
-      background:var(--bg-card);
-      border:2px solid var(--border-bright);
-      box-shadow:var(--shadow);
-      min-width:290px;
-      max-width:360px;
-      z-index:200;
-      display:none;
-      max-height:420px;
-      overflow:auto;
-    }
-    .notification-dropdown.active{ display:block; }
-    .notification-header{
-      padding:12px 16px;
-      border-bottom:1px solid var(--border);
-      font-size:11px;
-      text-transform:uppercase;
-      letter-spacing:1px;
-      font-weight:700;
-      color:var(--accent);
-      display:flex; align-items:center; justify-content:space-between; gap:10px;
-    }
-    .notification-item{
-      padding:12px 16px;
-      border-bottom:1px solid var(--border);
-      cursor:pointer;
-      transition:.15s ease;
-    }
-    .notification-item:last-child{ border-bottom:none; }
-    .notification-item.unread{
-      background:rgba(255,255,255,.04);
-      border-left:3px solid var(--accent);
-    }
-    .notification-item:hover{ background:rgba(255,255,255,.06); }
-    .nFrom{ font-size:10px; color:var(--accent); font-weight:700; margin-bottom:4px; }
-    .nText{ font-size:11px; color:var(--muted); white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
-    .nTime{ font-size:9px; color:var(--muted); margin-top:6px; }
-
-    /* Cover */
-    .cover{
-      margin-top:26px;
-      border:2px solid var(--border-bright);
-      background:var(--bg-card);
-      box-shadow:var(--shadow);
-      overflow:hidden;
-      position:relative;
-    }
-    .cover::before{
-      content:"";
-      position:absolute; top:0; left:0; right:0;
-      height:3px;
-      background:var(--accent);
-      box-shadow:0 0 14px var(--accent);
-    }
-    .coverInner{
-      padding:64px 30px 44px;
-      text-align:center;
-      border:1px solid var(--border);
-      margin:10px;
-      position:relative;
-      z-index:2;
-    }
-    .big{
-      font-size: clamp(30px, 5vw, 52px);
-      margin:0 0 18px;
-      line-height:1.05;
-      text-transform:uppercase;
-      font-weight:700;
-      letter-spacing:2px;
-    }
-    .sub{
-      color:var(--muted);
-      font-size:14px;
-      max-width:70ch;
-      margin:0 auto 24px;
-      line-height:1.6;
-    }
-    .heart{ width:60px; height:60px; margin:0 auto 24px; filter: drop-shadow(0 0 18px var(--accent)); }
-    .row{ display:flex; flex-wrap:wrap; justify-content:center; gap:12px; margin-top:24px; }
-    .actions{ display:flex; flex-wrap:wrap; gap:10px; justify-content:center; margin-top:28px; }
-
-    /* Year progress */
-    .year-progress{
-      border:2px solid var(--border);
-      background:var(--bg-card);
-      box-shadow:var(--shadow);
-      padding:20px;
-      margin-top:20px;
-    }
-    .year-progress h3{
-      margin:0 0 16px;
-      font-size:14px;
-      text-transform:uppercase;
-      letter-spacing:1px;
-      color:var(--accent);
-    }
-    .progress-stats{
-      display:grid;
-      grid-template-columns:repeat(auto-fit,minmax(200px,1fr));
-      gap:16px;
-      margin-bottom:16px;
-    }
-    .stat-item{
-      text-align:center;
-      padding:12px;
-      border:1px solid var(--border);
-      background:var(--bg);
-    }
-    .stat-label{
-      font-size:10px;
-      text-transform:uppercase;
-      color:var(--muted);
-      margin-bottom:6px;
-      letter-spacing:.5px;
-    }
-    .stat-value{
-      font-size:18px;
-      font-weight:700;
-      color:var(--accent);
-    }
-    .progress-bar-container{
-      width:100%;
-      height:24px;
-      background:var(--bg);
-      border:2px solid var(--border);
-      overflow:hidden;
-    }
-    .progress-bar{
-      height:100%;
-      background:linear-gradient(90deg,var(--accent),var(--accent-secondary));
-      display:flex;
-      align-items:center;
-      justify-content:flex-end;
-      padding-right:8px;
-      transition: width .35s ease;
-      width:0%;
-    }
-    .progress-percent{ font-size:11px; font-weight:700; color:#000; text-shadow:none; }
-
-    /* Grid */
-    .grid{ display:grid; grid-template-columns:1.1fr 0.9fr; gap:20px; margin-top:20px; }
-    @media (max-width: 900px){
-      .grid{ grid-template-columns:1fr; }
-      .topbar{ position:static; }
+      pointer-events: none;
+      z-index: 999;
+      opacity: 0;
+      transition: opacity 0.3s ease;
     }
 
-    .card{
-      border:2px solid var(--border);
-      background:var(--bg-card);
-      box-shadow:var(--shadow);
-      overflow:hidden;
-      position:relative;
-    }
-    .card::before{
-      content:"";
-      position:absolute; top:0; left:0; right:0;
-      height:2px;
-      background:var(--accent);
-      box-shadow:0 0 12px rgba(0,0,0,.2);
-    }
-    .cardHeader{
-      padding:18px 20px;
-      border-bottom:2px solid var(--border);
-      display:flex;
-      justify-content:space-between;
-      align-items:center;
-      gap:10px;
-      background:rgba(255,255,255,.03);
-    }
-    .cardHeader h2{
-      margin:0;
-      font-size:16px;
-      letter-spacing:1.5px;
-      text-transform:uppercase;
-    }
-    .cardBody{ padding:20px; }
-    .note{
-      color:var(--muted);
-      font-size:12px;
-      line-height:1.5;
-      border-left:2px solid var(--accent);
-      padding-left:12px;
+    [data-theme="dark"] body::before,
+    [data-theme="christmas"] body::before {
+      opacity: 0.15;
     }
 
-    /* Items */
-    .items{ display:flex; flex-direction:column; gap:12px; margin-top:16px; }
-    .item{
-      border:1px solid var(--border);
-      padding:14px;
-      background:var(--bg);
-      display:flex;
-      gap:12px;
-      align-items:flex-start;
-      position:relative;
-      transition:.15s ease;
-    }
-    .item:hover{ border-color:var(--accent); box-shadow:0 0 16px rgba(0,0,0,.25); }
-    .item input[type="checkbox"]{ margin-top:3px; width:18px; height:18px; accent-color:var(--accent); cursor:pointer; }
-    .itext{ flex:1; }
-    .ititle{
-      margin:0;
-      font-weight:700;
-      font-size:13px;
-      display:flex;
-      align-items:center;
-      gap:10px;
-      text-transform:uppercase;
-      letter-spacing:.5px;
-    }
-    .itag{
-      font-size:10px;
-      padding:4px 8px;
-      border:1px solid var(--accent);
-      color:var(--accent);
-      background:rgba(255,255,255,.03);
-      text-transform:uppercase;
-      font-weight:700;
-      letter-spacing:.5px;
-    }
-    .idesc{ margin:8px 0 0; color:var(--muted); font-size:12px; line-height:1.4; }
+    a { color: inherit; }
 
-    /* Form */
-    .form{ display:flex; flex-direction:column; gap:14px; margin-top:16px; }
-    label{ font-size:11px; color:var(--accent); text-transform:uppercase; letter-spacing:1px; font-weight:700; }
-    input[type="text"], textarea{
-      width:100%;
-      padding:12px 14px;
-      border:2px solid var(--border);
-      background:var(--bg);
-      color:var(--text);
-      outline:none;
-      font-family:'Roboto Mono', monospace;
-      font-size:13px;
-      transition:.15s ease;
-    }
-    input[type="text"]:focus, textarea:focus{
-      border-color:var(--accent);
-      box-shadow:0 0 12px rgba(0,0,0,.25);
-    }
-    textarea{ min-height:90px; resize:vertical; }
-    .actionsRow{ display:flex; flex-wrap:wrap; gap:10px; margin-top:12px; }
-    hr{ border:none; border-top:1px solid var(--border); margin:24px 0; }
-    .footer{ margin-top:24px; text-align:center; color:var(--muted); font-size:11px; text-transform:uppercase; letter-spacing:1px; }
-
-    /* Message list (scroll after ~3 items) */
-    .messageList{
-      margin-top:14px;
-      display:flex;
-      flex-direction:column;
-      gap:10px;
-      max-height:260px;
-      overflow:auto;
-      padding-right:6px;
-    }
-    .msg{
-      border:1px solid var(--border);
-      background:var(--bg);
-      padding:12px;
-    }
-    .msgHead{
-      display:flex; justify-content:space-between; align-items:center; gap:10px;
-      font-size:10px; text-transform:uppercase; letter-spacing:.8px;
-      color:var(--muted);
-      margin-bottom:8px;
-    }
-    .msgFrom{ color:var(--accent); font-weight:700; }
-    .msgText{ font-size:12px; line-height:1.45; color:var(--text); white-space:pre-wrap; }
-
-    /* Cursor */
-    .cursor{
-      display:inline-block;
-      width:10px;
-      height:1em;
-      background:var(--accent);
-      margin-left:6px;
-      animation: blink 1s infinite;
-      vertical-align:-2px;
-    }
-    @keyframes blink{ 0%,49%{opacity:1} 50%,100%{opacity:0} }
-
-    /* Snow (Christmas only) */
-    .snowflake{
-      position:fixed;
-      top:-10px;
-      font-size:14px;
-      color:#fff;
-      opacity:.85;
-      pointer-events:none;
-      animation: fall linear forwards;
-      z-index:40;
-      text-shadow: 0 0 10px rgba(255,255,255,.35);
-    }
-    @keyframes fall{
-      to{ transform: translateY(110vh) rotate(360deg); opacity:.2; }
+    .wrap {
+      width: min(1100px, 94vw);
+      margin: 0 auto;
+      padding: 20px 0 80px;
+      position: relative;
+      z-index: 10; /* keeps snow behind UI */
     }
 
-    /* Christmas lights (more pronounced) */
-    .christmasLights{
-      position:absolute;
-      top:0; left:0; right:0;
-      height:70px;
-      pointer-events:none;
-      z-index:3;
-      display:none;
-    }
-    [data-theme="christmas"] .christmasLights{ display:block; }
-
-    .wire{
-      position:absolute;
-      top:22px; left:-10px; right:-10px;
-      height:4px;
-      background: linear-gradient(90deg, rgba(0,0,0,.8), rgba(0,0,0,.2), rgba(0,0,0,.8));
-      border-radius:999px;
-      box-shadow: 0 0 18px rgba(0,0,0,.35);
-      opacity:.75;
-    }
-    .bulbs{
-      position:absolute;
-      top:8px; left:0; right:0;
-      display:flex;
-      justify-content:space-evenly;
-      align-items:flex-start;
-      padding:0 10px;
-    }
-    .bulb{
-      width:16px; height:16px;
-      border-radius:999px;
-      position:relative;
-      box-shadow:
-        0 0 18px rgba(255,255,255,.25),
-        0 0 40px rgba(255,255,255,.15);
-      transform: translateY(10px);
-      animation: twinkle 1.8s infinite ease-in-out;
-    }
-    .bulb::before{
-      content:"";
-      position:absolute;
-      top:-10px; left:50%;
-      width:2px; height:14px;
-      background: rgba(0,0,0,.55);
-      transform: translateX(-50%);
-      border-radius:2px;
-    }
-    .bulb::after{
-      content:"";
-      position:absolute;
-      inset:-18px;
-      border-radius:999px;
-      background: radial-gradient(circle, rgba(255,255,255,.25), transparent 60%);
-      opacity:.9;
-      filter: blur(2px);
-    }
-    @keyframes twinkle{
-      0%,100%{ filter: brightness(1.05); }
-      50%{ filter: brightness(1.55); }
-    }
-    .bulb:nth-child(1){ background:#ff3b30; animation-delay:.0s; }
-    .bulb:nth-child(2){ background:#34c759; animation-delay:.2s; }
-    .bulb:nth-child(3){ background:#0a84ff; animation-delay:.4s; }
-    .bulb:nth-child(4){ background:#ffd60a; animation-delay:.6s; }
-    .bulb:nth-child(5){ background:#bf5af2; animation-delay:.8s; }
-    .bulb:nth-child(6){ background:#64d2ff; animation-delay:1.0s; }
-    .bulb:nth-child(7){ background:#ff9f0a; animation-delay:1.2s; }
-    .bulb:nth-child(8){ background:#30d158; animation-delay:1.4s; }
-
-    /* Modals (in-site pairing + user selection) */
-    .modalOverlay{
-      position:fixed; inset:0;
-      background: rgba(0,0,0,.65);
-      display:none;
-      align-items:center;
-      justify-content:center;
-      padding:18px;
-      z-index:500;
-    }
-    .modalOverlay.active{ display:flex; }
-
-    .modal{
-      width:min(520px, 96vw);
-      background: var(--bg-card);
-      border:2px solid var(--border-bright);
+    .topbar {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 14px;
+      padding: 16px 20px;
+      border: 2px solid var(--border-bright);
+      background: var(--bg);
       box-shadow: var(--shadow);
-      padding:18px;
+      position: sticky;
+      top: 14px;
+      z-index: 50;
+      text-transform: uppercase;
+      font-weight: 700;
+      letter-spacing: 1px;
+      transition: all 0.3s ease;
     }
-    .modalHeader{
-      display:flex;
-      align-items:center;
-      justify-content:space-between;
-      gap:10px;
-      padding-bottom:12px;
-      border-bottom:1px solid var(--border);
-    }
-    .modalHeader h3{
-      margin:0;
-      font-size:13px;
-      text-transform:uppercase;
-      letter-spacing:1px;
-      color:var(--accent);
-    }
-    .modalClose{
-      border:2px solid var(--border);
-      background:var(--bg);
-      color:var(--text);
-      cursor:pointer;
-      padding:6px 10px;
-      font-weight:700;
-      text-transform:uppercase;
-      font-size:10px;
-    }
-    .modalBody{ padding-top:12px; }
-    .modalBody p{ margin:0 0 12px; font-size:11px; color:var(--muted); line-height:1.5; }
-    .row2{ display:grid; grid-template-columns:1fr 1fr; gap:10px; }
-    @media (max-width:520px){ .row2{ grid-template-columns:1fr; } }
 
-    .radioRow{ display:flex; flex-wrap:wrap; gap:10px; margin-top:8px; }
-    .chip{
-      border:2px solid var(--border);
-      background:var(--bg);
-      color:var(--text);
-      padding:10px 12px;
-      cursor:pointer;
-      font-weight:700;
-      text-transform:uppercase;
-      font-size:11px;
-      letter-spacing:1px;
+    .brand {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      font-weight: 700;
+      letter-spacing: 1.5px;
+      font-size: 13px;
     }
-    .chip.active{ border-color:var(--accent); color:var(--accent); box-shadow:0 0 18px rgba(0,0,0,.25); }
 
-    .tiny{ font-size:10px; color:var(--muted); margin-top:8px; }
+    .topbar-right {
+      display: flex;
+      gap: 10px;
+      align-items: center;
+      flex-wrap: wrap;
+      justify-content: flex-end;
+    }
+
+    .pill {
+      font-size: 11px;
+      padding: 6px 12px;
+      border: 1px solid var(--border-bright);
+      color: var(--accent);
+      background: var(--bg);
+      text-transform: uppercase;
+      font-weight: 700;
+      letter-spacing: 0.5px;
+      transition: all 0.3s ease;
+      user-select: none;
+      white-space: nowrap;
+    }
+
+    .btn {
+      border: 2px solid var(--border);
+      background: var(--bg);
+      color: var(--text);
+      padding: 10px 16px;
+      cursor: pointer;
+      transition: all 0.15s ease;
+      font-weight: 700;
+      text-transform: uppercase;
+      font-size: 11px;
+      letter-spacing: 1px;
+      font-family: 'Roboto Mono', monospace;
+    }
+
+    .btn:hover {
+      border-color: var(--accent);
+      color: var(--accent);
+      box-shadow: 0 0 20px rgba(255,107,157,.3);
+    }
+
+    .btn.primary {
+      background: var(--accent);
+      border-color: var(--accent);
+      color: #000;
+    }
+
+    .btn.primary:hover {
+      background: var(--accent-dim);
+      border-color: var(--accent-dim);
+    }
+
+    .theme-switcher {
+      position: relative;
+      display: inline-block;
+    }
+
+    .theme-btn {
+      padding: 8px 12px;
+      font-size: 11px;
+    }
+
+    .theme-dropdown {
+      position: absolute;
+      top: calc(100% + 8px);
+      right: 0;
+      background: var(--bg-card);
+      border: 2px solid var(--border-bright);
+      box-shadow: var(--shadow);
+      min-width: 180px;
+      z-index: 100;
+      display: none;
+    }
+
+    .theme-dropdown.active { display: block; }
+
+    .theme-option {
+      padding: 12px 16px;
+      cursor: pointer;
+      border-bottom: 1px solid var(--border);
+      font-size: 11px;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      transition: all 0.15s ease;
+    }
+
+    .theme-option:last-child { border-bottom: none; }
+    .theme-option:hover { background: var(--accent); color: #000; }
+    .theme-option.active { background: rgba(255,107,157,.1); color: var(--accent); font-weight: 700; }
+
+    .notification-bell {
+      position: relative;
+      cursor: pointer;
+      transition: all 0.15s ease;
+      width: 24px;
+      height: 24px;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .notification-bell svg {
+      width: 20px;
+      height: 20px;
+      fill: var(--text);
+      transition: fill 0.15s ease;
+    }
+
+    .notification-bell:hover svg { fill: var(--accent); }
+
+    .notification-badge {
+      position: absolute;
+      top: -5px;
+      right: -5px;
+      background: var(--accent);
+      color: #000;
+      font-size: 9px;
+      font-weight: 700;
+      padding: 2px 5px;
+      border-radius: 10px;
+      min-width: 16px;
+      text-align: center;
+    }
+
+    .notification-dropdown {
+      position: absolute;
+      top: calc(100% + 8px);
+      right: 0;
+      background: var(--bg-card);
+      border: 2px solid var(--border-bright);
+      box-shadow: var(--shadow);
+      min-width: 280px;
+      max-width: 320px;
+      z-index: 100;
+      display: none;
+      max-height: 400px;
+      overflow-y: auto;
+    }
+
+    .notification-dropdown.active { display: block; }
+
+    .notification-header {
+      padding: 12px 16px;
+      border-bottom: 1px solid var(--border);
+      font-size: 11px;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+      font-weight: 700;
+      color: var(--accent);
+    }
+
+    .notification-item {
+      padding: 12px 16px;
+      border-bottom: 1px solid var(--border);
+      cursor: pointer;
+      transition: all 0.15s ease;
+    }
+    .notification-item:last-child { border-bottom: none; }
+    .notification-item:hover { background: rgba(255,107,157,.05); }
+    .notification-item.unread { background: rgba(255,107,157,.08); border-left: 3px solid var(--accent); }
+
+    .notification-from { font-size: 10px; color: var(--accent); font-weight: 700; margin-bottom: 4px; }
+    .notification-preview { font-size: 11px; color: var(--muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .notification-time { font-size: 9px; color: var(--muted); margin-top: 4px; }
+
+    .cover {
+      margin-top: 26px;
+      border: 2px solid var(--border-bright);
+      background: var(--bg-card);
+      box-shadow: var(--shadow);
+      overflow: hidden;
+      position: relative;
+      transition: all 0.3s ease;
+    }
+
+    .cover::before {
+      content: "";
+      position: absolute;
+      top: 0; left: 0; right: 0;
+      height: 3px;
+      background: var(--accent);
+      box-shadow: 0 0 10px var(--accent);
+      z-index: 20;
+    }
+
+    /* ✅ CHRISTMAS LIGHTS — updated to match your new bulb style */
+    .christmas-lights {
+      position: absolute;
+      top: 6px;
+      left: 10px;
+      right: 10px;
+      height: 54px;
+      display: none;
+      align-items: flex-start;
+      justify-content: space-between;
+      padding: 10px 18px 0;
+      pointer-events: none;
+      z-index: 80;
+    }
+    [data-theme="christmas"] .christmas-lights { display: flex; }
+
+    .christmas-lights::before {
+      content: "";
+      position: absolute;
+      left: -10px;
+      right: -10px;
+      top: 18px;
+      height: 3px;
+      border-radius: 999px;
+      background: rgba(255,255,255,0.12);
+      border-top: 1px solid rgba(255,255,255,0.22);
+      box-shadow: 0 0 18px rgba(255,255,255,0.12);
+    }
+
+    .light {
+      width: 14px;
+      height: 14px;
+      border-radius: 999px;
+      transform: translateY(14px);
+      box-shadow: 0 0 14px currentColor, 0 0 40px currentColor;
+      opacity: 0.96;
+      animation: twinkle 1.8s infinite ease-in-out;
+      position: relative;
+    }
+
+    .light::after {
+      content: "";
+      position: absolute;
+      top: -14px;
+      left: 50%;
+      transform: translateX(-50%);
+      width: 1px;
+      height: 14px;
+      background: rgba(255,255,255,0.18);
+    }
+
+    .light:nth-child(1) { color: #ff3b3b; animation-delay: 0s; }
+    .light:nth-child(2) { color: #3bff6b; animation-delay: 0.15s; }
+    .light:nth-child(3) { color: #3b7bff; animation-delay: 0.3s; }
+    .light:nth-child(4) { color: #ffe93b; animation-delay: 0.45s; }
+    .light:nth-child(5) { color: #ff3bf7; animation-delay: 0.6s; }
+    .light:nth-child(6) { color: #3bfff0; animation-delay: 0.75s; }
+    .light:nth-child(7) { color: #ff8a3b; animation-delay: 0.9s; }
+    .light:nth-child(8) { color: #b83bff; animation-delay: 1.05s; }
+    .light:nth-child(9) { color: #ffe93b; animation-delay: 1.2s; }
+    .light:nth-child(10){ color: #3bff6b; animation-delay: 1.35s; }
+
+    @keyframes twinkle {
+      0%, 100% { filter: brightness(1); transform: translateY(14px) scale(1); opacity: 0.9; }
+      50% { filter: brightness(1.55); transform: translateY(14px) scale(1.08); opacity: 1; }
+    }
+
+    .coverInner {
+      padding: 60px 30px 40px;
+      text-align: center;
+      border: 1px solid var(--border);
+      margin: 10px;
+      position: relative;
+      z-index: 30;
+    }
+
+    .big {
+      font-size: clamp(32px, 5vw, 52px);
+      margin: 0 0 20px;
+      line-height: 1;
+      text-transform: uppercase;
+      font-weight: 700;
+      letter-spacing: 2px;
+    }
+
+    .sub {
+      color: var(--muted);
+      font-size: 14px;
+      max-width: 70ch;
+      margin: 0 auto 24px;
+      line-height: 1.6;
+    }
+
+    .emoticon-art {
+      color: var(--accent);
+      font-size: 10px;
+      line-height: 1.2;
+      margin: 20px auto;
+      display: inline-block;
+      font-family: monospace;
+    }
+
+    .heart {
+      width: 60px;
+      height: 60px;
+      margin: 0 auto 24px;
+      filter: drop-shadow(0 0 15px var(--accent));
+      transition: filter 0.3s ease;
+    }
+
+    .grid {
+      display: grid;
+      grid-template-columns: 1.1fr 0.9fr;
+      gap: 20px;
+      margin-top: 18px;
+    }
+
+    @media (max-width: 900px) {
+      .grid { grid-template-columns: 1fr; }
+      .topbar { position: static; }
+    }
+
+    .card {
+      border: 2px solid var(--border);
+      background: var(--bg-card);
+      box-shadow: var(--shadow);
+      overflow: hidden;
+      position: relative;
+      transition: all 0.3s ease;
+    }
+
+    .card::before {
+      content: "";
+      position: absolute;
+      top: 0; left: 0; right: 0;
+      height: 2px;
+      background: var(--accent);
+    }
+
+    .cardHeader {
+      padding: 18px 20px;
+      border-bottom: 2px solid var(--border);
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 10px;
+      background: rgba(255,107,157,.03);
+      transition: all 0.3s ease;
+    }
+
+    .cardHeader h2 {
+      margin: 0;
+      font-size: 16px;
+      letter-spacing: 1.5px;
+      text-transform: uppercase;
+      font-weight: 700;
+    }
+
+    .cardBody { padding: 20px; }
+
+    .note {
+      color: var(--muted);
+      font-size: 12px;
+      line-height: 1.5;
+      border-left: 2px solid var(--accent);
+      padding-left: 12px;
+    }
+
+    .mission-tabs {
+      display: flex;
+      gap: 10px;
+      margin-bottom: 16px;
+      border-bottom: 2px solid var(--border);
+    }
+
+    .mission-tab {
+      padding: 10px 16px;
+      cursor: pointer;
+      font-size: 11px;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+      font-weight: 700;
+      border-bottom: 2px solid transparent;
+      transition: all 0.15s ease;
+      margin-bottom: -2px;
+    }
+
+    .mission-tab:hover { color: var(--accent); }
+    .mission-tab.active { border-bottom-color: var(--accent); color: var(--accent); }
+
+    .items {
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+      margin-top: 16px;
+    }
+
+    .item {
+      border: 1px solid var(--border);
+      padding: 14px;
+      background: var(--bg);
+      display: flex;
+      gap: 12px;
+      align-items: flex-start;
+      transition: all 0.15s ease;
+      position: relative;
+    }
+
+    .item.example { opacity: 0.5; border-style: dashed; }
+
+    .item::before {
+      content: "";
+      position: absolute;
+      left: 0; top: 0; bottom: 0;
+      width: 2px;
+      background: var(--accent);
+      opacity: 0;
+      transition: opacity 0.15s ease;
+    }
+
+    .item:hover { border-color: var(--accent); box-shadow: 0 0 20px rgba(255,107,157,.2); }
+    .item:hover::before { opacity: 1; }
+
+    .item input[type="checkbox"] {
+      margin-top: 3px;
+      width: 18px;
+      height: 18px;
+      accent-color: var(--accent);
+      cursor: pointer;
+    }
+
+    .itext { flex: 1; }
+
+    .ititle {
+      margin: 0;
+      font-weight: 700;
+      font-size: 13px;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+
+    .itag {
+      font-size: 10px;
+      padding: 4px 8px;
+      border: 1px solid var(--accent);
+      color: var(--accent);
+      background: rgba(255,107,157,.05);
+      text-transform: uppercase;
+      font-weight: 700;
+      letter-spacing: 0.5px;
+    }
+
+    .idesc {
+      margin: 8px 0 0;
+      color: var(--muted);
+      font-size: 12px;
+      line-height: 1.4;
+    }
+
+    .form {
+      display: flex;
+      flex-direction: column;
+      gap: 14px;
+      margin-top: 16px;
+    }
+
+    .field {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+
+    label {
+      font-size: 11px;
+      color: var(--accent);
+      text-transform: uppercase;
+      letter-spacing: 1px;
+      font-weight: 700;
+    }
+
+    input[type="text"],
+    textarea,
+    select {
+      width: 100%;
+      padding: 12px 14px;
+      border: 2px solid var(--border);
+      background: var(--bg);
+      color: var(--text);
+      outline: none;
+      font-family: 'Roboto Mono', monospace;
+      font-size: 13px;
+      transition: all 0.15s ease;
+    }
+
+    select { cursor: pointer; }
+
+    input[type="text"]:focus,
+    textarea:focus,
+    select:focus {
+      border-color: var(--accent);
+      box-shadow: 0 0 15px rgba(255,107,157,.2);
+    }
+
+    textarea { min-height: 90px; resize: vertical; }
+
+    .actions {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+      margin-top: 12px;
+    }
+
+    hr { border: none; border-top: 1px solid var(--border); margin: 24px 0; }
+
+    .footer {
+      margin-top: 24px;
+      text-align: center;
+      color: var(--muted);
+      font-size: 11px;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+    }
+
+    .hidden { display: none !important; }
+
+    .cursor {
+      display: inline-block;
+      width: 10px;
+      height: 1em;
+      background: var(--accent);
+      margin-left: 5px;
+      animation: blink 1s infinite;
+    }
+
+    @keyframes blink {
+      0%, 49% { opacity: 1; }
+      50%, 100% { opacity: 0; }
+    }
+
+    .corner-decor { position: absolute; width: 20px; height: 20px; border: 2px solid var(--accent); z-index: 60; }
+    .corner-decor.tl { top: 10px; left: 10px; border-right: none; border-bottom: none; }
+    .corner-decor.tr { top: 10px; right: 10px; border-left: none; border-bottom: none; }
+    .corner-decor.bl { bottom: 10px; left: 10px; border-right: none; border-top: none; }
+    .corner-decor.br { bottom: 10px; right: 10px; border-left: none; border-top: none; }
+
+    .modal {
+      position: fixed;
+      top: 0; left: 0;
+      width: 100%; height: 100%;
+      background: rgba(0,0,0,0.9);
+      z-index: 1000;
+      display: none;
+      align-items: center;
+      justify-content: center;
+      padding: 20px;
+    }
+
+    .modal.active { display: flex; }
+
+    .modal-content {
+      background: var(--bg-card);
+      border: 2px solid var(--border-bright);
+      box-shadow: var(--shadow);
+      max-width: 800px;
+      width: 100%;
+      max-height: 80vh;
+      overflow-y: auto;
+      padding: 30px;
+      position: relative;
+    }
+
+    .modal-content.small {
+      max-width: 520px;
+    }
+
+    .modal-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 18px;
+      gap: 10px;
+    }
+
+    .modal-header h3 {
+      margin: 0;
+      font-size: 18px;
+      text-transform: uppercase;
+      letter-spacing: 1.5px;
+      color: var(--accent);
+    }
+
+    .modal-close-btn {
+      width: 34px;
+      height: 34px;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      border: 2px solid var(--border);
+      background: var(--bg);
+      color: var(--muted);
+      font-weight: 900;
+      transition: all 0.15s ease;
+      user-select: none;
+      flex: 0 0 auto;
+    }
+    .modal-close-btn:hover { border-color: var(--accent); color: var(--accent); }
+
+    .modal-text {
+      color: var(--muted);
+      font-size: 12px;
+      line-height: 1.6;
+      margin: 0 0 14px;
+    }
+
+    .saved-mission-card {
+      border: 1px solid var(--border);
+      padding: 14px;
+      margin-bottom: 12px;
+      background: var(--bg);
+      position: relative;
+    }
+
+    .saved-mission-card.selected {
+      border-color: var(--accent);
+      background: rgba(255,107,157,.05);
+    }
+
+    .saved-mission-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+      gap: 10px;
+      margin-bottom: 10px;
+    }
+
+    .saved-mission-actions { display: flex; gap: 8px; }
+
+    .envelope-container {
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      padding: 8px 12px;
+      border: 1px solid var(--border);
+      background: var(--bg);
+      transition: all 0.15s ease;
+      user-select: none;
+    }
+
+    .envelope-container:hover { border-color: var(--accent); color: var(--accent); }
+
+    /* makes just the name clickable without breaking open-last-letter */
+    #fromPill { cursor: pointer; text-decoration: underline; text-underline-offset: 3px; }
+
+    .letter-modal {
+      position: fixed;
+      top: 0; left: 0;
+      width: 100%; height: 100%;
+      background: rgba(0,0,0,0.95);
+      z-index: 2000;
+      display: none;
+      align-items: center;
+      justify-content: center;
+      padding: 20px;
+    }
+
+    .letter-modal.active {
+      display: flex;
+      animation: fadeIn 0.3s ease;
+    }
+
+    @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+
+    .letter-envelope {
+      width: 400px;
+      max-width: 90vw;
+      background: #c9b17a;
+      border: 3px solid #8b7355;
+      padding: 40px;
+      position: relative;
+      transform-origin: center;
+      animation: envelopeOpen 0.5s ease forwards;
+    }
+
+    @keyframes envelopeOpen {
+      from { transform: scale(0.8) rotateX(-10deg); opacity: 0; }
+      to { transform: scale(1) rotateX(0deg); opacity: 1; }
+    }
+
+    .letter-paper {
+      background: #f4ecd8;
+      border: 2px solid #8b7355;
+      padding: 30px;
+      font-family: 'Roboto Mono', monospace;
+      color: #2c2416;
+      line-height: 1.6;
+      box-shadow: 0 4px 15px rgba(0,0,0,0.3);
+      transform-origin: top;
+      animation: letterUnfold 0.5s ease 0.3s forwards;
+      opacity: 0;
+    }
+
+    @keyframes letterUnfold {
+      from { transform: scaleY(0); opacity: 0; }
+      to { transform: scaleY(1); opacity: 1; }
+    }
+
+    .letter-from {
+      font-size: 11px;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+      font-weight: 700;
+      margin-bottom: 8px;
+      color: #666;
+    }
+
+    .letter-timestamp { font-size: 10px; color: #999; margin-bottom: 16px; }
+
+    .letter-content {
+      font-size: 13px;
+      white-space: pre-wrap;
+      word-wrap: break-word;
+    }
+
+    .letter-close {
+      position: absolute;
+      top: 10px; right: 10px;
+      width: 30px; height: 30px;
+      background: var(--bg);
+      border: 2px solid var(--accent);
+      color: var(--accent);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      font-size: 18px;
+      transition: all 0.15s ease;
+    }
+
+    .letter-close:hover { background: var(--accent); color: #000; }
+
+    #messageLog {
+      max-height: 300px;
+      overflow-y: auto;
+      scroll-behavior: smooth;
+    }
+
+    .message-log-item {
+      border: 1px solid var(--border);
+      padding: 12px;
+      margin-bottom: 12px;
+      background: var(--bg);
+    }
+
+    .message-log-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 8px;
+      font-size: 10px;
+      color: var(--muted);
+    }
+
+    .message-log-content {
+      font-size: 12px;
+      line-height: 1.5;
+      color: var(--text);
+    }
+
+    .toast {
+      position: fixed;
+      bottom: 20px;
+      right: 20px;
+      padding: 16px 24px;
+      background: var(--bg-card);
+      border: 2px solid var(--accent);
+      box-shadow: var(--shadow);
+      font-size: 12px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+      color: var(--accent);
+      z-index: 3000;
+      animation: slideInToast 0.3s ease, slideOutToast 0.3s ease 2.7s;
+      pointer-events: none;
+    }
+
+    @keyframes slideInToast {
+      from { transform: translateX(400px); opacity: 0; }
+      to { transform: translateX(0); opacity: 1; }
+    }
+
+    @keyframes slideOutToast {
+      from { transform: translateX(0); opacity: 1; }
+      to { transform: translateX(400px); opacity: 0; }
+    }
+
+    /* ✅ Snow is visible but behind content */
+    .snowflake {
+      position: fixed;
+      top: -10px;
+      font-size: 14px;
+      opacity: 0.85;
+      pointer-events: none;
+      animation: fall linear forwards;
+      filter: drop-shadow(0 6px 10px rgba(0,0,0,.25));
+      z-index: 5;
+    }
+
+    @keyframes fall {
+      to { transform: translateY(110vh) rotate(360deg); opacity: 0.25; }
+    }
+
+    /* ✅ 2026 PROGRESS TRACKER (clock section like your screenshot) */
+    .tracker {
+      margin-top: 22px;
+      border: 2px solid var(--border-bright);
+      background: var(--bg-card);
+      box-shadow: var(--shadow);
+      overflow: hidden;
+      position: relative;
+    }
+
+    .tracker::before {
+      content: "";
+      position: absolute;
+      top: 0; left: 0; right: 0;
+      height: 3px;
+      background: var(--accent);
+      box-shadow: 0 0 10px var(--accent);
+    }
+
+    .trackerInner {
+      border: 1px solid var(--border);
+      margin: 10px;
+      padding: 18px;
+      background: rgba(0,0,0,0.08);
+    }
+
+    .trackerTitle {
+      font-size: 13px;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+      font-weight: 800;
+      color: var(--accent);
+      margin-bottom: 14px;
+    }
+
+    .trackerRow {
+      display: grid;
+      grid-template-columns: 1fr 1fr 1fr;
+      gap: 12px;
+    }
+
+    @media (max-width: 900px) {
+      .trackerRow { grid-template-columns: 1fr; }
+    }
+
+    .trackerBox {
+      border: 1px solid var(--border);
+      background: var(--bg);
+      padding: 14px 14px;
+      text-align: center;
+    }
+
+    .trackerLabel {
+      color: var(--muted);
+      font-size: 10px;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+      font-weight: 700;
+      margin-bottom: 8px;
+    }
+
+    .trackerValue {
+      color: var(--accent);
+      font-weight: 900;
+      letter-spacing: 1px;
+      font-size: 14px;
+      text-transform: uppercase;
+    }
+
+    .trackerBarWrap {
+      margin-top: 14px;
+      border: 1px solid var(--border);
+      background: var(--bg);
+      padding: 8px;
+    }
+
+    .trackerBar {
+      height: 12px;
+      border: 1px solid var(--border);
+      background: rgba(0,0,0,0.25);
+      overflow: hidden;
+      position: relative;
+    }
+
+    .trackerFill {
+      height: 100%;
+      width: 0%;
+      background: var(--accent);
+      box-shadow: 0 0 14px rgba(255,107,157,0.35);
+      transition: width 0.25s ease;
+    }
   </style>
 </head>
 
 <body>
   <div class="wrap">
-
-    <!-- Topbar -->
     <div class="topbar">
       <div class="brand">
         <span>[▸] 2026 BUCKET_LIST.EXE</span>
-        <span class="pill" id="progressPill">0/0 COMPLETE</span>
-        <span class="pill" id="syncPill"><span class="syncDot" id="syncDot"></span><span id="syncText">SYNC: OFF</span></span>
       </div>
 
       <div class="topbar-right">
         <button class="btn hidden" id="btnHome">◂ HOME</button>
 
-        <div class="notificationWrap">
-          <div class="notification-bell" id="bellBtn" title="Notifications">
-            <svg viewBox="0 0 24 24" aria-hidden="true">
-              <path d="M12 22a2.2 2.2 0 0 0 2.2-2.2h-4.4A2.2 2.2 0 0 0 12 22zm7-6V11a7 7 0 0 0-5-6.71V3a2 2 0 1 0-4 0v1.29A7 7 0 0 0 5 11v5l-2 2v1h20v-1l-2-2z"/>
+        <div style="position: relative;">
+          <div class="notification-bell" id="notificationBell" aria-label="Notifications" title="Notifications">
+            <svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+              <path d="M12 22c1.1 0 2-.9 2-2h-4c0 1.1.9 2 2 2zm6-6v-5c0-3.07-1.63-5.64-4.5-6.32V4c0-.83-.67-1.5-1.5-1.5s-1.5.67-1.5 1.5v.68C7.64 5.36 6 7.92 6 11v5l-2 2v1h16v-1l-2-2zm-2 1H8v-6c0-2.48 1.51-4.5 4-4.5s4 2.02 4 4.5v6z"/>
             </svg>
-            <span class="notification-badge hidden" id="bellBadge">0</span>
+            <span class="notification-badge hidden" id="notificationBadge">0</span>
           </div>
-          <div class="notification-dropdown" id="bellDropdown">
-            <div class="notification-header">
-              <span>New messages</span>
-              <button class="btn" style="padding:6px 10px;" id="btnMarkAllRead">MARK READ</button>
-            </div>
-            <div id="bellList"></div>
+          <div class="notification-dropdown" id="notificationDropdown">
+            <div class="notification-header">MESSAGES</div>
+            <div id="notificationList"></div>
           </div>
         </div>
 
         <button class="btn" id="btnPair">PAIR</button>
+        <span class="pill" id="syncPill">SYNC: OFF</span>
+        <span class="pill" id="youPill">YOU: --</span>
+        <span class="pill" id="partnerPill">PARTNER: --</span>
+
+        <button class="btn" id="btnDownloadText">EXPORT .TXT</button>
 
         <div class="theme-switcher">
-          <button class="btn" id="themeBtn">THEME</button>
+          <button class="btn theme-btn" id="themeBtn">THEME</button>
           <div class="theme-dropdown" id="themeDropdown">
-            <div class="theme-option" data-theme="system">SYSTEM</div>
-            <div class="theme-option" data-theme="light">LIGHT</div>
-            <div class="theme-option" data-theme="dark">DARK</div>
-            <div class="theme-option" data-theme="christmas">CHRISTMAS</div>
+            <div class="theme-option active" data-theme="system">System</div>
+            <div class="theme-option" data-theme="light">Light</div>
+            <div class="theme-option" data-theme="dark">Dark</div>
+            <div class="theme-option" data-theme="christmas">Christmas</div>
           </div>
         </div>
-
-        <button class="btn" id="btnExport">EXPORT .TXT</button>
-        <button class="btn" id="btnPrint">PRINT</button>
-        <button class="btn" id="btnReset">RESET</button>
       </div>
     </div>
 
-    <!-- Year Progress Widget -->
-    <div class="year-progress hidden" id="yearProgress">
-      <h3>[▸] 2026 PROGRESS TRACKER</h3>
-      <div class="progress-stats">
-        <div class="stat-item">
-          <div class="stat-label">Current Date/Time</div>
-          <div class="stat-value" id="currentDateTime">--</div>
-        </div>
-        <div class="stat-item">
-          <div class="stat-label">Time Remaining in 2026</div>
-          <div class="stat-value" id="timeRemaining">--</div>
-        </div>
-        <div class="stat-item">
-          <div class="stat-label">Days Elapsed</div>
-          <div class="stat-value" id="daysElapsed">--</div>
-        </div>
-      </div>
-      <div class="progress-bar-container">
-        <div class="progress-bar" id="progressBar">
-          <span class="progress-percent" id="progressPercent">0%</span>
-        </div>
-      </div>
-    </div>
-
-    <!-- Cover -->
     <section class="cover" id="cover">
-      <div class="christmasLights" aria-hidden="true">
-        <div class="wire"></div>
-        <div class="bulbs">
-          <div class="bulb"></div><div class="bulb"></div><div class="bulb"></div><div class="bulb"></div>
-          <div class="bulb"></div><div class="bulb"></div><div class="bulb"></div><div class="bulb"></div>
-        </div>
+      <div class="christmas-lights">
+        <div class="light"></div><div class="light"></div><div class="light"></div><div class="light"></div><div class="light"></div>
+        <div class="light"></div><div class="light"></div><div class="light"></div><div class="light"></div><div class="light"></div>
       </div>
+
+      <div class="corner-decor tl"></div>
+      <div class="corner-decor tr"></div>
+      <div class="corner-decor bl"></div>
+      <div class="corner-decor br"></div>
 
       <div class="coverInner">
         <svg class="heart" viewBox="0 0 24 24" fill="none" aria-hidden="true">
@@ -702,227 +1091,260 @@
                 fill="currentColor" stroke="currentColor" stroke-width="0.5" style="color: var(--accent);"/>
         </svg>
 
-        <h1 class="big">SYSTEM MESSAGE:<br><span id="systemMessageText">MY LOVE</span><span class="cursor"></span></h1>
-        <p class="sub" id="subtitleText">
-          [INITIALIZING...] Welcome to your 2026 bucket list protocol. A collection of missions, memories, and moments to execute together. Status: READY TO DEPLOY.
-        </p>
+        <h1 class="big">SYSTEM MESSAGE:<br><span id="herName">MY LOVE</span><span class="cursor"></span></h1>
 
-        <div class="row">
-          <span class="pill">[ COMPILED WITH LOVE ]</span>
-          <span class="pill" id="pairPill">[ PAIR: NOT SET ]</span>
-          <span class="pill" id="userPill">[ YOU: NOT SET ]</span>
-        </div>
+        <p class="sub">[INITIALIZING...] Our bucket list for the new year. Status: READY TO DEPLOY.</p>
 
-        <div class="actions">
+        <pre class="emoticon-art">⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⢀⣀⣀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⡀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀
+⠀⠀⠀⠀⠀⠀⠀⠀⢀⣴⣿⠟⠿⣷⣦⡀⠀⠀⠀⠀⠀⠀⣀⣴⣿⠿⣷⣦⡀⠀⠀⠀⠀⠀⠀⠀
+⠀⠀⠀⠀⠀⠀⠀⣰⣿⠟⠀⠀⠀⠈⠻⣿⣦⣤⣤⣤⣤⣾⡿⠋⠁⠀⠈⠻⣿⣦⠀⠀⠀⠀⠀⠀
+⠀⠀⠀⠀⠀⠀⢰⣿⠏⠀⠀⠀⠀⠀⠀⢸⠙⠉⢹⢉⢹⠉⠁⠀⠀⠀⠀⠀⠈⣿⡇⠀⠀⠀⠀⠀
+⠀⠀⠀⠀⣤⣤⣬⣷⣶⣶⣴⣶⣶⣶⣤⠀⣧⠀⣼⠘⢺⣤⣤⣴⣶⣶⣶⣶⣤⣭⣤⡀⠀⠀⠀⠀
+⠀⠿⣷⣶⢽⣿⠉⠁⠀⠈⠉⠉⠉⠸⣿⠀⠀⠀⢀⣀⣸⣿⠉⠉⠉⠉⠉⠉⠉⠉⣿⣇⣴⣾⠿⠀
+⣠⣴⣶⡦⢸⣿⠀⢀⣀⠀⠀⠀⠀⠀⣿⡿⠿⠿⠿⠟⢻⣿⠀⠀⠀⠀⢀⣀⠀⠀⣿⣿⣿⣥⣤⡀
+⠈⠉⠁⠀⢸⣿⣀⣼⣿⣃⣤⣤⣤⣴⣿⡅⠀⠀⠀⠀⠸⣿⣦⣤⣤⣀⣸⣿⣀⣸⣿⠋⠉⠉⠛⠋
+⠀⠀⠀⠀⣘⣟⡿⡋⠑⢽⠛⠉⠉⠉⠻⢿⣿⣿⡿⢿⣿⠏⠉⠉⠙⠛⠛⠛⠛⣻⣯⠀⠀⠀⠀⠀
+⠀⢀⡖⠉⠉⠀⠠⠇⠀⠸⣶⣶⣶⣤⠀⢸⣿⣿⣷⣿⡏⠀⠀⠀⠀⢀⣀⣴⣾⡿⠋⠀⠀⠀⠀⠀
+⠀⠘⢷⡀⠁⠀⠀⠀⠀⠀⢹⠀⠈⠉⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠘⠛⢉⣿⡿⠀⠀⠀⠀⠀⠀
+⠀⠀⠈⠱⣤⣀⠀⠀⢀⣠⡞⠀⠀⠀⠀⠀⠀⠀⠤⠀⠀⠀⠀⠀⠀⠀⣾⡿⠟⠁⠀⠀⠀⠀⠀⠀
+⠀⠀⠀⠀⠈⠓⠒⠚⠁⣿⣇⢀⣀⣀⣀⣀⣀⣀⣐⣀⣀⣀⣤⣤⣄⠀⢸⡇⠀⠀⠀⠀⠀⠀⠀⠀
+⠀⠀⠀⠀⠀⠀⠀⠀⠀⠹⣿⣿⠟⠛⠛⠛⠛⠛⠛⠛⠛⠛⠛⠉⠻⠿⠿⠃⠀⠀⠀⠀⠀⠀⠀⠀</pre>
+
+        <div class="actions" style="justify-content:center; margin-top:30px;">
           <button class="btn primary" id="btnOpen">▸ INITIALIZE SYSTEM</button>
-          <button class="btn" id="btnEditSystem">EDIT SYSTEM MESSAGE</button>
+          <button class="btn" id="btnEditSystemMessage">EDIT SYSTEM MESSAGE</button>
         </div>
-
-        <div class="tiny" id="tinyHint"></div>
       </div>
     </section>
 
-    <!-- Main Content -->
-    <section class="grid hidden" id="main">
-      <div class="card">
-        <div class="cardHeader">
-          <h2>[▸] MISSION_LIST.LOG</h2>
-          <span class="pill" id="yearPill">2026</span>
-        </div>
-        <div class="cardBody">
-          <div class="note">// STATUS: Shared + saved to database. Check to mark complete.</div>
-          <div class="items" id="items"></div>
-          <div class="actionsRow">
-            <button class="btn" id="btnAddSample">+ ADD 10 MISSIONS</button>
-            <button class="btn" id="btnClearAdded">RESET TO DEFAULT</button>
+    <!-- MAIN WRAPPER (now includes tracker + grid) -->
+    <section class="hidden" id="main">
+      <!-- ✅ PROGRESS TRACKER CLOCK -->
+      <section class="tracker" id="tracker">
+        <div class="trackerInner">
+          <div class="trackerTitle">[+] 2026 PROGRESS TRACKER</div>
+
+          <div class="trackerRow">
+            <div class="trackerBox">
+              <div class="trackerLabel">CURRENT DATE/TIME</div>
+              <div class="trackerValue" id="trackerNow">--</div>
+            </div>
+
+            <div class="trackerBox">
+              <div class="trackerLabel">TIME REMAINING IN 2026</div>
+              <div class="trackerValue" id="trackerRemaining">--</div>
+            </div>
+
+            <div class="trackerBox">
+              <div class="trackerLabel">DAYS ELAPSED</div>
+              <div class="trackerValue" id="trackerElapsed">--</div>
+            </div>
           </div>
 
-          <hr />
+          <div class="trackerBarWrap">
+            <div class="trackerBar">
+              <div class="trackerFill" id="trackerFill"></div>
+            </div>
+          </div>
+        </div>
+      </section>
 
-          <div class="note">// Add a custom mission (shared)</div>
-          <div class="form">
+      <section class="grid" id="grid">
+        <div class="card">
+          <div class="cardHeader">
+            <h2>[▸] MISSION_LIST.LOG</h2>
+            <span class="pill" id="yearPill">2026</span>
+          </div>
+          <div class="cardBody">
+            <div class="mission-tabs">
+              <div class="mission-tab active" data-tab="active">Active Missions</div>
+              <div class="mission-tab" data-tab="completed">Completed Missions</div>
+            </div>
+
+            <div id="activeTab">
+              <div class="note">// STATUS: Items are auto-saved. Check to mark complete.</div>
+              <div class="items" id="itemsActive"></div>
+              <div class="actions">
+                <button class="btn primary" id="btnAddSaved">ADD SAVED MISSION</button>
+              </div>
+            </div>
+
+            <div id="completedTab" class="hidden">
+              <div class="note">// COMPLETED: Missions you've finished.</div>
+              <div class="items" id="itemsCompleted"></div>
+            </div>
+          </div>
+        </div>
+
+        <div class="card">
+          <div class="cardHeader">
+            <h2>[▸] MESSAGE_LOG</h2>
+            <div class="envelope-container" id="envelopeBtn" title="Open latest letter">
+              <span aria-hidden="true">✉</span>
+              <span id="fromPill">FROM: --</span>
+            </div>
+          </div>
+
+          <div class="cardBody">
+            <p class="note" id="loveNote">// SYSTEM MESSAGE: MY LOVE</p>
+
+            <div id="messageLog"></div>
+
+            <div class="form">
+              <div class="field">
+                <label for="customNote">[▸] NEW MESSAGE</label>
+                <textarea id="customNote" placeholder="// Enter your message here..."></textarea>
+              </div>
+              <button class="btn primary" id="btnSaveNote">SEND LETTER</button>
+            </div>
+
+            <hr />
+
             <div class="field">
-              <label>[▸] TITLE</label>
-              <input id="newTitle" type="text" placeholder="TITLE (e.g., 'Late-night dessert run')">
+              <label>[▸] ADD NEW MISSION</label>
+              <input id="newTitle" type="text" placeholder="Movie">
             </div>
             <div class="field">
-              <label>[▸] DESCRIPTION</label>
-              <input id="newDesc" type="text" placeholder="DESCRIPTION (e.g., 'Pick a new spot and rate it 1-10')">
+              <input id="newDesc" type="text" placeholder="pick a movie and location">
             </div>
             <div class="field">
-              <label>[▸] TAG</label>
-              <input id="newTag" type="text" placeholder="TAG (e.g., 'date', 'travel', 'cozy')">
+              <label for="newTag">TAG</label>
+              <select id="newTag">
+                <option value="date">date</option>
+                <option value="travel">travel</option>
+                <option value="cozy">cozy</option>
+                <option value="food">food</option>
+                <option value="home">home</option>
+                <option value="romantic">romantic</option>
+                <option value="fun">fun</option>
+                <option value="tradition">tradition</option>
+                <option value="music">music</option>
+                <option value="new">new</option>
+                <option value="heart">heart</option>
+                <option value="custom">Custom...</option>
+              </select>
             </div>
-            <div class="actionsRow">
+            <div class="field hidden" id="customTagField">
+              <input id="customTagInput" type="text" placeholder="Enter custom tag">
+            </div>
+            <div class="actions">
               <button class="btn primary" id="btnAdd">+ ADD MISSION</button>
+              <button class="btn" id="btnClearFields">CLEAR FIELDS</button>
             </div>
+
+            <div class="footer">[ COMPILED FOR ONE SPECIAL KITTEN ]</div>
           </div>
         </div>
-      </div>
-
-      <div class="card">
-        <div class="cardHeader">
-          <h2>[▸] MESSAGE_LOG</h2>
-          <span class="pill" id="fromPill">FROM: ?</span>
-        </div>
-        <div class="cardBody">
-          <p class="note" id="loveNote">
-            // OBJECTIVE: Make 2026 the year of "us" — more moments, more adventures, more memories.
-            All systems go. Let's make it count.
-          </p>
-
-          <div class="form">
-            <div class="field">
-              <label for="customNote">[▸] NEW MESSAGE</label>
-              <textarea id="customNote" placeholder="// Enter your message here..."></textarea>
-            </div>
-            <button class="btn primary" id="btnSendMsg">SEND MESSAGE</button>
-          </div>
-
-          <div class="messageList" id="messageList"></div>
-
-          <div class="footer">[ COMPILED FOR ONE SPECIAL PERSON ]</div>
-        </div>
-      </div>
+      </section>
     </section>
   </div>
 
-  <!-- Pair Modal -->
-  <div class="modalOverlay" id="pairModal">
-    <div class="modal">
-      <div class="modalHeader">
-        <h3>PAIR SETUP</h3>
-        <button class="modalClose" id="pairClose">X</button>
+  <!-- Saved Missions Modal -->
+  <div class="modal" id="savedMissionsModal">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h3>Saved Missions Database</h3>
+        <div class="modal-close-btn" id="closeSavedModal">X</div>
       </div>
-      <div class="modalBody">
-        <p>
-          Enter a shared pair code (room). Example: <b>yasir-kylee</b>.  
-          Tip: you can also share a link like <b>?room=yasir-kylee</b> so it auto-fills.
-        </p>
-        <div class="field">
-          <label>PAIR CODE</label>
-          <input id="pairInput" type="text" placeholder="yasir-kylee">
-        </div>
-        <div class="actionsRow">
-          <button class="btn primary" id="pairSave">SAVE + CONNECT</button>
-          <button class="btn" id="pairCancel">CANCEL</button>
-        </div>
-        <div class="tiny">
-          This enables global syncing (system message, missions, messages) across devices.
-        </div>
+      <div id="savedMissionsList"></div>
+      <div class="actions">
+        <button class="btn primary" id="btnAddSelectedMissions">ADD SELECTED TO ACTIVE</button>
       </div>
     </div>
   </div>
 
-  <!-- User Modal -->
-  <div class="modalOverlay" id="userModal">
-    <div class="modal">
-      <div class="modalHeader">
+  <!-- Letter Modal -->
+  <div class="letter-modal" id="letterModal">
+    <div class="letter-envelope">
+      <div class="letter-close" id="closeLetterModal">✖</div>
+      <div class="letter-paper">
+        <div class="letter-from">FROM: <span id="letterFrom">--</span></div>
+        <div class="letter-timestamp" id="letterTimestamp"></div>
+        <div class="letter-content" id="letterContent"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ✅ WHO ARE YOU (blocking on first load) -->
+  <div class="modal" id="whoModal">
+    <div class="modal-content small">
+      <div class="modal-header">
         <h3>WHO ARE YOU?</h3>
-        <button class="modalClose" id="userClose">X</button>
+        <div class="modal-close-btn hidden" id="closeWhoModal">X</div>
       </div>
-      <div class="modalBody">
-        <p>Pick who is sending right now. This controls “FROM: …” and message sender.</p>
+      <p class="modal-text">// Pick who is using the site right now. You can change this later.</p>
 
-        <div class="radioRow">
-          <button class="chip" id="chipYasir">Yasir</button>
-          <button class="chip" id="chipKylee">Kylee</button>
-          <button class="chip" id="chipCustom">Custom</button>
-        </div>
-
-        <div class="field" style="margin-top:10px;">
-          <label>NAME</label>
-          <input id="userInput" type="text" placeholder="Yasir">
-        </div>
-
-        <div class="actionsRow">
-          <button class="btn primary" id="userSave">SAVE</button>
-          <button class="btn" id="userCancel">CANCEL</button>
-        </div>
-
-        <div class="tiny">
-          Stored on this device only (so each device can be “Yasir” or “Kylee”).
-        </div>
+      <div class="actions">
+        <button class="btn primary" id="btnIamYasir">I'M YASIR</button>
+        <button class="btn primary" id="btnIamKylee">I'M KYLEE</button>
       </div>
     </div>
   </div>
 
-  <!-- Edit System Message Modal -->
-  <div class="modalOverlay" id="sysModal">
-    <div class="modal">
-      <div class="modalHeader">
-        <h3>EDIT SYSTEM MESSAGE</h3>
-        <button class="modalClose" id="sysClose">X</button>
+  <!-- ✅ PAIR SETUP (in-website, no prompts, no codes) -->
+  <div class="modal" id="pairModal">
+    <div class="modal-content small">
+      <div class="modal-header">
+        <h3>PAIR SETUP</h3>
+        <div class="modal-close-btn" id="closePairModal">X</div>
       </div>
-      <div class="modalBody">
-        <p>This is global (shared). Changing it updates for both of you across devices.</p>
-        <div class="field">
-          <label>SYSTEM MESSAGE</label>
-          <input id="sysInput" type="text" placeholder="MERRY CHRISTMAS">
-        </div>
-        <div class="actionsRow">
-          <button class="btn primary" id="sysSave">SAVE</button>
-          <button class="btn" id="sysCancel">CANCEL</button>
+
+      <p class="modal-text">
+        This site auto-syncs (system message, missions, messages) across devices.<br>
+        No pair code required — just set who you are.
+      </p>
+
+      <div class="field">
+        <label>YOU</label>
+        <div class="actions">
+          <button class="btn" id="btnChangeWho">CHANGE WHO I AM</button>
         </div>
       </div>
+
+      <div class="field">
+        <label>ROOM</label>
+        <input type="text" id="pairRoomDisplay" value="" disabled>
+      </div>
+
+      <div class="actions">
+        <button class="btn primary" id="btnSyncNow">SAVE + CONNECT</button>
+        <button class="btn" id="btnPairCancel">CANCEL</button>
+      </div>
+
+      <p class="modal-text" style="margin-top: 10px;">
+        // Tip: Open the site on phone/laptop — it will sync automatically.
+      </p>
     </div>
   </div>
 
   <script>
-    /***********************
-     *  Storage / Defaults
-     ***********************/
-    const LS = {
-      ROOM: "ky_room_v3",
-      USER: "ky_user_v3",
-      THEME: "ky_theme_v3",
-      LOCAL_STATE: "ky_local_state_v3",
-      SEEN: "ky_seen_msgs_v3"
-    };
+    // ---------- Local keys ----------
+    const KEY_ACTIVE = "bucketlist_2026_active";
+    const KEY_SAVED = "bucketlist_2026_saved";
+    const KEY_COMPLETED = "bucketlist_2026_completed";
+    const KEY_MESSAGES = "bucketlist_2026_messages";
+    const KEY_CUSTOM_TAGS = "bucketlist_2026_custom_tags";
+    const KEY_THEME = "bucketlist_2026_theme";
+    const KEY_SYSTEM_MESSAGE = "bucketlist_2026_system_message";
 
-    const defaultItems = [
-      { title:"Christmas lights drive + hot chocolate", desc:"Pick a neighborhood, make a playlist, and rate the lights.", tag:"cozy", done:false },
-      { title:"One fancy date night", desc:"Dress up, take photos, and try somewhere new.", tag:"date", done:false },
-      { title:"Cook one meal together from scratch", desc:"No shortcuts — we make it a whole moment.", tag:"home", done:false },
-      { title:"Sunrise or sunset moment", desc:"Bring blankets + snacks and just sit.", tag:"simple", done:false },
-      { title:"Mini road trip (1–2 days)", desc:"No stress, just vibes. We pick a place and go.", tag:"travel", done:false },
-      { title:"Try something neither of us has done", desc:"A class, a hobby, anything — once.", tag:"new", done:false },
-      { title:"Write each other a letter", desc:"Open it on a random day when we need it.", tag:"romantic", done:false },
-      { title:"Movie night with rules", desc:"Pick a theme + snacks. Phones away.", tag:"cozy", done:false },
-      { title:"Make a 'memory jar'", desc:"Little notes all year, open on New Year's.", tag:"tradition", done:false },
-      { title:"One 'yes day'", desc:"We say yes to each other's ideas (within reason)", tag:"fun", done:false },
-    ];
+    // identity + pairing (shared sync)
+    const KEY_IDENTITY = "bucketlist_2026_identity";
+    const KEY_ROOM = "bucketlist_2026_room";
+    const KEY_PRESENCE = "bucketlist_2026_presence";
 
-    const extraIdeas = [
-      { title:"Picnic date", desc:"Blanket + fruit + pastries + a playlist.", tag:"date", done:false },
-      { title:"Museum / art day", desc:"Pick favorites and buy one tiny souvenir.", tag:"day", done:false },
-      { title:"Thrift-store challenge", desc:"Each other picks an outfit under $25.", tag:"fun", done:false },
-      { title:"DIY photoshoot", desc:"Golden hour + phone camera + goofy poses.", tag:"memories", done:false },
-      { title:"Try a new dessert spot", desc:"Rate it and build a 'top 10' list.", tag:"food", done:false },
-      { title:"Game night", desc:"Winner chooses the next date idea.", tag:"cozy", done:false },
-      { title:"Spa night at home", desc:"Face masks, massage, candles.", tag:"romantic", done:false },
-      { title:"Make a shared playlist", desc:"Add songs all year long.", tag:"music", done:false },
-      { title:"Plan a future trip", desc:"Even if it's small — we plan it together.", tag:"dream", done:false },
-      { title:"Do one kind thing together", desc:"Volunteer or help someone, quietly.", tag:"heart", done:false },
-    ];
-
-    const DEFAULT_STATE = {
-      meta: {
-        systemMessage: "MY LOVE",
-        _rev: 0,
-        _updatedAt: 0
-      },
-      items: defaultItems,
-      messages: [] // {id, from, text, ts}
-    };
+    // ✅ Auto-pair room (no code required)
+    const DEFAULT_ROOM = "kywee-yessir-2026-room";
 
     const $ = (id) => document.getElementById(id);
 
-    function safeJsonParse(s, fallback){
-      try { return JSON.parse(s) ?? fallback; } catch { return fallback; }
-    }
+    const exampleActive = { title: "Test Mission (Example)", desc: "This is an example card", tag: "example", done: false, isExample: true };
+    const exampleCompleted = { title: "Test Completed (Example)", desc: "This is a completed example", tag: "example", done: true, isExample: true };
 
-    function escapeHtml(str){
+    let selectedSavedMissions = [];
+    let currentTheme = "system";
+
+    // ---------- helpers ----------
+    function escapeHtml(str) {
       return String(str)
         .replaceAll("&", "&amp;")
         .replaceAll("<", "&lt;")
@@ -931,666 +1353,900 @@
         .replaceAll("'", "&#039;");
     }
 
-    function makeId(){
-      // good-enough ID for our use
-      return "m_" + Math.random().toString(36).slice(2) + "_" + Date.now().toString(36);
+    function showToast(message) {
+      const toast = document.createElement("div");
+      toast.className = "toast";
+      toast.textContent = message;
+      document.body.appendChild(toast);
+      setTimeout(() => toast.remove(), 3000);
     }
 
-    function getRoomFromUrl(){
-      const u = new URL(location.href);
-      const room = u.searchParams.get("room");
-      return room ? room.trim() : "";
+    function normalizeName(name) {
+      const n = String(name || "").trim().toLowerCase();
+      if (n === "yasir") return "Yasir";
+      if (n === "kylee") return "Kylee";
+      return "";
     }
 
-    /***********************
-     *  Netlify API calls
-     *  (Secret key stays server-side)
-     ***********************/
-    async function apiGetRoom(room){
-      const res = await fetch(`/.netlify/functions/room?room=${encodeURIComponent(room)}`, { method:"GET" });
-      if (!res.ok) throw new Error("GET failed");
-      return await res.json(); // {payload}
+    function normalizeKey(name) {
+      const n = String(name || "").trim().toLowerCase();
+      if (n === "yasir") return "yasir";
+      if (n === "kylee") return "kylee";
+      return "";
     }
 
-    async function apiSaveRoom(room, payload){
-      const res = await fetch(`/.netlify/functions/room`, {
-        method:"POST",
-        headers: { "Content-Type":"application/json" },
-        body: JSON.stringify({ room, payload })
+    // ---------- identity ----------
+    function loadIdentity() { return localStorage.getItem(KEY_IDENTITY) || ""; }
+    function saveIdentity(name) { localStorage.setItem(KEY_IDENTITY, name); }
+
+    function renderFromPill() {
+      const who = loadIdentity();
+      $("fromPill").textContent = `FROM: ${(who || "--").toUpperCase()}`;
+      $("youPill").textContent = `YOU: ${(who || "--").toUpperCase()}`;
+    }
+
+    function openWhoModal({ allowClose = false } = {}) {
+      $("whoModal").classList.add("active");
+      $("closeWhoModal").classList.toggle("hidden", !allowClose);
+    }
+
+    function closeWhoModal() {
+      $("whoModal").classList.remove("active");
+    }
+
+    function setWho(name) {
+      const clean = normalizeName(name);
+      if (!clean) return;
+
+      saveIdentity(clean);
+      renderFromPill();
+      renderPresencePills();
+      closeWhoModal();
+
+      // after choosing who you are, mark presence and sync (safe)
+      bumpPresenceLocal();
+      schedulePush();
+      showToast("Identity set");
+    }
+
+    // ---------- local storage state ----------
+    function loadArray(key) {
+      try {
+        const saved = JSON.parse(localStorage.getItem(key));
+        return Array.isArray(saved) ? saved : [];
+      } catch { return []; }
+    }
+
+    function saveArray(key, arr) {
+      localStorage.setItem(key, JSON.stringify(arr));
+      schedulePush(); // if paired, push to shared
+    }
+
+    function loadActive() { return loadArray(KEY_ACTIVE); }
+    function saveActive(items) { saveArray(KEY_ACTIVE, items); }
+
+    function loadSaved() { return loadArray(KEY_SAVED); }
+    function saveSaved(items) { saveArray(KEY_SAVED, items); }
+
+    function loadCompleted() { return loadArray(KEY_COMPLETED); }
+    function saveCompleted(items) { saveArray(KEY_COMPLETED, items); }
+
+    function loadMessages() { return loadArray(KEY_MESSAGES); }
+    function saveMessages(msgs) { saveArray(KEY_MESSAGES, msgs); }
+
+    function loadCustomTags() { return loadArray(KEY_CUSTOM_TAGS); }
+    function saveCustomTags(tags) { saveArray(KEY_CUSTOM_TAGS, tags); }
+
+    function loadTheme() { return localStorage.getItem(KEY_THEME) || "system"; }
+    function saveTheme(theme) { localStorage.setItem(KEY_THEME, theme); }
+
+    function loadSystemMessage() { return localStorage.getItem(KEY_SYSTEM_MESSAGE) || "My Love"; }
+    function saveSystemMessage(msg) {
+      localStorage.setItem(KEY_SYSTEM_MESSAGE, msg);
+      schedulePush(); // shared
+    }
+
+    function renderSystemMessage(msg) {
+      $("herName").textContent = String(msg).toUpperCase();
+      $("loveNote").textContent = `// SYSTEM MESSAGE: ${String(msg).toUpperCase()}`;
+    }
+
+    // ---------- Presence (who is "synced") ----------
+    function loadPresence() {
+      try {
+        const p = JSON.parse(localStorage.getItem(KEY_PRESENCE) || "{}");
+        return (p && typeof p === "object") ? p : {};
+      } catch { return {}; }
+    }
+
+    function savePresence(p) {
+      localStorage.setItem(KEY_PRESENCE, JSON.stringify(p || {}));
+    }
+
+    function bumpPresenceLocal() {
+      const who = normalizeKey(loadIdentity());
+      if (!who) return;
+      const p = loadPresence();
+      p[who] = new Date().toISOString();
+      savePresence(p);
+    }
+
+    function renderPresencePills() {
+      const who = normalizeKey(loadIdentity());
+      const partner = who === "yasir" ? "kylee" : (who === "kylee" ? "yasir" : "");
+      const p = loadPresence();
+
+      const partnerLabel = partner ? partner.toUpperCase() : "--";
+      const partnerSeen = partner ? p[partner] : null;
+
+      let partnerStatus = "--";
+      if (partnerSeen) {
+        const ms = Date.now() - new Date(partnerSeen).getTime();
+        partnerStatus = (ms <= 2 * 60 * 1000) ? "ONLINE" : "OFFLINE";
+      }
+
+      $("partnerPill").textContent = `PARTNER: ${partner ? `${partnerLabel} ${partnerStatus}` : "--"}`;
+    }
+
+    // ---------- Notifications ----------
+    function updateNotifications() {
+      const messages = loadMessages();
+      const unread = messages.filter(m => m.read === false);
+
+      const badge = $("notificationBadge");
+      const list = $("notificationList");
+
+      if (unread.length > 0) {
+        badge.textContent = unread.length;
+        badge.classList.remove("hidden");
+      } else {
+        badge.classList.add("hidden");
+      }
+
+      list.innerHTML = "";
+      if (messages.length === 0) {
+        list.innerHTML = '<div style="padding: 20px; text-align: center; color: var(--muted); font-size: 11px;">No messages yet</div>';
+        return;
+      }
+
+      messages.slice().reverse().forEach((msg, idx) => {
+        const displayName = msg.from || "Unknown";
+        const item = document.createElement("div");
+        item.className = "notification-item" + (msg.read === false ? " unread" : "");
+        item.innerHTML = `
+          <div class="notification-from">FROM: ${escapeHtml(displayName)}</div>
+          <div class="notification-preview">${escapeHtml(msg.content.substring(0, 50))}${msg.content.length > 50 ? "..." : ""}</div>
+          <div class="notification-time">${escapeHtml(msg.timestamp)}</div>
+        `;
+        item.addEventListener("click", () => {
+          openMessage(messages.length - 1 - idx);
+          $("notificationDropdown").classList.remove("active");
+        });
+        list.appendChild(item);
       });
-      if (!res.ok) throw new Error("POST failed");
-      return await res.json(); // {payload}
     }
 
-    /***********************
-     *  App state
-     ***********************/
-    let roomCode = "";
-    let currentUser = "";
-    let state = DEFAULT_STATE;
+    function openMessage(index) {
+      const messages = loadMessages();
+      const msg = messages[index];
+      if (!msg) return;
 
-    let pollTimer = null;
-    let saveTimer = null;
-    let isSaving = false;
-    let lastSeenRev = 0;
+      const displayName = msg.from || "Unknown";
+      $("letterFrom").textContent = displayName.toUpperCase();
+      $("letterTimestamp").textContent = msg.timestamp;
+      $("letterContent").textContent = msg.content;
 
-    function loadLocalState(){
-      const local = safeJsonParse(localStorage.getItem(LS.LOCAL_STATE), null);
-      if (!local || typeof local !== "object") return structuredClone(DEFAULT_STATE);
-      // minimal merge
-      return {
-        meta: { ...DEFAULT_STATE.meta, ...(local.meta || {}) },
-        items: Array.isArray(local.items) ? local.items : structuredClone(DEFAULT_STATE.items),
-        messages: Array.isArray(local.messages) ? local.messages : []
-      };
+      if (msg.read === false) {
+        messages[index].read = true;
+        saveMessages(messages);
+        showToast("Letter read");
+        updateNotifications();
+      }
+
+      $("letterModal").classList.add("active");
     }
 
-    function saveLocalState(){
-      localStorage.setItem(LS.LOCAL_STATE, JSON.stringify(state));
-    }
-
-    function setSync(on){
-      $("syncDot").classList.toggle("on", !!on);
-      $("syncText").textContent = on ? "SYNC: ON" : "SYNC: OFF";
-    }
-
-    function seenSet(){
-      return new Set(safeJsonParse(localStorage.getItem(LS.SEEN), []));
-    }
-    function saveSeen(set){
-      localStorage.setItem(LS.SEEN, JSON.stringify(Array.from(set)));
-    }
-
-    /***********************
-     *  Rendering
-     ***********************/
-    function updateHeaderPills(){
-      $("pairPill").textContent = roomCode ? `[ PAIR: ${roomCode.toUpperCase()} ]` : "[ PAIR: NOT SET ]";
-      $("userPill").textContent = currentUser ? `[ YOU: ${currentUser.toUpperCase()} ]` : "[ YOU: NOT SET ]";
-      $("fromPill").textContent = `FROM: ${currentUser ? currentUser.toUpperCase() : "?"}`;
-      $("systemMessageText").textContent = (state.meta.systemMessage || "MY LOVE").toUpperCase();
-
-      const hintParts = [];
-      if (!roomCode) hintParts.push("Tap PAIR to connect.");
-      if (!currentUser) hintParts.push("Set who you are (Yasir/Kylee).");
-      $("tinyHint").textContent = hintParts.join(" ");
-    }
-
-    function updateProgress(){
-      const items = state.items || [];
-      const done = items.filter(i => i.done).length;
-      $("progressPill").textContent = `${done}/${items.length} COMPLETE`;
-    }
-
-    function renderItems(){
-      const container = $("items");
+    // ---------- UI render ----------
+    function renderActive() {
+      const items = loadActive();
+      const container = $("itemsActive");
       container.innerHTML = "";
 
-      (state.items || []).forEach((it, idx) => {
+      const withExample = [exampleActive, ...items];
+
+      withExample.forEach((it, idx) => {
         const el = document.createElement("div");
-        el.className = "item";
+        el.className = "item" + (it.isExample ? " example" : "");
         el.innerHTML = `
-          <input type="checkbox" ${it.done ? "checked" : ""} aria-label="Mark done">
+          <input type="checkbox" ${it.done ? "checked" : ""} ${it.isExample ? "disabled" : ""} aria-label="Mark done">
           <div class="itext">
             <div class="ititle">
-              <span>${escapeHtml(it.title || "")}</span>
+              <span>${escapeHtml(it.title)}</span>
               <span class="itag">${escapeHtml(it.tag || "idea")}</span>
             </div>
             <p class="idesc">${escapeHtml(it.desc || "")}</p>
           </div>
-          <button class="btn" style="padding:8px 12px;" title="Remove">[X]</button>
+          ${!it.isExample ? '<button class="btn" style="padding:8px 12px;" title="Remove">[X]</button>' : ""}
         `;
 
-        const cb = el.querySelector("input");
-        cb.addEventListener("change", () => {
-          state.items[idx].done = cb.checked;
-          bumpRevAndSave();
-          updateProgress();
-        });
+        if (!it.isExample) {
+          const cb = el.querySelector("input");
+          cb.addEventListener("change", () => {
+            const itemsNow = loadActive();
+            const actualIdx = idx - 1;
+            const mission = itemsNow[actualIdx];
+            itemsNow.splice(actualIdx, 1);
+            saveActive(itemsNow);
 
-        const rm = el.querySelector("button");
-        rm.addEventListener("click", () => {
-          state.items.splice(idx, 1);
-          bumpRevAndSave();
-          renderItems();
-          updateProgress();
-        });
+            const completed = loadCompleted();
+            completed.push({ ...mission, done: true });
+            saveCompleted(completed);
+
+            renderActive();
+            renderCompleted();
+          });
+
+          const rm = el.querySelector("button");
+          rm.addEventListener("click", () => {
+            const itemsNow = loadActive();
+            const actualIdx = idx - 1;
+            itemsNow.splice(actualIdx, 1);
+            saveActive(itemsNow);
+            renderActive();
+          });
+        }
 
         container.appendChild(el);
       });
     }
 
-    function formatTime(ts){
-      const d = new Date(ts);
-      return d.toLocaleString([], { month:"2-digit", day:"2-digit", year:"numeric", hour:"2-digit", minute:"2-digit" });
-    }
+    function renderCompleted() {
+      const items = loadCompleted();
+      const container = $("itemsCompleted");
+      container.innerHTML = "";
 
-    function renderMessages(){
-      const list = $("messageList");
-      list.innerHTML = "";
+      const withExample = [exampleCompleted, ...items];
 
-      const msgs = Array.isArray(state.messages) ? state.messages : [];
-      msgs.slice().reverse().forEach((m) => {
+      withExample.forEach((it, idx) => {
         const el = document.createElement("div");
-        el.className = "msg";
+        el.className = "item" + (it.isExample ? " example" : "");
         el.innerHTML = `
-          <div class="msgHead">
-            <span class="msgFrom">FROM: ${escapeHtml((m.from || "?").toUpperCase())}</span>
-            <span>${escapeHtml(formatTime(m.ts || Date.now()))}</span>
+          <div class="itext">
+            <div class="ititle">
+              <span>${escapeHtml(it.title)}</span>
+              <span class="itag">${escapeHtml(it.tag || "idea")}</span>
+            </div>
+            <p class="idesc">${escapeHtml(it.desc || "")}</p>
           </div>
-          <div class="msgText">${escapeHtml(m.text || "")}</div>
+          ${!it.isExample ? '<button class="btn" style="padding:8px 12px;" title="Undo">UNDO</button>' : ""}
         `;
-        list.appendChild(el);
-      });
 
-      // notifications
-      renderBell();
-    }
+        if (!it.isExample) {
+          const undo = el.querySelector("button");
+          undo.addEventListener("click", () => {
+            const completedNow = loadCompleted();
+            const actualIdx = idx - 1;
+            const mission = completedNow[actualIdx];
+            completedNow.splice(actualIdx, 1);
+            saveCompleted(completedNow);
 
-    function renderBell(){
-      const set = seenSet();
-      const msgs = Array.isArray(state.messages) ? state.messages : [];
-      const unread = msgs.filter(m => m.from && currentUser && m.from.toLowerCase() !== currentUser.toLowerCase())
-                         .filter(m => !set.has(m.id));
+            const active = loadActive();
+            active.push({ ...mission, done: false });
+            saveActive(active);
 
-      const badge = $("bellBadge");
-      if (unread.length > 0){
-        badge.classList.remove("hidden");
-        badge.textContent = String(unread.length);
-      } else {
-        badge.classList.add("hidden");
-      }
+            renderActive();
+            renderCompleted();
+          });
+        }
 
-      const bellList = $("bellList");
-      bellList.innerHTML = "";
-
-      if (msgs.length === 0){
-        bellList.innerHTML = `<div class="notification-item"><div class="nText">No messages yet.</div></div>`;
-        return;
-      }
-
-      // show latest 12
-      msgs.slice().reverse().slice(0, 12).forEach(m => {
-        const isUnread = currentUser && m.from && m.from.toLowerCase() !== currentUser.toLowerCase() && !set.has(m.id);
-        const item = document.createElement("div");
-        item.className = "notification-item" + (isUnread ? " unread" : "");
-        item.innerHTML = `
-          <div class="nFrom">${escapeHtml((m.from || "?").toUpperCase())}</div>
-          <div class="nText">${escapeHtml(m.text || "")}</div>
-          <div class="nTime">${escapeHtml(formatTime(m.ts || Date.now()))}</div>
-        `;
-        item.addEventListener("click", () => {
-          const seen = seenSet();
-          seen.add(m.id);
-          saveSeen(seen);
-          renderBell();
-        });
-        bellList.appendChild(item);
+        container.appendChild(el);
       });
     }
 
-    function renderAll(){
-      updateHeaderPills();
-      updateProgress();
-      renderItems();
+    function renderMessages() {
+      const messages = loadMessages();
+      const container = $("messageLog");
+      container.innerHTML = "";
+
+      messages.forEach(msg => {
+        const displayName = msg.from || "Unknown";
+        const el = document.createElement("div");
+        el.className = "message-log-item";
+        el.innerHTML = `
+          <div class="message-log-header">
+            <span>FROM: ${escapeHtml(displayName)}</span>
+            <span>${escapeHtml(msg.timestamp)}</span>
+          </div>
+          <div class="message-log-content">${escapeHtml(msg.content)}</div>
+        `;
+        container.appendChild(el);
+      });
+    }
+
+    function ensureCustomTagsInSelect() {
+      const tags = loadCustomTags();
+      const select = $("newTag");
+      const existing = new Set(Array.from(select.options).map(o => o.value));
+
+      tags.forEach(tag => {
+        if (!existing.has(tag)) {
+          const opt = document.createElement("option");
+          opt.value = tag;
+          opt.textContent = tag;
+          select.insertBefore(opt, select.lastElementChild);
+        }
+      });
+    }
+
+    // ---------- cover/main toggle ----------
+    function openGift() {
+      $("cover").classList.add("hidden");
+      $("main").classList.remove("hidden");
+      $("btnHome").classList.remove("hidden");
+      renderActive();
+      renderCompleted();
       renderMessages();
+      updateNotifications();
+      updateTracker();
     }
 
-    /***********************
-     *  Theme + Snow
-     ***********************/
+    function goHome() {
+      $("cover").classList.remove("hidden");
+      $("main").classList.add("hidden");
+      $("btnHome").classList.add("hidden");
+    }
+
+    // ---------- Theme + Snow (christmas only) ----------
     let snowTimer = null;
 
-    function getSystemTheme(){
-      return window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
-    }
-    function loadTheme(){
-      return localStorage.getItem(LS.THEME) || "system";
-    }
-    function saveTheme(t){
-      localStorage.setItem(LS.THEME, t);
-    }
-    function applyTheme(pref){
-      const actual = pref === "system" ? getSystemTheme() : pref;
-      document.documentElement.setAttribute("data-theme", actual);
-
-      // mark active option
-      document.querySelectorAll(".theme-option").forEach(opt => {
-        opt.classList.toggle("active", opt.dataset.theme === pref);
-      });
-
-      // snow only on christmas
-      stopSnow();
-      if (actual === "christmas") startSnow();
-    }
-
-    function startSnow(){
+    function startSnow() {
       if (snowTimer) return;
       snowTimer = setInterval(() => {
         const s = document.createElement("div");
         s.className = "snowflake";
         s.textContent = Math.random() < 0.5 ? "❄" : "✦";
-        s.style.left = (Math.random() * 100) + "vw";
-        s.style.animationDuration = (6 + Math.random() * 8) + "s";
-        s.style.fontSize = (10 + Math.random() * 12) + "px";
-        s.style.opacity = (0.45 + Math.random() * 0.45);
+        s.style.left = Math.random() * 100 + "vw";
+        s.style.animationDuration = (5 + Math.random() * 6) + "s";
+        s.style.fontSize = (12 + Math.random() * 14) + "px";
+        s.style.opacity = (0.35 + Math.random() * 0.6);
         document.body.appendChild(s);
-        setTimeout(() => s.remove(), 15000);
+        setTimeout(() => s.remove(), 12000);
       }, 220);
     }
 
-    function stopSnow(){
-      if (snowTimer){
+    function stopSnow() {
+      if (snowTimer) {
         clearInterval(snowTimer);
         snowTimer = null;
       }
-      document.querySelectorAll(".snowflake").forEach(x => x.remove());
+      document.querySelectorAll(".snowflake").forEach(s => s.remove());
     }
 
-    /***********************
-     *  Year progress clock
-     ***********************/
-    function updateYearProgress(){
+    function applyTheme(theme) {
+      currentTheme = theme;
+
+      if (theme === "dark") document.documentElement.setAttribute("data-theme", "dark");
+      else if (theme === "light") document.documentElement.setAttribute("data-theme", "light");
+      else if (theme === "christmas") document.documentElement.setAttribute("data-theme", "christmas");
+      else document.documentElement.removeAttribute("data-theme");
+
+      document.querySelectorAll(".theme-option").forEach(opt => {
+        opt.classList.toggle("active", opt.dataset.theme === theme);
+      });
+
+      // snow only on christmas theme
+      if (theme === "christmas") startSnow();
+      else stopSnow();
+    }
+
+    // ---------- Progress Tracker (clock) ----------
+    function formatNow() {
+      const d = new Date();
+      const date = d.toLocaleDateString(undefined, { month: "short", day: "2-digit", year: "numeric" });
+      const time = d.toLocaleTimeString(undefined, { hour: "2-digit", minute: "2-digit" });
+      return `${date} ${time}`.replace(",", "");
+    }
+
+    function daysBetween(a, b) {
+      const ms = b.getTime() - a.getTime();
+      return Math.max(0, Math.floor(ms / (1000 * 60 * 60 * 24)));
+    }
+
+    function updateTracker() {
       const now = new Date();
-      const yearStart = new Date('2026-01-01T00:00:00');
-      const yearEnd = new Date('2026-12-31T23:59:59');
-      const totalMs = yearEnd - yearStart;
+      $("trackerNow").textContent = formatNow();
 
-      const dateStr = now.toLocaleDateString('en-US', { month:'short', day:'numeric', year:'numeric' });
-      const timeStr = now.toLocaleTimeString('en-US', { hour:'2-digit', minute:'2-digit' });
-      $("currentDateTime").textContent = `${dateStr} ${timeStr}`;
+      const start2026 = new Date("2026-01-01T00:00:00");
+      const end2026 = new Date("2027-01-01T00:00:00");
+      const start2025 = new Date("2025-01-01T00:00:00");
+      const end2025 = new Date("2026-01-01T00:00:00");
 
-      let progress = 0;
-      if (now < yearStart){
-        const daysUntil = Math.ceil((yearStart - now) / (1000 * 60 * 60 * 24));
-        $("timeRemaining").textContent = `${daysUntil}d until 2026`;
-        $("daysElapsed").textContent = "Not started";
-        progress = 0;
-      } else if (now > yearEnd){
-        $("timeRemaining").textContent = "Year completed";
-        $("daysElapsed").textContent = "365 days";
-        progress = 100;
-      } else {
-        const elapsedMs = now - yearStart;
-        const remainingMs = yearEnd - now;
-        const days = Math.floor(remainingMs / (1000*60*60*24));
-        const hours = Math.floor((remainingMs % (1000*60*60*24)) / (1000*60*60));
-        const minutes = Math.floor((remainingMs % (1000*60*60)) / (1000*60));
-        $("timeRemaining").textContent = `${days}d ${hours}h ${minutes}m`;
+      if (now < start2026) {
+        const remainingDays = daysBetween(now, start2026);
+        $("trackerRemaining").textContent = `${remainingDays}d UNTIL 2026`;
+        $("trackerElapsed").textContent = `NOT STARTED`;
 
-        const daysElapsed = Math.floor(elapsedMs / (1000*60*60*24));
-        $("daysElapsed").textContent = `${daysElapsed} days`;
-
-        progress = Math.min(100, Math.max(0, (elapsedMs / totalMs) * 100));
+        // bar = remaining time in 2025 (small near end, like your screenshot)
+        const total = end2025.getTime() - start2025.getTime();
+        const remaining = end2025.getTime() - now.getTime();
+        const pct = Math.max(0, Math.min(100, (remaining / total) * 100));
+        $("trackerFill").style.width = `${pct}%`;
+        return;
       }
 
-      $("progressBar").style.width = progress + "%";
-      $("progressPercent").textContent = progress.toFixed(1) + "%";
+      if (now >= start2026 && now < end2026) {
+        const elapsedDays = daysBetween(start2026, now);
+        const remainingDays = daysBetween(now, end2026);
+
+        $("trackerRemaining").textContent = `${remainingDays}d LEFT IN 2026`;
+        $("trackerElapsed").textContent = `${elapsedDays} DAYS`;
+
+        const total = end2026.getTime() - start2026.getTime();
+        const elapsed = now.getTime() - start2026.getTime();
+        const pct = Math.max(0, Math.min(100, (elapsed / total) * 100));
+        $("trackerFill").style.width = `${pct}%`;
+        return;
+      }
+
+      $("trackerRemaining").textContent = `COMPLETE`;
+      $("trackerElapsed").textContent = `DONE`;
+      $("trackerFill").style.width = `100%`;
     }
 
-    /***********************
-     *  Sync logic (polling)
-     ***********************/
-    async function connectRoom(newRoom){
-      roomCode = newRoom.trim();
-      localStorage.setItem(LS.ROOM, roomCode);
+    // ---------- Pair sync ----------
+    function ensureRoomConfigured() {
+      const r = (localStorage.getItem(KEY_ROOM) || "").trim();
+      if (!r) localStorage.setItem(KEY_ROOM, DEFAULT_ROOM);
+    }
 
-      // update URL for easy sharing
-      const u = new URL(location.href);
-      u.searchParams.set("room", roomCode);
-      history.replaceState({}, "", u.toString());
+    function loadRoom() { return localStorage.getItem(KEY_ROOM) || ""; }
 
-      $("pairInput").value = roomCode;
-      updateHeaderPills();
+    function syncConfigured() {
+      return !!loadRoom().trim();
+    }
 
-      // load local first (fast)
-      state = loadLocalState();
-      renderAll();
+    function setSyncPill(text) {
+      $("syncPill").textContent = text;
+    }
 
-      // now load remote
-      try{
-        setSync(false);
-        const res = await apiGetRoom(roomCode);
-        if (res && res.payload){
-          state = normalizePayload(res.payload);
-          saveLocalState();
-          lastSeenRev = state.meta._rev || 0;
-          renderAll();
-          setSync(true);
+    let suppressSync = false;
+    let syncDebounce = null;
+
+    function getLocalState() {
+      return {
+        active: loadActive(),
+        saved: loadSaved(),
+        completed: loadCompleted(),
+        messages: loadMessages(),
+        customTags: loadCustomTags(),
+        systemMessage: loadSystemMessage(),
+        presence: loadPresence(),
+      };
+    }
+
+    function applyStateToLocal(state) {
+      if (!state || typeof state !== "object") return;
+
+      suppressSync = true;
+      if (Array.isArray(state.active)) localStorage.setItem(KEY_ACTIVE, JSON.stringify(state.active));
+      if (Array.isArray(state.saved)) localStorage.setItem(KEY_SAVED, JSON.stringify(state.saved));
+      if (Array.isArray(state.completed)) localStorage.setItem(KEY_COMPLETED, JSON.stringify(state.completed));
+      if (Array.isArray(state.messages)) localStorage.setItem(KEY_MESSAGES, JSON.stringify(state.messages));
+      if (Array.isArray(state.customTags)) localStorage.setItem(KEY_CUSTOM_TAGS, JSON.stringify(state.customTags));
+      if (typeof state.systemMessage === "string") localStorage.setItem(KEY_SYSTEM_MESSAGE, state.systemMessage);
+      if (state.presence && typeof state.presence === "object") localStorage.setItem(KEY_PRESENCE, JSON.stringify(state.presence));
+      suppressSync = false;
+    }
+
+    async function remoteGetState() {
+      const room = loadRoom().trim();
+      const res = await fetch(`/.netlify/functions/room?room=${encodeURIComponent(room)}`, {
+        headers: { "Cache-Control": "no-store" }
+      });
+      if (!res.ok) throw new Error("Remote get failed");
+      const data = await res.json();
+      return data.payload || null;
+    }
+
+    async function remoteSetState(payload) {
+      const room = loadRoom().trim();
+      const res = await fetch(`/.netlify/functions/room`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ room, payload })
+      });
+      if (!res.ok) throw new Error("Remote set failed");
+      return true;
+    }
+
+    async function pullRemoteState() {
+      if (!syncConfigured()) return;
+      try {
+        setSyncPill("SYNC: PULLING");
+        const remote = await remoteGetState();
+
+        if (remote && Object.keys(remote).length) {
+          applyStateToLocal(remote);
         } else {
-          // first time: push local state to remote
-          bumpRev();
-          const saved = await apiSaveRoom(roomCode, state);
-          if (saved && saved.payload){
-            state = normalizePayload(saved.payload);
-            saveLocalState();
-            lastSeenRev = state.meta._rev || 0;
-          }
-          renderAll();
-          setSync(true);
+          // if room is empty, create it from this device
+          await remoteSetState(getLocalState());
         }
-      } catch(e){
-        console.error(e);
-        setSync(false);
-      }
 
-      // start polling
-      if (pollTimer) clearInterval(pollTimer);
-      pollTimer = setInterval(pollOnce, 2500);
-      $("pairPill").textContent = `[ PAIR: ${roomCode.toUpperCase()} ]`;
-    }
+        ensureCustomTagsInSelect();
+        renderSystemMessage(loadSystemMessage());
+        renderFromPill();
+        renderPresencePills();
 
-    function normalizePayload(p){
-      const meta = { ...DEFAULT_STATE.meta, ...(p.meta || {}) };
-      const items = Array.isArray(p.items) ? p.items : structuredClone(DEFAULT_STATE.items);
-      const messages = Array.isArray(p.messages) ? p.messages : [];
-      return { meta, items, messages };
-    }
-
-    async function pollOnce(){
-      if (!roomCode) return;
-      try{
-        const res = await apiGetRoom(roomCode);
-        if (!res || !res.payload) return;
-        const incoming = normalizePayload(res.payload);
-        const incomingRev = incoming.meta._rev || 0;
-        if (incomingRev > (state.meta._rev || 0)){
-          state = incoming;
-          saveLocalState();
-          lastSeenRev = incomingRev;
-          renderAll();
+        if (!$("main").classList.contains("hidden")) {
+          renderActive();
+          renderCompleted();
+          renderMessages();
+          updateNotifications();
+          updateTracker();
+        } else {
+          updateNotifications();
         }
-        setSync(true);
-      } catch(e){
-        setSync(false);
+
+        setSyncPill("SYNC: ON");
+      } catch {
+        setSyncPill("SYNC: ERROR");
       }
     }
 
-    function bumpRev(){
-      state.meta._rev = (state.meta._rev || 0) + 1;
-      state.meta._updatedAt = Date.now();
-    }
+    async function pushRemoteState() {
+      if (!syncConfigured() || suppressSync) return;
+      try {
+        setSyncPill("SYNC: SAVING");
 
-    function bumpRevAndSave(){
-      bumpRev();
-      saveLocalState();
-      scheduleSave();
-    }
+        // mark presence before saving
+        bumpPresenceLocal();
 
-    function scheduleSave(){
-      if (!roomCode) return;
-      if (saveTimer) clearTimeout(saveTimer);
-      saveTimer = setTimeout(async () => {
-        if (isSaving) return;
-        isSaving = true;
-        try{
-          const saved = await apiSaveRoom(roomCode, state);
-          if (saved && saved.payload){
-            state = normalizePayload(saved.payload);
-            saveLocalState();
-            lastSeenRev = state.meta._rev || lastSeenRev;
-          }
-          setSync(true);
-        } catch(e){
-          setSync(false);
-        } finally {
-          isSaving = false;
-        }
-      }, 450);
-    }
+        await remoteSetState(getLocalState());
+        setSyncPill("SYNC: ON");
 
-    /***********************
-     *  Navigation
-     ***********************/
-    function openGift(){
-      $("cover").classList.add("hidden");
-      $("main").classList.remove("hidden");
-      $("yearProgress").classList.remove("hidden");
-      $("btnHome").classList.remove("hidden");
-      renderAll();
-    }
-    function goHome(){
-      $("cover").classList.remove("hidden");
-      $("main").classList.add("hidden");
-      $("yearProgress").classList.add("hidden");
-      $("btnHome").classList.add("hidden");
-    }
-
-    /***********************
-     *  Modals
-     ***********************/
-    function openModal(id){ $(id).classList.add("active"); }
-    function closeModal(id){ $(id).classList.remove("active"); }
-
-    function ensureUser(){
-      if (!currentUser){
-        openUserModal();
+        // update partner display after write
+        renderPresencePills();
+      } catch {
+        setSyncPill("SYNC: ERROR");
       }
     }
 
-    function openUserModal(){
-      openModal("userModal");
-      const stored = localStorage.getItem(LS.USER) || "";
-      $("userInput").value = stored || "";
-      setChipActive(null);
-      if (stored.toLowerCase() === "yasir") setChipActive("yasir");
-      if (stored.toLowerCase() === "kylee") setChipActive("kylee");
+    function schedulePush() {
+      if (!syncConfigured() || suppressSync) return;
+      clearTimeout(syncDebounce);
+      syncDebounce = setTimeout(pushRemoteState, 600);
     }
 
-    function setChipActive(which){
-      $("chipYasir").classList.toggle("active", which === "yasir");
-      $("chipKylee").classList.toggle("active", which === "kylee");
-      $("chipCustom").classList.toggle("active", which === "custom");
+    // ---------- Pair Modal (in-website) ----------
+    function openPairModal() {
+      $("pairRoomDisplay").value = loadRoom().trim() || DEFAULT_ROOM;
+      $("pairModal").classList.add("active");
+    }
+    function closePairModal() {
+      $("pairModal").classList.remove("active");
     }
 
-    /***********************
-     *  Events
-     ***********************/
-    $("btnOpen").addEventListener("click", () => {
-      if (!roomCode) openModal("pairModal");
-      ensureUser();
-      openGift();
+    // ---------- Wire up events ----------
+    $("btnOpen").addEventListener("click", openGift);
+    $("btnHome").addEventListener("click", goHome);
+
+    $("btnEditSystemMessage").addEventListener("click", () => {
+      // keep your prompt here (this is NOT the pair prompt)
+      const msg = prompt("Edit system message:", loadSystemMessage());
+      if (msg !== null && msg.trim()) {
+        saveSystemMessage(msg.trim());
+        renderSystemMessage(msg.trim());
+        showToast("System message updated");
+      }
     });
 
-    $("btnHome").addEventListener("click", goHome);
-    $("btnPrint").addEventListener("click", () => window.print());
+    $("btnPair").addEventListener("click", openPairModal);
+    $("closePairModal").addEventListener("click", closePairModal);
+    $("btnPairCancel").addEventListener("click", closePairModal);
 
-    $("btnReset").addEventListener("click", () => {
-      // shared reset
-      state.items = (state.items || []).map(it => ({ ...it, done:false }));
-      bumpRevAndSave();
-      renderItems();
-      updateProgress();
+    $("btnSyncNow").addEventListener("click", async () => {
+      closePairModal();
+      await pullRemoteState();
+      showToast("Synced");
+    });
+
+    $("btnChangeWho").addEventListener("click", () => {
+      closePairModal();
+      openWhoModal({ allowClose: true });
+    });
+
+    $("closeWhoModal").addEventListener("click", () => closeWhoModal());
+
+    $("btnIamYasir").addEventListener("click", () => setWho("Yasir"));
+    $("btnIamKylee").addEventListener("click", () => setWho("Kylee"));
+
+    $("fromPill").addEventListener("click", (e) => {
+      e.stopPropagation();
+      openWhoModal({ allowClose: true });
     });
 
     $("btnAdd").addEventListener("click", () => {
       const title = $("newTitle").value.trim();
       const desc = $("newDesc").value.trim();
-      const tag = $("newTag").value.trim() || "idea";
+      const tagSelect = $("newTag");
+      let tag = tagSelect.value;
+
+      if (tag === "custom") {
+        tag = $("customTagInput").value.trim() || "custom";
+        const customTags = loadCustomTags();
+        if (!customTags.includes(tag)) {
+          customTags.push(tag);
+          saveCustomTags(customTags);
+          const opt = document.createElement("option");
+          opt.value = tag;
+          opt.textContent = tag;
+          tagSelect.insertBefore(opt, tagSelect.lastElementChild);
+        }
+      }
+
       if (!title) return alert("Add a title first");
 
-      state.items = Array.isArray(state.items) ? state.items : [];
-      state.items.unshift({ title, desc, tag, done:false });
+      const mission = { title, desc, tag, done: false };
+
+      const active = loadActive();
+      active.push(mission);
+      saveActive(active);
+
+      const saved = loadSaved();
+      const isDuplicate = saved.some(s => s.title === mission.title && s.desc === mission.desc && s.tag === mission.tag);
+      if (!isDuplicate) {
+        saved.push(mission);
+        saveSaved(saved);
+      }
 
       $("newTitle").value = "";
       $("newDesc").value = "";
-      $("newTag").value = "";
+      $("newTag").value = "date";
+      $("customTagInput").value = "";
+      $("customTagField").classList.add("hidden");
 
-      bumpRevAndSave();
-      renderItems();
-      updateProgress();
+      renderActive();
     });
 
-    $("btnClearAdded").addEventListener("click", () => {
-      state.items = structuredClone(defaultItems);
-      bumpRevAndSave();
-      renderItems();
-      updateProgress();
+    $("btnClearFields").addEventListener("click", () => {
+      $("newTitle").value = "";
+      $("newDesc").value = "";
+      $("newTag").value = "date";
+      $("customTagInput").value = "";
+      $("customTagField").classList.add("hidden");
     });
 
-    $("btnAddSample").addEventListener("click", () => {
-      const items = Array.isArray(state.items) ? state.items : [];
-      const titles = new Set(items.map(i => i.title));
-      extraIdeas.forEach(i => { if (!titles.has(i.title)) items.push(i); });
-      state.items = items;
-      bumpRevAndSave();
-      renderItems();
-      updateProgress();
+    $("newTag").addEventListener("change", (e) => {
+      if (e.target.value === "custom") $("customTagField").classList.remove("hidden");
+      else $("customTagField").classList.add("hidden");
     });
 
-    $("btnSendMsg").addEventListener("click", () => {
-      ensureUser();
-      const text = $("customNote").value.trim();
-      if (!text) return;
+    document.querySelectorAll(".mission-tab").forEach(tab => {
+      tab.addEventListener("click", () => {
+        document.querySelectorAll(".mission-tab").forEach(t => t.classList.remove("active"));
+        tab.classList.add("active");
 
-      state.messages = Array.isArray(state.messages) ? state.messages : [];
-      state.messages.push({ id: makeId(), from: currentUser, text, ts: Date.now() });
+        if (tab.dataset.tab === "active") {
+          $("activeTab").classList.remove("hidden");
+          $("completedTab").classList.add("hidden");
+        } else {
+          $("activeTab").classList.add("hidden");
+          $("completedTab").classList.remove("hidden");
+        }
+      });
+    });
+
+    $("btnAddSaved").addEventListener("click", () => {
+      const saved = loadSaved();
+      const container = $("savedMissionsList");
+      container.innerHTML = "";
+      selectedSavedMissions = [];
+
+      if (saved.length === 0) {
+        container.innerHTML = '<p style="color: var(--muted); text-align: center;">No saved missions yet. Add one first!</p>';
+      } else {
+        saved.forEach((mission, idx) => {
+          const card = document.createElement("div");
+          card.className = "saved-mission-card";
+          card.dataset.idx = idx;
+          card.innerHTML = `
+            <div class="saved-mission-header">
+              <div class="itext">
+                <div class="ititle">
+                  <span>${escapeHtml(mission.title)}</span>
+                  <span class="itag">${escapeHtml(mission.tag)}</span>
+                </div>
+                <p class="idesc">${escapeHtml(mission.desc || "")}</p>
+              </div>
+              <div class="saved-mission-actions">
+                <button class="btn" data-action="select">SELECT</button>
+                <button class="btn" data-action="edit">EDIT & ADD</button>
+              </div>
+            </div>
+          `;
+
+          card.querySelector('[data-action="select"]').addEventListener("click", () => {
+            if (selectedSavedMissions.includes(idx)) {
+              selectedSavedMissions = selectedSavedMissions.filter(i => i !== idx);
+              card.classList.remove("selected");
+            } else {
+              selectedSavedMissions.push(idx);
+              card.classList.add("selected");
+            }
+          });
+
+          card.querySelector('[data-action="edit"]').addEventListener("click", () => {
+            $("newTitle").value = mission.title;
+            $("newDesc").value = mission.desc;
+
+            const tagSelect = $("newTag");
+            const hasTag = Array.from(tagSelect.options).some(opt => opt.value === mission.tag);
+            if (hasTag) {
+              tagSelect.value = mission.tag;
+            } else {
+              tagSelect.value = "custom";
+              $("customTagField").classList.remove("hidden");
+              $("customTagInput").value = mission.tag;
+            }
+
+            $("savedMissionsModal").classList.remove("active");
+            alert("Mission loaded for editing. Click 'Add Mission' to add the edited version to Active list.");
+          });
+
+          container.appendChild(card);
+        });
+      }
+
+      $("savedMissionsModal").classList.add("active");
+    });
+
+    $("btnAddSelectedMissions").addEventListener("click", () => {
+      if (selectedSavedMissions.length === 0) return alert("Please select at least one mission");
+
+      const saved = loadSaved();
+      const active = loadActive();
+
+      selectedSavedMissions.forEach(idx => {
+        const mission = saved[idx];
+        active.push({ ...mission, done: false });
+      });
+
+      saveActive(active);
+      renderActive();
+      $("savedMissionsModal").classList.remove("active");
+      selectedSavedMissions = [];
+    });
+
+    $("closeSavedModal").addEventListener("click", () => {
+      $("savedMissionsModal").classList.remove("active");
+    });
+
+    $("btnSaveNote").addEventListener("click", () => {
+      const content = $("customNote").value.trim();
+      if (!content) return alert("Write a message first");
+
+      const from = loadIdentity();
+      if (!from) {
+        openWhoModal({ allowClose: false });
+        return;
+      }
+
+      const timestamp = new Date().toLocaleString();
+      const messages = loadMessages();
+      messages.push({ from, timestamp, content, read: false });
+      saveMessages(messages);
+
       $("customNote").value = "";
-
-      bumpRevAndSave();
       renderMessages();
+      updateNotifications();
+      showToast("Letter sent");
     });
 
-    $("btnExport").addEventListener("click", () => {
-      const done = (x) => x.done ? "[X]" : "[ ]";
-      const itemsTxt = (state.items || [])
-        .map(i => `${done(i)} ${i.title} — ${i.desc} (#${i.tag})`)
-        .join("\n");
+    $("envelopeBtn").addEventListener("click", () => {
+      const messages = loadMessages();
+      if (messages.length > 0) openMessage(messages.length - 1);
+      else alert("No messages yet!");
+    });
 
-      const msgsTxt = (state.messages || [])
-        .slice()
-        .reverse()
-        .map(m => `FROM: ${m.from} @ ${formatTime(m.ts)}\n${m.text}\n---`)
-        .join("\n");
+    $("notificationBell").addEventListener("click", () => {
+      $("notificationDropdown").classList.toggle("active");
+    });
 
-      const text =
-`kywee + yessir bucket list - 2026
-ROOM: ${roomCode || "(not set)"}
-USER: ${currentUser || "(not set)"}
-SYSTEM MESSAGE: ${(state.meta.systemMessage || "MY LOVE")}
+    $("closeLetterModal").addEventListener("click", () => {
+      $("letterModal").classList.remove("active");
+    });
 
-MISSIONS
+    $("btnDownloadText").addEventListener("click", () => {
+      const active = loadActive();
+      const completed = loadCompleted().filter(c => !c.isExample);
+
+      const text = `kywee + yessir bucket list - 2026
 ====================
-${itemsTxt || "(none)"}
 
-MESSAGES
-====================
-${msgsTxt || "(none)"}
+SYSTEM MESSAGE:
+${loadSystemMessage()}
+
+ACTIVE MISSIONS:
+${active.map(i => `[ ] ${i.title} — ${i.desc} (#${i.tag})`).join("\n")}
+
+COMPLETED MISSIONS:
+${completed.map(i => `[X] ${i.title} — ${i.desc} (#${i.tag})`).join("\n")}
 `;
-      const blob = new Blob([text], { type:"text/plain" });
+
+      const blob = new Blob([text], { type: "text/plain" });
       const url = URL.createObjectURL(blob);
       const a = document.createElement("a");
       a.href = url;
-      a.download = `kywee-yessir-bucket-list-2026-${(roomCode||"room")}.txt`;
+      a.download = "kywee-yessir-bucket-list-2026.txt";
       a.click();
       URL.revokeObjectURL(url);
     });
 
-    // Pair button opens modal
-    $("btnPair").addEventListener("click", () => openModal("pairModal"));
-    $("pairClose").addEventListener("click", () => closeModal("pairModal"));
-    $("pairCancel").addEventListener("click", () => closeModal("pairModal"));
-    $("pairSave").addEventListener("click", async () => {
-      const val = $("pairInput").value.trim();
-      if (!val) return alert("Enter a pair code");
-      closeModal("pairModal");
-      await connectRoom(val);
+    $("themeBtn").addEventListener("click", () => {
+      $("themeDropdown").classList.toggle("active");
     });
 
-    // User modal controls
-    $("chipYasir").addEventListener("click", () => { setChipActive("yasir"); $("userInput").value = "Yasir"; });
-    $("chipKylee").addEventListener("click", () => { setChipActive("kylee"); $("userInput").value = "Kylee"; });
-    $("chipCustom").addEventListener("click", () => { setChipActive("custom"); $("userInput").focus(); });
-
-    $("userClose").addEventListener("click", () => closeModal("userModal"));
-    $("userCancel").addEventListener("click", () => closeModal("userModal"));
-    $("userSave").addEventListener("click", () => {
-      const name = $("userInput").value.trim();
-      if (!name) return alert("Enter your name");
-      currentUser = name;
-      localStorage.setItem(LS.USER, currentUser);
-      closeModal("userModal");
-      updateHeaderPills();
-      renderBell();
-    });
-
-    // Edit system message (GLOBAL)
-    $("btnEditSystem").addEventListener("click", () => {
-      $("sysInput").value = state.meta.systemMessage || "";
-      openModal("sysModal");
-    });
-    $("sysClose").addEventListener("click", () => closeModal("sysModal"));
-    $("sysCancel").addEventListener("click", () => closeModal("sysModal"));
-    $("sysSave").addEventListener("click", () => {
-      const msg = $("sysInput").value.trim();
-      if (!msg) return alert("Enter a system message");
-      state.meta.systemMessage = msg.toUpperCase();
-      bumpRevAndSave();
-      closeModal("sysModal");
-      updateHeaderPills();
-    });
-
-    // Theme switcher
-    $("themeBtn").addEventListener("click", () => $("themeDropdown").classList.toggle("active"));
-    document.querySelectorAll(".theme-option").forEach(opt => {
-      opt.addEventListener("click", () => {
-        const theme = opt.dataset.theme;
+    document.querySelectorAll(".theme-option").forEach(option => {
+      option.addEventListener("click", () => {
+        const theme = option.dataset.theme;
         saveTheme(theme);
         applyTheme(theme);
         $("themeDropdown").classList.remove("active");
       });
     });
 
-    // Close dropdowns on outside click
     document.addEventListener("click", (e) => {
       if (!e.target.closest(".theme-switcher")) $("themeDropdown").classList.remove("active");
-      if (!e.target.closest(".notificationWrap")) $("bellDropdown").classList.remove("active");
+      if (!e.target.closest("#notificationBell") && !e.target.closest("#notificationDropdown")) {
+        $("notificationDropdown").classList.remove("active");
+      }
     });
 
-    // Bell dropdown
-    $("bellBtn").addEventListener("click", () => $("bellDropdown").classList.toggle("active"));
-    $("btnMarkAllRead").addEventListener("click", () => {
-      const set = seenSet();
-      (state.messages || []).forEach(m => set.add(m.id));
-      saveSeen(set);
-      renderBell();
+    // Pull on focus (so if Kylee changes it, you see it when you come back)
+    window.addEventListener("focus", () => {
+      if (syncConfigured()) pullRemoteState();
     });
 
-    // system theme change listener
-    window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', () => {
-      if ((loadTheme() || "system") === "system") applyTheme("system");
-    });
+    // ✅ Also pull periodically so updates appear even if you never refocus
+    let syncPoll = null;
+    function startSyncPolling() {
+      if (syncPoll) return;
+      syncPoll = setInterval(() => {
+        if (syncConfigured()) pullRemoteState();
+      }, 20000);
+    }
 
-    /***********************
-     *  Init
-     ***********************/
-    (function init(){
-      // theme
-      applyTheme(loadTheme());
+    // ---------- Init ----------
+    (function init() {
+      ensureRoomConfigured();
 
-      // load local fast
-      state = loadLocalState();
-      renderAll();
+      ensureCustomTagsInSelect();
 
-      // room from URL or local storage
-      const urlRoom = getRoomFromUrl();
-      roomCode = urlRoom || (localStorage.getItem(LS.ROOM) || "");
-      if (roomCode){
-        $("pairInput").value = roomCode;
-        connectRoom(roomCode);
-      } else {
-        openModal("pairModal");
+      const theme = loadTheme();
+      applyTheme(theme);
+
+      const systemMessage = loadSystemMessage();
+      renderSystemMessage(systemMessage);
+
+      renderFromPill();
+      updateNotifications();
+      renderPresencePills();
+
+      setSyncPill(syncConfigured() ? "SYNC: CONNECTING" : "SYNC: OFF");
+
+      // start tracker clock
+      updateTracker();
+      setInterval(updateTracker, 1000);
+
+      if (syncConfigured()) {
+        pullRemoteState();
+        startSyncPolling();
       }
 
-      // user
-      currentUser = localStorage.getItem(LS.USER) || "";
-      if (!currentUser) openUserModal();
-
-      updateHeaderPills();
-
-      // year progress
-      updateYearProgress();
-      setInterval(updateYearProgress, 60000);
+      // ✅ FIRST THING on launch: ask who you are
+      if (!loadIdentity()) {
+        openWhoModal({ allowClose: false });
+      }
     })();
   </script>
 </body>
