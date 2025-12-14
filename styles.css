@@ -947,7 +947,7 @@
       box-shadow: 0 4px 15px rgba(0,0,0,0.3);
       transform-origin: top;
       animation: letterUnfold 0.5s ease 0.3s forwards;
-
+      opacity: 0;
     }
 
     @keyframes letterUnfold {
@@ -1169,7 +1169,14 @@
       margin-top: 14px;
     }
 
+
 /* ✅ iOS/mobile tap fix: Safari can occasionally treat fixed pseudo-overlays as click blockers */
 @media (hover: none) and (pointer: coarse) {
   body::before { display: none !important; }
+}
+
+/* ✅ Fallback: if an animation fails to trigger on iOS, keep the paper visible once the modal is open */
+.letter-modal.active .letter-paper {
+  opacity: 1;
+  transform: scaleY(1);
 }

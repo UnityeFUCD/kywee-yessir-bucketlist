@@ -1,5 +1,4 @@
-
-  // ---------- Local keys ----------
+// ---------- Local keys ----------
   const KEY_ACTIVE = "bucketlist_2026_active";
   const KEY_SAVED = "bucketlist_2026_saved";
   const KEY_COMPLETED = "bucketlist_2026_completed";
@@ -401,14 +400,15 @@
       updateNotifications();
     }
 
-    $("letterModal").classList.add("active");
-    // ✅ iOS Safari: re-trigger animations (prevents "blank envelope" on reopen)
-    const env = document.querySelector(".letter-envelope");
-    const paper = document.querySelector(".letter-paper");
-    if (env) { env.style.animation = "none"; env.offsetHeight; env.style.animation = "envelopeOpen 0.5s ease forwards"; }
-    if (paper) { paper.style.animation = "none"; paper.offsetHeight; paper.style.animation = "letterUnfold 0.5s ease 0.3s forwards"; }
+    
+$("letterModal").classList.add("active");
 
-  }
+// ✅ iOS Safari: re-trigger animations (prevents "blank envelope" on reopen)
+const env = document.querySelector(".letter-envelope");
+const paper = document.querySelector(".letter-paper");
+if (env) { env.style.animation = "none"; env.offsetHeight; env.style.animation = "envelopeOpen 0.5s ease forwards"; }
+if (paper) { paper.style.animation = "none"; paper.offsetHeight; paper.style.animation = "letterUnfold 0.5s ease 0.3s forwards"; }
+}
 
   function clearAllNotifications() {
     const messages = loadMessages();
@@ -850,56 +850,61 @@
     showToast("LOGGED OFF");
   }
 
-  // ---------- Wire up events ----------
-  $("btnOpen").addEventListener("click", openGift);
-  $("btnHome").addEventListener("click", goHome);
-
-  // ✅ EDIT SYSTEM MESSAGE (in-site modal, mobile friendly)
+  
+// ---------- System Message Modal (in-page, iOS-safe) ----------
 function openSystemMessageModal() {
   const modal = $("systemMessageModal");
   const input = $("systemMessageInput");
+  if (!modal || !input) return;
+
   input.value = loadSystemMessage() || "";
   modal.classList.add("active");
   modal.setAttribute("aria-hidden", "false");
-  // iOS: focus needs a tick
-  setTimeout(() => input.focus(), 60);
+
+  // ✅ iOS Safari: focus must be synchronous with the click/tap gesture
+  input.focus();
+  input.setSelectionRange(input.value.length, input.value.length);
 }
 
 function closeSystemMessageModal() {
   const modal = $("systemMessageModal");
+  if (!modal) return;
   modal.classList.remove("active");
   modal.setAttribute("aria-hidden", "true");
 }
 
 async function saveSystemMessageFromModal() {
   const input = $("systemMessageInput");
-  const msg = (input.value || "").trim();
-  if (!msg) return showToast("Type a message first.");
-  showToast("Updating system message...");
+  if (!input) return;
+
+  const msg = String(input.value || "").trim();
+  if (!msg) {
+    showToast("Can't set a blank message");
+    return;
+  }
+
+  showToast("Updating...");
   saveSystemMessageLocalOnly(msg);
   renderSystemMessage(msg);
   closeSystemMessageModal();
   await pushRemoteState();
-  showToast("System message updated.");
+  showToast("Message updated");
 }
 
-$("btnEditSystemMessage").addEventListener("click", openSystemMessageModal);
+// ---------- Wire up events ----------
+  $("btnOpen").addEventListener("click", openGift);
+  $("btnHome").addEventListener("click", goHome);
+
+  $("btnEditSystemMessage").addEventListener("click", () => openSystemMessageModal());
+
+// System message modal controls
 $("closeSystemMessageModal").addEventListener("click", closeSystemMessageModal);
 $("btnSystemMessageCancel").addEventListener("click", closeSystemMessageModal);
 $("btnSystemMessageSave").addEventListener("click", saveSystemMessageFromModal);
-
 $("systemMessageModal").addEventListener("click", (e) => {
-  if (e.target && e.target.id === "systemMessageModal") closeSystemMessageModal();
+  if (e.target === $("systemMessageModal")) closeSystemMessageModal();
 });
 
-$("systemMessageInput").addEventListener("keydown", (e) => {
-  if (e.key === "Enter") {
-    e.preventDefault();
-    saveSystemMessageFromModal();
-  } else if (e.key === "Escape") {
-    closeSystemMessageModal();
-  }
-});
 $("userPill").addEventListener("click", () => openWhoModal());
 
   $("btnWhoYasir").addEventListener("click", () => setUserAndStart("Yasir"));
