@@ -5,6 +5,13 @@
   <meta name="viewport" content="width=device-width,initial-scale=1" />
   <title>kywee + yessir bucket list</title>
 
+  <!-- ✅ App icon + favicon (iOS + browsers) -->
+  <link rel="apple-touch-icon" href="/app-icon.png">
+  <link rel="icon" type="image/png" href="/app-icon.png">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="Bucket List">
+
   <style>
     @import url('https://fonts.googleapis.com/css2?family=Roboto+Mono:wght@400;500;700&display=swap');
 
@@ -105,7 +112,7 @@
       margin: 0 auto;
       padding: 20px 0 80px;
       position: relative;
-      z-index: 10;
+      z-index: 10; /* keeps snow behind UI */
     }
 
     .topbar {
@@ -176,7 +183,9 @@
     .dot.red { background: #ff3b3b; box-shadow: 0 0 12px rgba(255,59,59,.35); }
     .dot.gray { background: rgba(255,255,255,.25); box-shadow: none; }
 
-    .dot.pulse { animation: pulseDot 1.1s infinite ease-in-out; }
+    .dot.pulse {
+      animation: pulseDot 1.1s infinite ease-in-out;
+    }
 
     @keyframes pulseDot {
       0%, 100% { transform: scale(1); opacity: .85; }
@@ -214,8 +223,15 @@
       border-color: var(--accent-dim);
     }
 
-    .theme-switcher { position: relative; display: inline-block; }
-    .theme-btn { padding: 8px 12px; font-size: 11px; }
+    .theme-switcher {
+      position: relative;
+      display: inline-block;
+    }
+
+    .theme-btn {
+      padding: 8px 12px;
+      font-size: 11px;
+    }
 
     .theme-dropdown {
       position: absolute;
@@ -244,6 +260,9 @@
     .theme-option:last-child { border-bottom: none; }
     .theme-option:hover { background: var(--accent); color: #000; }
     .theme-option.active { background: rgba(255,107,157,.1); color: var(--accent); font-weight: 700; }
+
+    /* ✅ wrapper class so mobile can align the bell cleanly */
+    .notif-wrap { position: relative; }
 
     .notification-bell {
       position: relative;
@@ -310,7 +329,11 @@
       gap: 10px;
     }
 
-    .notif-head-actions { display: inline-flex; gap: 8px; align-items: center; }
+    .notif-head-actions {
+      display: inline-flex;
+      gap: 8px;
+      align-items: center;
+    }
 
     .notif-mini-btn {
       width: 28px;
@@ -349,7 +372,11 @@
     .notification-preview { font-size: 11px; color: var(--muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
     .notification-time { font-size: 9px; color: var(--muted); margin-top: 6px; }
 
-    .notification-actions { display: flex; gap: 8px; margin-top: 10px; }
+    .notification-actions {
+      display: flex;
+      gap: 8px;
+      margin-top: 10px;
+    }
 
     .cover {
       margin-top: 26px;
@@ -371,7 +398,7 @@
       z-index: 20;
     }
 
-    /* ✅ CHRISTMAS LIGHTS */
+    /* ✅ CHRISTMAS LIGHTS (brighter + real colored bulbs) */
     .christmas-lights {
       position: absolute;
       top: 0; left: 0; right: 0;
@@ -386,18 +413,17 @@
 
     [data-theme="christmas"] .christmas-lights { display: flex; }
 
-    /* brighter cable */
     .christmas-lights::before {
       content: "";
       position: absolute;
-      left: -8px;
-      right: -8px;
+      left: 0;
+      right: 0;
       top: 18px;
       height: 2px;
-      background: rgba(255,255,255,0.14);
+      background: rgba(255,255,255,0.22);
+      box-shadow: 0 0 10px rgba(255,255,255,0.08);
     }
 
-    /* bright red glow line */
     .christmas-lights::after {
       content: "";
       position: absolute;
@@ -405,24 +431,29 @@
       right: -8px;
       top: 16px;
       height: 2px;
-      background: rgba(231,76,60,1);
-      box-shadow: 0 0 18px rgba(231,76,60,0.75);
+      background: rgba(231,76,60,.98);
+      box-shadow: 0 0 16px rgba(231,76,60,.65), 0 0 34px rgba(231,76,60,.35);
     }
 
-    /* ✅ FIXED: real colored bulbs (no dark circles) */
     .light {
-      width: 11px;
-      height: 11px;
+      position: relative;
+      width: 12px;
+      height: 12px;
       border-radius: 999px;
-      background: currentColor;
+      background: currentColor; /* ✅ real bulb fill */
       opacity: 1;
-      box-shadow:
-        0 0 14px currentColor,
-        0 0 32px currentColor,
-        0 0 62px currentColor;
-      filter: saturate(1.35) brightness(1.2);
+      box-shadow: 0 0 12px currentColor, 0 0 28px currentColor, 0 0 70px currentColor;
       animation: twinkleDot 1.9s infinite ease-in-out;
-      transform: translateY(10px);
+      transform: translateY(9px);
+    }
+
+    .light::after {
+      content: "";
+      position: absolute;
+      inset: -14px;
+      background: radial-gradient(circle, currentColor 0%, rgba(0,0,0,0) 70%);
+      opacity: .75;
+      filter: blur(3px);
     }
 
     .light:nth-child(1) { color: #ff3b3b; animation-delay: 0s; }
@@ -436,8 +467,8 @@
     .light:nth-child(9) { color: #ff3b3b; animation-delay: 1.44s; }
 
     @keyframes twinkleDot {
-      0%, 100% { filter: saturate(1.25) brightness(1.05); opacity: .95; }
-      50% { filter: saturate(1.7) brightness(1.55); opacity: 1; }
+      0%, 100% { filter: brightness(1.15); opacity: .95; }
+      50% { filter: brightness(1.9); opacity: 1; }
     }
 
     .coverInner {
@@ -493,6 +524,72 @@
     @media (max-width: 900px) {
       .grid { grid-template-columns: 1fr; }
       .topbar { position: static; }
+    }
+
+    /* ✅ Mobile topbar alignment fix (doesn't touch desktop) */
+    @media (max-width: 620px) {
+      .wrap { width: min(1100px, 96vw); }
+
+      .topbar {
+        flex-direction: column;
+        align-items: stretch;
+        padding: 14px;
+        gap: 12px;
+      }
+
+      .brand {
+        width: 100%;
+        justify-content: center;
+        text-align: center;
+        font-size: 12px;
+        white-space: normal;
+      }
+
+      .topbar-right {
+        width: 100%;
+        flex-direction: column;
+        align-items: stretch;
+        justify-content: center;
+        gap: 8px;
+      }
+
+      .topbar .pill,
+      .topbar .btn {
+        width: 100%;
+        justify-content: center;
+        text-align: center;
+      }
+
+      .notif-wrap {
+        width: 100%;
+        display: flex;
+        justify-content: center;
+      }
+
+      .notification-bell {
+        width: 44px;
+        height: 44px;
+        border: 1px solid var(--border-bright);
+        background: var(--bg);
+      }
+
+      .notification-dropdown {
+        left: 50%;
+        right: auto;
+        transform: translateX(-50%);
+        width: min(92vw, 340px);
+        max-width: 340px;
+      }
+
+      .theme-switcher { width: 100%; }
+      .theme-btn { width: 100%; }
+
+      .theme-dropdown {
+        left: 50%;
+        right: auto;
+        transform: translateX(-50%);
+        width: min(92vw, 220px);
+      }
     }
 
     .card {
@@ -642,7 +739,11 @@
       margin-top: 16px;
     }
 
-    .field { display: flex; flex-direction: column; gap: 8px; }
+    .field {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
 
     label {
       font-size: 11px;
@@ -652,7 +753,9 @@
       font-weight: 700;
     }
 
-    input[type="text"], textarea, select {
+    input[type="text"],
+    textarea,
+    select {
       width: 100%;
       padding: 12px 14px;
       border: 2px solid var(--border);
@@ -682,9 +785,15 @@
       margin-top: 12px;
     }
 
-    /* ✅ export moved next to Add Saved Mission */
-    .mission-actions { align-items: center; }
-    .mission-actions #btnDownloadText { white-space: nowrap; }
+    /* ✅ Export next to Add Saved Mission (nice on mobile too) */
+    .actions.actions-inline { justify-content: flex-start; }
+    @media (max-width: 620px) {
+      .actions.actions-inline {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+      }
+      .actions.actions-inline .btn { width: 100%; }
+    }
 
     hr { border: none; border-top: 1px solid var(--border); margin: 24px 0; }
 
@@ -820,7 +929,11 @@
       padding: 20px;
     }
 
-    .letter-modal.active { display: flex; animation: fadeIn 0.3s ease; }
+    .letter-modal.active {
+      display: flex;
+      animation: fadeIn 0.3s ease;
+    }
+
     @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
 
     .letter-envelope {
@@ -892,8 +1005,16 @@
 
     .letter-close:hover { background: var(--accent); color: #000; }
 
-    #messageLog { max-height: none; overflow: visible; scroll-behavior: smooth; }
-    #messageLog.scroll { max-height: 290px; overflow-y: auto; }
+    #messageLog {
+      max-height: none;
+      overflow: visible;
+      scroll-behavior: smooth;
+    }
+
+    #messageLog.scroll {
+      max-height: 290px;
+      overflow-y: auto;
+    }
 
     .message-log-item {
       border: 1px solid var(--border);
@@ -958,10 +1079,19 @@
       z-index: 5;
     }
 
-    @keyframes fall { to { transform: translateY(110vh) rotate(360deg); opacity: 0.25; } }
+    @keyframes fall {
+      to { transform: translateY(110vh) rotate(360deg); opacity: 0.25; }
+    }
 
-    .tracker-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 14px; }
-    @media (max-width: 900px) { .tracker-grid { grid-template-columns: 1fr; } }
+    .tracker-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 14px;
+    }
+
+    @media (max-width: 900px) {
+      .tracker-grid { grid-template-columns: 1fr; }
+    }
 
     .tracker-box {
       border: 1px solid var(--border);
@@ -1005,8 +1135,16 @@
       transition: width 0.25s ease;
     }
 
-    .who-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-top: 12px; }
-    @media (max-width: 700px) { .who-grid { grid-template-columns: 1fr; } }
+    .who-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 12px;
+      margin-top: 12px;
+    }
+
+    @media (max-width: 700px) {
+      .who-grid { grid-template-columns: 1fr; }
+    }
 
     .who-btn {
       padding: 14px 16px;
@@ -1026,51 +1164,24 @@
       gap: 10px;
     }
 
-    .who-btn:hover { border-color: var(--accent); color: var(--accent); box-shadow: 0 0 18px rgba(255,107,157,.25); }
-
-    .who-sub { font-size: 11px; color: var(--muted); line-height: 1.6; margin-top: 10px; }
-
-    .who-actions { display: flex; gap: 10px; flex-wrap: wrap; margin-top: 14px; }
-
-    /* =======================
-       ✅ MOBILE-ONLY POLISH
-       (desktop untouched)
-    ======================= */
-    @media (max-width: 640px) {
-      .topbar-right {
-        display: grid;
-        grid-template-columns: auto auto;
-        gap: 10px;
-        justify-content: end;
-        align-items: start;
-      }
-      #btnHome { grid-column: 1; justify-self: end; min-width: 170px; }
-      .notif-wrap { grid-column: 2; justify-self: end; }
-
-      #userPill, #duoPill, #syncPill, .theme-switcher {
-        grid-column: 1 / -1;
-        justify-self: end;
-        min-width: 170px;
-      }
-      .theme-switcher { width: 170px; }
-      .theme-btn { width: 100%; }
-      #syncPill { justify-content: center; }
+    .who-btn:hover {
+      border-color: var(--accent);
+      color: var(--accent);
+      box-shadow: 0 0 18px rgba(255,107,157,.25);
     }
 
-    @media (max-width: 520px) {
-      .coverInner { padding: 56px 18px 34px; }
-      .coverInner .actions { flex-direction: column; align-items: stretch; }
-      .coverInner .actions .btn { width: 100%; }
+    .who-sub {
+      font-size: 11px;
+      color: var(--muted);
+      line-height: 1.6;
+      margin-top: 10px;
+    }
 
-      /* mission actions: keep export next to add saved on mobile */
-      .mission-actions { display: grid; grid-template-columns: 1fr 1fr; }
-      .mission-actions .btn { width: 100%; font-size: 10px; letter-spacing: 0.6px; padding: 12px 10px; }
-
-      /* make other action rows look clean on mobile */
-      .cardBody .actions:not(.mission-actions) { display: grid; grid-template-columns: 1fr; }
-      .cardBody .actions:not(.mission-actions) .btn { width: 100%; }
-
-      .who-actions { display: grid; grid-template-columns: 1fr; }
+    .who-actions {
+      display: flex;
+      gap: 10px;
+      flex-wrap: wrap;
+      margin-top: 14px;
     }
   </style>
 </head>
@@ -1085,8 +1196,7 @@
       <div class="topbar-right">
         <button class="btn hidden" id="btnHome">◂ HOME</button>
 
-        <!-- ✅ added class notif-wrap for mobile layout targeting (no desktop impact) -->
-        <div class="notif-wrap" style="position: relative;">
+        <div class="notif-wrap">
           <div class="notification-bell" id="notificationBell" aria-label="Notifications" title="Notifications">
             <svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
               <path d="M12 22c1.1 0 2-.9 2-2h-4c0 1.1.9 2 2 2zm6-6v-5c0-3.07-1.63-5.64-4.5-6.32V4c0-.83-.67-1.5-1.5-1.5s-1.5.67-1.5 1.5v.68C7.64 5.36 6 7.92 6 11v5l-2 2v1h16v-1l-2-2zm-2 1H8v-6c0-2.48 1.51-4.5 4-4.5s4 2.02 4 4.5v6z"/>
@@ -1213,7 +1323,6 @@
 
           <div style="display:flex; gap:10px; align-items:center; flex-wrap:wrap;">
             <span class="pill" id="yearPill">2026</span>
-            <!-- ✅ EXPORT removed from header (keeps 2026 on top) -->
           </div>
         </div>
 
@@ -1227,8 +1336,8 @@
             <div class="note">// STATUS: Items are auto-saved. Check to mark complete.</div>
             <div class="items" id="itemsActive"></div>
 
-            <!-- ✅ EXPORT moved next to ADD SAVED MISSION -->
-            <div class="actions mission-actions">
+            <!-- ✅ Export moved next to Add Saved Mission -->
+            <div class="actions actions-inline">
               <button class="btn primary" id="btnAddSaved">ADD SAVED MISSION</button>
               <button class="btn" id="btnDownloadText">EXPORT .TXT</button>
             </div>
@@ -1357,6 +1466,7 @@
   </div>
 
   <script>
+    // ---------- Local keys ----------
     const KEY_ACTIVE = "bucketlist_2026_active";
     const KEY_SAVED = "bucketlist_2026_saved";
     const KEY_COMPLETED = "bucketlist_2026_completed";
@@ -1364,8 +1474,8 @@
     const KEY_CUSTOM_TAGS = "bucketlist_2026_custom_tags";
     const KEY_THEME = "bucketlist_2026_theme";
     const KEY_SYSTEM_MESSAGE = "bucketlist_2026_system_message";
-    const KEY_USER = "bucketlist_2026_user";
 
+    const KEY_USER = "bucketlist_2026_user";
     function keyLastRead(user) { return `bucketlist_2026_lastread_${String(user || "").toLowerCase()}`; }
 
     const ROOM_CODE = "yasir-kylee";
@@ -1465,7 +1575,9 @@
     function saveTheme(theme) { localStorage.setItem(KEY_THEME, theme); }
 
     function loadSystemMessage() { return localStorage.getItem(KEY_SYSTEM_MESSAGE) || "My Love"; }
-    function saveSystemMessageLocalOnly(msg) { localStorage.setItem(KEY_SYSTEM_MESSAGE, msg); }
+    function saveSystemMessageLocalOnly(msg) {
+      localStorage.setItem(KEY_SYSTEM_MESSAGE, msg);
+    }
 
     function renderSystemMessage(msg) {
       $("herName").textContent = String(msg).toUpperCase();
@@ -2265,7 +2377,6 @@
       $("letterModal").classList.remove("active");
     });
 
-    /* ✅ export still same behavior, just moved location */
     $("btnDownloadText").addEventListener("click", () => {
       const active = loadActive();
       const completed = loadCompleted().filter(c => !c.isExample);
