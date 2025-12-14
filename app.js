@@ -400,15 +400,14 @@
       updateNotifications();
     }
 
-    
-$("letterModal").classList.add("active");
+    $("letterModal").classList.add("active");
+    // ✅ FIXED: iOS Safari animation bug - was setting env.style.animation twice instead of paper.style.animation
+    const env = document.querySelector(".letter-envelope");
+    const paper = document.querySelector(".letter-paper");
+    if (env) { env.style.animation = "none"; env.offsetHeight; env.style.animation = "envelopeOpen 0.5s ease forwards"; }
+    if (paper) { paper.style.animation = "none"; paper.offsetHeight; paper.style.animation = "letterUnfold 0.5s ease 0.3s forwards"; }
 
-// ✅ iOS Safari: re-trigger animations (prevents "blank envelope" on reopen)
-const env = document.querySelector(".letter-envelope");
-const paper = document.querySelector(".letter-paper");
-if (env) { env.style.animation = "none"; env.offsetHeight; env.style.animation = "envelopeOpen 0.5s ease forwards"; }
-if (paper) { paper.style.animation = "none"; paper.offsetHeight; paper.style.animation = "letterUnfold 0.5s ease 0.3s forwards"; }
-}
+  }
 
   function clearAllNotifications() {
     const messages = loadMessages();
@@ -850,61 +849,56 @@ if (paper) { paper.style.animation = "none"; paper.offsetHeight; paper.style.ani
     showToast("LOGGED OFF");
   }
 
-  
-// ---------- System Message Modal (in-page, iOS-safe) ----------
+  // ---------- Wire up events ----------
+  $("btnOpen").addEventListener("click", openGift);
+  $("btnHome").addEventListener("click", goHome);
+
+  // ✅ FIXED: iOS Safari keyboard bug - removed setTimeout, focus must be synchronous to preserve gesture context
 function openSystemMessageModal() {
   const modal = $("systemMessageModal");
   const input = $("systemMessageInput");
-  if (!modal || !input) return;
-
   input.value = loadSystemMessage() || "";
   modal.classList.add("active");
   modal.setAttribute("aria-hidden", "false");
-
-  // ✅ iOS Safari: focus must be synchronous with the click/tap gesture
+  // Focus immediately to preserve user gesture context on iOS
   input.focus();
-  input.setSelectionRange(input.value.length, input.value.length);
 }
 
 function closeSystemMessageModal() {
   const modal = $("systemMessageModal");
-  if (!modal) return;
   modal.classList.remove("active");
   modal.setAttribute("aria-hidden", "true");
 }
 
 async function saveSystemMessageFromModal() {
   const input = $("systemMessageInput");
-  if (!input) return;
-
-  const msg = String(input.value || "").trim();
-  if (!msg) {
-    showToast("Can't set a blank message");
-    return;
-  }
-
-  showToast("Updating...");
+  const msg = (input.value || "").trim();
+  if (!msg) return showToast("Type a message first.");
+  showToast("Updating system message...");
   saveSystemMessageLocalOnly(msg);
   renderSystemMessage(msg);
   closeSystemMessageModal();
   await pushRemoteState();
-  showToast("Message updated");
+  showToast("System message updated.");
 }
 
-// ---------- Wire up events ----------
-  $("btnOpen").addEventListener("click", openGift);
-  $("btnHome").addEventListener("click", goHome);
-
-  $("btnEditSystemMessage").addEventListener("click", () => openSystemMessageModal());
-
-// System message modal controls
+$("btnEditSystemMessage").addEventListener("click", openSystemMessageModal);
 $("closeSystemMessageModal").addEventListener("click", closeSystemMessageModal);
 $("btnSystemMessageCancel").addEventListener("click", closeSystemMessageModal);
 $("btnSystemMessageSave").addEventListener("click", saveSystemMessageFromModal);
+
 $("systemMessageModal").addEventListener("click", (e) => {
-  if (e.target === $("systemMessageModal")) closeSystemMessageModal();
+  if (e.target && e.target.id === "systemMessageModal") closeSystemMessageModal();
 });
 
+$("systemMessageInput").addEventListener("keydown", (e) => {
+  if (e.key === "Enter") {
+    e.preventDefault();
+    saveSystemMessageFromModal();
+  } else if (e.key === "Escape") {
+    closeSystemMessageModal();
+  }
+});
 $("userPill").addEventListener("click", () => openWhoModal());
 
   $("btnWhoYasir").addEventListener("click", () => setUserAndStart("Yasir"));
