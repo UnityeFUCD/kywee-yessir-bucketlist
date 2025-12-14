@@ -17,6 +17,13 @@ function json(statusCode, body) {
   };
 }
 
+function normUser(name) {
+  const n = String(name || "").trim().toLowerCase();
+  if (n === "yasir") return "yasir";
+  if (n === "kylee") return "kylee";
+  return "";
+}
+
 exports.handler = async (event) => {
   if (event.httpMethod === "OPTIONS") return json(200, { ok: true });
 
@@ -48,8 +55,12 @@ exports.handler = async (event) => {
       const rows = await r.json();
       const first = rows?.[0] || null;
 
+      const payload = first?.payload || {};
+      const presence = payload?.presence || {};
+
       return json(200, {
-        payload: first?.payload || {},
+        payload,
+        presence,
         updated_at: first?.updated_at || null,
       });
     }
@@ -57,13 +68,43 @@ exports.handler = async (event) => {
     if (event.httpMethod === "POST") {
       const body = JSON.parse(event.body || "{}");
       const room = (body.room || "").trim();
-      const payload = body.payload || {};
+      const payloadIn = body.payload || null;
+      const presenceIn = body.presence || null;
 
       if (!room) return json(400, { error: "room required" });
 
-      const url = `${SUPABASE_URL}/rest/v1/${TABLE}?on_conflict=room`;
+      // Read existing row so presence-patch doesn't overwrite data
+      const getUrl =
+        `${SUPABASE_URL}/rest/v1/${TABLE}` +
+        `?select=payload&room=eq.${encodeURIComponent(room)}&limit=1`;
 
-      const r = await fetch(url, {
+      let existingPayload = {};
+      const getR = await fetch(getUrl, { headers });
+      if (getR.ok) {
+        const rows = await getR.json();
+        existingPayload = rows?.[0]?.payload || {};
+      }
+
+      let merged = { ...(existingPayload || {}) };
+
+      // Merge main payload if provided
+      if (payloadIn && typeof payloadIn === "object") {
+        merged = { ...merged, ...payloadIn };
+      }
+
+      // Presence patch (stores last seen for yasir/kylee)
+      if (presenceIn && typeof presenceIn === "object" && presenceIn.user) {
+        const key = normUser(presenceIn.user);
+        if (key) {
+          const pres = { ...(merged.presence || {}) };
+          pres[key] = new Date().toISOString();
+          merged.presence = pres;
+        }
+      }
+
+      const upsertUrl = `${SUPABASE_URL}/rest/v1/${TABLE}?on_conflict=room`;
+
+      const r = await fetch(upsertUrl, {
         method: "POST",
         headers: {
           ...headers,
@@ -71,14 +112,14 @@ exports.handler = async (event) => {
         },
         body: JSON.stringify({
           room,
-          payload,
+          payload: merged,
           updated_at: new Date().toISOString(),
         }),
       });
 
       if (!r.ok) return json(500, { error: "supabase write failed" });
 
-      return json(200, { ok: true });
+      return json(200, { ok: true, payload: merged, presence: merged.presence || {} });
     }
 
     return json(405, { error: "method not allowed" });
