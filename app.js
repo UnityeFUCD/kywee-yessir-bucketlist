@@ -30,6 +30,49 @@
   let lastRemoteUpdatedAt = null;
   let pollTimer = null;
 
+  // ✅ [FEATURE C] Audio unlock + notification sound/vibration
+  let audioUnlocked = false;
+  let notifAudio = null;
+  let lastNotifTime = 0;
+  const NOTIF_DEBOUNCE_MS = 2000; // don't spam sounds within 2s
+
+  // ✅ [FEATURE D] Daily rotating emoticons (30 cute ones)
+  const DAILY_EMOTICONS = [
+    "(づ｡◕‿‿◕｡)づ ❤",
+    "ʕ•ᴥ•ʔ ♡",
+    "(◕ᴗ◕✿)",
+    "( ˘▽˘)っ♨",
+    "₍ᐢ.ˬ.ᐢ₎ ♡",
+    "(｡♥‿♥｡)",
+    "(◠‿◠)✌",
+    "ヾ(≧▽≦*)o",
+    "(✿◠‿◠)",
+    "♡(ӦｖӦ｡)",
+    "(っ◔◡◔)っ ♥",
+    "ʕ￫ᴥ￩ʔ",
+    "(◕‿◕)♡",
+    "(´• ω •`)♡",
+    "( ˶ˆᗜˆ˵ )",
+    "(*≧ω≦)",
+    "(ﾉ◕ヮ◕)ﾉ*:・ﾟ✧",
+    "( ͡° ͜ʖ ͡°)♡",
+    "(◍•ᴗ•◍)❤",
+    "♪(´ε` )",
+    "(✧ω✧)",
+    "٩(◕‿◕｡)۶",
+    "(◠ᴗ◠✿)",
+    "ლ(╹◡╹ლ)",
+    "✿◕ ‿ ◕✿",
+    "(っ˘ω˘ς )",
+    "ฅ^•ﻌ•^ฅ",
+    "(=^・ω・^=)",
+    "(*^ω^*)",
+    "( ´ ▽ ` )ﾉ♡"
+  ];
+
+  // ✅ [BUG 2 FIX] Prevent double-trigger of letter animation
+  let letterAnimationInProgress = false;
+
   // ---------- helpers ----------
   function escapeHtml(str) {
     return String(str)
@@ -64,6 +107,52 @@
       }).replace(",", "");
     } catch {
       return String(dt);
+    }
+  }
+
+  // ✅ [FEATURE D] Get daily emoticon based on date
+  function getDailyEmoticon() {
+    const today = new Date();
+    const dateKey = `${today.getFullYear()}-${String(today.getMonth()+1).padStart(2,'0')}-${String(today.getDate()).padStart(2,'0')}`;
+    // Simple hash from date string
+    let hash = 0;
+    for (let i = 0; i < dateKey.length; i++) {
+      hash = ((hash << 5) - hash) + dateKey.charCodeAt(i);
+      hash |= 0;
+    }
+    const idx = Math.abs(hash) % DAILY_EMOTICONS.length;
+    return DAILY_EMOTICONS[idx];
+  }
+
+  // ✅ [FEATURE C] Unlock audio on first user interaction
+  function unlockAudio() {
+    if (audioUnlocked) return;
+    audioUnlocked = true;
+    // Create and prime the audio element
+    notifAudio = new Audio("data:audio/wav;base64,UklGRl9vT19XQVZFZm10IBAAAAABAAEAQB8AAEAfAAABAAgAZGF0YU" + 
+      "tvT19" + "AAAAAAAA"); // tiny silent audio to unlock
+    notifAudio.volume = 0;
+    notifAudio.play().catch(() => {});
+    // Now load a real bell sound (short chime)
+    notifAudio = new Audio("data:audio/mp3;base64,//uQxAAAAAANIAAAAAExBTUUzLjEwMFVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVf/7kMQAAAosdSB0EQACGQ6kDoAAABVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVU=");
+    notifAudio.volume = 0.5;
+  }
+
+  // ✅ [FEATURE C] Play notification sound + vibrate (debounced)
+  function playNotificationAlert() {
+    const now = Date.now();
+    if (now - lastNotifTime < NOTIF_DEBOUNCE_MS) return; // debounce
+    lastNotifTime = now;
+
+    // Vibrate if supported
+    if (navigator.vibrate) {
+      navigator.vibrate([100, 50, 100]);
+    }
+
+    // Play sound if audio unlocked
+    if (audioUnlocked && notifAudio) {
+      notifAudio.currentTime = 0;
+      notifAudio.play().catch(() => {});
     }
   }
 
@@ -151,9 +240,12 @@
       const from = String(m?.from || "").trim();
       const timestamp = String(m?.timestamp || "").trim();
       const content = normalizeNewlines(m?.content ?? "").trim();
+      // ✅ [FEATURE B] preserve attachment fields
+      const attachment = m?.attachment || null;
+      const attachmentType = m?.attachmentType || null;
       if (!from) continue;
       if (!content) continue; // 🔥 removes blank letters forever
-      cleaned.push({ from, timestamp, content });
+      cleaned.push({ from, timestamp, content, attachment, attachmentType });
     }
     return cleaned;
   }
@@ -265,6 +357,9 @@
   }
 
   // ---------- Notifications (duo-only unread) ----------
+  // ✅ [FEATURE C] Track previous unread count to detect new messages
+  let prevUnreadCount = 0;
+
   function duoUnreadIndexes(messages) {
     const user = loadUser().trim().toLowerCase();
     if (!user) return [];
@@ -290,12 +385,19 @@
     if (deletedIndex <= cur) saveLastRead(cur - 1);
   }
 
-  function updateNotifications() {
+  function updateNotifications(opts = {}) {
+    const { silent = false } = opts;
     const messages = loadMessages();
     const badge = $("notificationBadge");
     const list = $("notificationList");
 
     const unreadIdxs = duoUnreadIndexes(messages);
+
+    // ✅ [FEATURE C] Play sound if new unread arrived (not silent pull)
+    if (!silent && unreadIdxs.length > prevUnreadCount && prevUnreadCount >= 0) {
+      playNotificationAlert();
+    }
+    prevUnreadCount = unreadIdxs.length;
 
     if (unreadIdxs.length > 0) {
       badge.textContent = unreadIdxs.length;
@@ -326,11 +428,13 @@
     duoMsgs.slice().reverse().forEach(({ m, i }) => {
       const displayName = m.from || "Unknown";
       const isUnread = i > lastRead;
+      // ✅ [FEATURE B] Show attachment indicator
+      const hasAttachment = !!(m.attachment);
 
       const item = document.createElement("div");
       item.className = "notification-item" + (isUnread ? " unread" : "");
       item.innerHTML = `
-        <div class="notification-from">FROM: ${escapeHtml(displayName)}</div>
+        <div class="notification-from">FROM: ${escapeHtml(displayName)} ${hasAttachment ? '📎' : ''}</div>
         <div class="notification-preview">${escapeHtml(String(m.content || "").substring(0, 54))}${String(m.content || "").length > 54 ? "..." : ""}</div>
         <div class="notification-time">${escapeHtml(m.timestamp || "")}</div>
 
@@ -348,7 +452,10 @@
         </div>
       `;
 
-      item.addEventListener("click", () => {
+      // ✅ [BUG 2 FIX] Use stopPropagation to prevent double-trigger from nested handlers
+      item.addEventListener("click", (e) => {
+        if (e.target.closest('[data-action]')) return; // let action buttons handle themselves
+        e.stopPropagation();
         openMessage(i);
         $("notificationDropdown").classList.remove("active");
       });
@@ -377,6 +484,9 @@
   }
 
   function openMessage(index) {
+    // ✅ [BUG 2 FIX] Guard against double-trigger
+    if (letterAnimationInProgress) return;
+
     const messages = loadMessages();
     const msg = messages[index];
     if (!msg) return;
@@ -388,10 +498,35 @@
       return;
     }
 
+    letterAnimationInProgress = true; // lock
+
     const displayName = msg.from || "Unknown";
     $("letterFrom").textContent = displayName.toUpperCase();
     $("letterTimestamp").textContent = msg.timestamp || "";
     $("letterContent").textContent = safeContent;
+
+    // ✅ [FEATURE B] Show attachment in letter if present
+    const attachmentContainer = $("letterAttachment");
+    if (attachmentContainer) {
+      if (msg.attachment) {
+        const isVideo = msg.attachmentType === 'video';
+        if (isVideo) {
+          attachmentContainer.innerHTML = `
+            <div class="letter-attachment-label">📎 Video Attachment</div>
+            <video controls class="letter-attachment-media" src="${escapeHtml(msg.attachment)}"></video>
+          `;
+        } else {
+          attachmentContainer.innerHTML = `
+            <div class="letter-attachment-label">📎 Image Attachment</div>
+            <img class="letter-attachment-media" src="${escapeHtml(msg.attachment)}" alt="Attachment" onclick="openAttachmentModal('${escapeHtml(msg.attachment)}', 'image')">
+          `;
+        }
+        attachmentContainer.classList.remove("hidden");
+      } else {
+        attachmentContainer.innerHTML = "";
+        attachmentContainer.classList.add("hidden");
+      }
+    }
 
     const userLower = loadUser().trim().toLowerCase();
     const fromLower = String(msg.from || "").trim().toLowerCase();
@@ -401,13 +536,40 @@
     }
 
     $("letterModal").classList.add("active");
-    // ✅ FIXED: iOS Safari animation bug - was setting env.style.animation twice instead of paper.style.animation
+    
+    // ✅ [BUG 2 FIX] Reset animations properly - force reflow once
     const env = document.querySelector(".letter-envelope");
     const paper = document.querySelector(".letter-paper");
-    if (env) { env.style.animation = "none"; env.offsetHeight; env.style.animation = "envelopeOpen 0.5s ease forwards"; }
-    if (paper) { paper.style.animation = "none"; paper.offsetHeight; paper.style.animation = "letterUnfold 0.5s ease 0.3s forwards"; }
+    if (env) {
+      env.style.animation = "none";
+      void env.offsetHeight; // single reflow
+      env.style.animation = "envelopeOpen 0.5s ease forwards";
+    }
+    if (paper) {
+      paper.style.animation = "none";
+      void paper.offsetHeight; // single reflow
+      paper.style.animation = "letterUnfold 0.5s ease 0.3s forwards";
+    }
 
+    // ✅ [BUG 2 FIX] Unlock after animation completes
+    setTimeout(() => {
+      letterAnimationInProgress = false;
+    }, 900); // slightly longer than animation duration
   }
+
+  // ✅ [FEATURE B] Open attachment in fullscreen modal
+  window.openAttachmentModal = function(url, type) {
+    const modal = $("attachmentModal");
+    const content = $("attachmentModalContent");
+    if (!modal || !content) return;
+    
+    if (type === 'video') {
+      content.innerHTML = `<video controls autoplay class="attachment-fullscreen" src="${escapeHtml(url)}"></video>`;
+    } else {
+      content.innerHTML = `<img class="attachment-fullscreen" src="${escapeHtml(url)}" alt="Attachment">`;
+    }
+    modal.classList.add("active");
+  };
 
   function clearAllNotifications() {
     const messages = loadMessages();
@@ -529,16 +691,23 @@
     const container = $("messageLog");
     container.innerHTML = "";
 
-    messages.forEach(msg => {
+    // ✅ [FEATURE A] Render newest-first (reverse order)
+    const reversed = [...messages].reverse();
+
+    reversed.forEach((msg, revIdx) => {
+      const originalIdx = messages.length - 1 - revIdx;
       const displayName = msg.from || "Unknown";
+      // ✅ [FEATURE B] Show attachment indicator
+      const hasAttachment = !!(msg.attachment);
       const el = document.createElement("div");
       el.className = "message-log-item";
       el.innerHTML = `
         <div class="message-log-header">
-          <span>FROM: ${escapeHtml(displayName)}</span>
+          <span>FROM: ${escapeHtml(displayName)} ${hasAttachment ? '<span class="attachment-badge" title="Has attachment">📎</span>' : ''}</span>
           <span>${escapeHtml(msg.timestamp || "")}</span>
         </div>
         <div class="message-log-content">${escapeHtml(msg.content || "")}</div>
+        ${hasAttachment ? `<div class="message-attachment-preview" onclick="openAttachmentModal('${escapeHtml(msg.attachment)}', '${escapeHtml(msg.attachmentType || 'image')}')">View Attachment</div>` : ''}
       `;
       container.appendChild(el);
     });
@@ -546,9 +715,9 @@
     if (messages.length > 3) container.classList.add("scroll");
     else container.classList.remove("scroll");
 
-    // only auto-scroll when YOU send a message (not on remote pulls)
+    // ✅ [FEATURE A] With newest-first, scroll to TOP for latest
     if (autoScroll || messages.length > lastMsgCount) {
-      if (container.classList.contains("scroll")) container.scrollTop = container.scrollHeight;
+      if (container.classList.contains("scroll")) container.scrollTop = 0;
     }
     lastMsgCount = messages.length;
   }
@@ -767,7 +936,8 @@
       renderActive();
       renderCompleted();
       renderMessages(); // do NOT autoscroll on remote updates
-      updateNotifications();
+      // ✅ [FEATURE C] Pass silent flag to avoid sound on background pulls
+      updateNotifications({ silent });
       updateUserDuoPills();
 
       setSyncStatus("on");
@@ -849,15 +1019,32 @@
     showToast("LOGGED OFF");
   }
 
+  // ✅ [FEATURE B] Convert file to base64 for storage
+  function fileToBase64(file) {
+    return new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.onload = () => resolve(reader.result);
+      reader.onerror = reject;
+      reader.readAsDataURL(file);
+    });
+  }
+
+  // ✅ [FEATURE B] Current attachment state
+  let pendingAttachment = null;
+  let pendingAttachmentType = null;
+
   // ---------- Wire up events ----------
   $("btnOpen").addEventListener("click", openGift);
   $("btnHome").addEventListener("click", goHome);
 
-  // ✅ FIXED: iOS Safari keyboard bug - removed setTimeout, focus must be synchronous to preserve gesture context
+  // ✅ [BUG 1 FIX] iOS Safari keyboard bug - focus must be synchronous to preserve gesture context
 function openSystemMessageModal() {
   const modal = $("systemMessageModal");
   const input = $("systemMessageInput");
-  input.value = loadSystemMessage() || "";
+  const current = loadSystemMessage() || "";
+  input.value = current;
+  // ✅ [FEATURE E] Update character counter
+  updateCharCounter(current.length);
   modal.classList.add("active");
   modal.setAttribute("aria-hidden", "false");
   // Focus immediately to preserve user gesture context on iOS
@@ -870,9 +1057,23 @@ function closeSystemMessageModal() {
   modal.setAttribute("aria-hidden", "true");
 }
 
+// ✅ [FEATURE E] Update character counter
+function updateCharCounter(len) {
+  const counter = $("charCounter");
+  if (!counter) return;
+  const remaining = 80 - len;
+  counter.textContent = `${remaining} left`;
+  counter.style.color = remaining < 10 ? "var(--accent)" : "var(--muted)";
+}
+
 async function saveSystemMessageFromModal() {
   const input = $("systemMessageInput");
   const msg = (input.value || "").trim();
+  // ✅ [FEATURE E] Enforce 80 char limit
+  if (msg.length > 80) {
+    showToast("Message too long (max 80 chars)");
+    return;
+  }
   if (!msg) return showToast("Type a message first.");
   showToast("Updating system message...");
   saveSystemMessageLocalOnly(msg);
@@ -899,6 +1100,18 @@ $("systemMessageInput").addEventListener("keydown", (e) => {
     closeSystemMessageModal();
   }
 });
+
+// ✅ [FEATURE E] Live character counter update
+$("systemMessageInput").addEventListener("input", (e) => {
+  const len = (e.target.value || "").length;
+  updateCharCounter(len);
+  // Hard stop at 80 chars (maxlength should handle but just in case)
+  if (len > 80) {
+    e.target.value = e.target.value.substring(0, 80);
+    updateCharCounter(80);
+  }
+});
+
 $("userPill").addEventListener("click", () => openWhoModal());
 
   $("btnWhoYasir").addEventListener("click", () => setUserAndStart("Yasir"));
@@ -1064,6 +1277,60 @@ $("userPill").addEventListener("click", () => openWhoModal());
     $("savedMissionsModal").classList.remove("active");
   });
 
+  // ✅ [FEATURE B] Handle attachment file selection
+  const attachInput = $("attachmentInput");
+  if (attachInput) {
+    attachInput.addEventListener("change", async (e) => {
+      const file = e.target.files?.[0];
+      if (!file) {
+        pendingAttachment = null;
+        pendingAttachmentType = null;
+        $("attachmentPreview").classList.add("hidden");
+        return;
+      }
+      
+      // Determine type
+      const isVideo = file.type.startsWith("video/");
+      const isImage = file.type.startsWith("image/");
+      
+      if (!isVideo && !isImage) {
+        showToast("Only images and videos allowed");
+        e.target.value = "";
+        return;
+      }
+      
+      // Size check (5MB limit for base64)
+      if (file.size > 5 * 1024 * 1024) {
+        showToast("File too large (max 5MB)");
+        e.target.value = "";
+        return;
+      }
+      
+      try {
+        pendingAttachment = await fileToBase64(file);
+        pendingAttachmentType = isVideo ? "video" : "image";
+        
+        // Show preview
+        const preview = $("attachmentPreview");
+        if (preview) {
+          preview.innerHTML = `<span>📎 ${escapeHtml(file.name)}</span><button type="button" class="btn" id="clearAttachment">✕</button>`;
+          preview.classList.remove("hidden");
+          
+          $("clearAttachment").addEventListener("click", () => {
+            pendingAttachment = null;
+            pendingAttachmentType = null;
+            attachInput.value = "";
+            preview.classList.add("hidden");
+          });
+        }
+      } catch {
+        showToast("Failed to read file");
+        pendingAttachment = null;
+        pendingAttachmentType = null;
+      }
+    });
+  }
+
   $("btnSaveNote").addEventListener("click", () => {
     if (!hasUser()) { showToast("Pick USER first"); return; }
 
@@ -1078,13 +1345,29 @@ $("userPill").addEventListener("click", () => openWhoModal());
 
     const timestamp = formatDT(new Date());
     const messages = loadMessages();
-    messages.push({ from, timestamp, content });
+    
+    // ✅ [FEATURE B] Include attachment if present
+    const newMsg = { from, timestamp, content };
+    if (pendingAttachment) {
+      newMsg.attachment = pendingAttachment;
+      newMsg.attachmentType = pendingAttachmentType;
+    }
+    messages.push(newMsg);
 
     // ✅ sanitize immediately (prevents any empty record)
     const cleaned = sanitizeMessages(messages);
     localStorage.setItem(KEY_MESSAGES, JSON.stringify(cleaned));
 
     $("customNote").value = "";
+    
+    // ✅ [FEATURE B] Clear attachment after send
+    pendingAttachment = null;
+    pendingAttachmentType = null;
+    const attachInput = $("attachmentInput");
+    if (attachInput) attachInput.value = "";
+    const preview = $("attachmentPreview");
+    if (preview) preview.classList.add("hidden");
+    
     renderMessages({ autoScroll: true });
     updateNotifications();
     showToast("Letter sent");
@@ -1119,7 +1402,27 @@ $("userPill").addEventListener("click", () => openWhoModal());
 
   $("closeLetterModal").addEventListener("click", () => {
     $("letterModal").classList.remove("active");
+    // ✅ [BUG 2 FIX] Reset animation lock when closing
+    letterAnimationInProgress = false;
   });
+
+  // ✅ [FEATURE B] Close attachment modal
+  const closeAttachmentModal = $("closeAttachmentModal");
+  if (closeAttachmentModal) {
+    closeAttachmentModal.addEventListener("click", () => {
+      $("attachmentModal").classList.remove("active");
+    });
+  }
+  
+  // Close attachment modal on backdrop click
+  const attachmentModal = $("attachmentModal");
+  if (attachmentModal) {
+    attachmentModal.addEventListener("click", (e) => {
+      if (e.target === attachmentModal) {
+        attachmentModal.classList.remove("active");
+      }
+    });
+  }
 
   $("btnDownloadText").addEventListener("click", () => {
     const active = loadActive();
@@ -1177,6 +1480,21 @@ ${completed.map(i => `[X] ${i.title} — ${i.desc} (#${i.tag})`).join("\n")}
     if (document.visibilityState === "visible") pullRemoteState({ silent: false });
   });
 
+  // ✅ [FEATURE C] Unlock audio on first user interaction
+  document.addEventListener("click", unlockAudio, { once: true });
+  document.addEventListener("touchstart", unlockAudio, { once: true });
+
+  // ✅ [BUG 1 FIX] Ensure inputs work on iOS standalone web app
+  // Remove any touch prevention that might block input focus
+  document.addEventListener("touchend", (e) => {
+    // Only allow default behavior for inputs/textareas
+    const tag = e.target.tagName?.toLowerCase();
+    if (tag === "input" || tag === "textarea" || tag === "select") {
+      // Let the default behavior happen
+      return;
+    }
+  }, { passive: true });
+
   // ---------- Init ----------
   (function init() {
     ensureCustomTagsInSelect();
@@ -1185,6 +1503,12 @@ ${completed.map(i => `[X] ${i.title} — ${i.desc} (#${i.tag})`).join("\n")}
     applyTheme(theme);
 
     renderSystemMessage(loadSystemMessage());
+    
+    // ✅ [FEATURE D] Set daily emoticon
+    const emoticonEl = $("dailyEmoticon");
+    if (emoticonEl) {
+      emoticonEl.textContent = getDailyEmoticon();
+    }
 
     setSyncStatus("off");
     updateUserDuoPills();

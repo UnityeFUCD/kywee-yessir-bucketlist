@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no" />
   <title>kywee + yessir bucket list</title>
 
   <!-- ✅ App icon + favicon (iOS + browsers) -->
@@ -11,6 +11,8 @@
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
   <meta name="apple-mobile-web-app-title" content="Bucket List">
+  <!-- ✅ [BUG 1 FIX] Additional iOS web app meta tags for better input handling -->
+  <meta name="format-detection" content="telephone=no">
 
   <link rel="stylesheet" href="styles.css">
 </head>
@@ -97,20 +99,7 @@
 
         <p class="sub">[INITIALIZING...] Our bucket list for the new year. Status: WEADY TO DEPLOY.</p>
 
-        <pre class="emoticon-art">⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⢀⣀⣀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⡀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀
-⠀⠀⠀⠀⠀⠀⠀⠀⢀⣴⣿⠟⠿⣷⣦⡀⠀⠀⠀⠀⠀⠀⣀⣴⣿⠿⣷⣦⡀⠀⠀⠀⠀⠀⠀⠀
-⠀⠀⠀⠀⠀⠀⠀⣰⣿⠟⠀⠀⠀⠈⠻⣿⣦⣤⣤⣤⣤⣾⡿⠋⠁⠀⠈⠻⣿⣦⠀⠀⠀⠀⠀⠀
-⠀⠀⠀⠀⠀⠀⢰⣿⠏⠀⠀⠀⠀⠀⠀⢸⠙⠉⢹⢉⢹⠉⠁⠀⠀⠀⠀⠀⠈⣿⡇⠀⠀⠀⠀⠀
-⠀⠀⠀⠀⣤⣤⣬⣷⣶⣶⣴⣶⣶⣶⣤⠀⣧⠀⣼⠘⢺⣤⣤⣴⣶⣶⣶⣶⣤⣭⣤⡀⠀⠀⠀⠀
-⠀⠿⣷⣶⢽⣿⠉⠁⠀⠈⠉⠉⠉⠸⣿⠀⠀⠀⢀⣀⣸⣿⠉⠉⠉⠉⠉⠉⠉⠉⣿⣇⣴⣾⠿⠀
-⣠⣴⣶⡦⢸⣿⠀⢀⣀⠀⠀⠀⠀⠀⣿⡿⠿⠿⠿⠟⢻⣿⠀⠀⠀⠀⢀⣀⠀⠀⣿⣿⣿⣥⣤⡀
-⠈⠉⠁⠀⢸⣿⣀⣼⣿⣃⣤⣤⣤⣴⣿⡅⠀⠀⠀⠀⠸⣿⣦⣤⣤⣀⣸⣿⣀⣸⣿⠋⠉⠉⠛⠋
-⠀⠀⠀⠀⣘⣟⡿⡋⠑⢽⠛⠉⠉⠉⠻⢿⣿⣿⡿⢿⣿⠏⠉⠉⠙⠛⠛⠛⠛⣻⣯⠀⠀⠀⠀⠀
-⠀⢀⡖⠉⠉⠀⠠⠇⠀⠸⣶⣶⣶⣤⠀⢸⣿⣿⣷⣿⡏⠀⠀⠀⠀⢀⣀⣴⣾⡿⠋⠀⠀⠀⠀⠀
-⠀⠘⢷⡀⠁⠀⠀⠀⠀⠀⢹⠀⠈⠉⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠘⠛⢉⣿⡿⠀⠀⠀⠀⠀⠀
-⠀⠀⠈⠱⣤⣀⠀⠀⢀⣠⡞⠀⠀⠀⠀⠀⠀⠀⠤⠀⠀⠀⠀⠀⠀⠀⣾⡿⠟⠁⠀⠀⠀⠀⠀⠀
-⠀⠀⠀⠀⠈⠓⠒⠚⠁⣿⣇⢀⣀⣀⣀⣀⣀⣀⣐⣀⣀⣀⣤⣤⣄⠀⢸⡇⠀⠀⠀⠀⠀⠀⠀⠀
-⠀⠀⠀⠀⠀⠀⠀⠀⠀⠹⣿⣿⠟⠛⠛⠛⠛⠛⠛⠛⠛⠛⠛⠉⠻⠿⠿⠃⠀⠀⠀⠀⠀⠀⠀⠀</pre>
+        <pre class="emoticon-art" id="dailyEmoticon"></pre>
 
         <div class="actions" style="justify-content:center; margin-top:30px;">
           <button class="btn primary" id="btnOpen">▸ INITIALIZE SYSTEM</button>
@@ -196,8 +185,17 @@
           <div class="form">
             <div class="field">
               <label for="customNote">[▸] NEW MESSAGE</label>
-              <textarea id="customNote" placeholder="// Enter your message here..."></textarea>
+              <!-- ✅ [BUG 1 FIX] Added iOS-friendly input attributes -->
+              <textarea id="customNote" placeholder="// Enter your message here..." inputmode="text" autocomplete="off" autocapitalize="sentences" autocorrect="on" spellcheck="true"></textarea>
             </div>
+            
+            <!-- ✅ [FEATURE B] Attachment input -->
+            <div class="field attachment-field">
+              <label for="attachmentInput">📎 ATTACH IMAGE/VIDEO</label>
+              <input type="file" id="attachmentInput" accept="image/*,video/*" />
+              <div id="attachmentPreview" class="attachment-preview hidden"></div>
+            </div>
+            
             <button class="btn primary" id="btnSaveNote">SEND LETTER</button>
           </div>
 
@@ -205,10 +203,11 @@
 
           <div class="field">
             <label>[▸] ADD NEW MISSION</label>
-            <input id="newTitle" type="text" placeholder="Movie">
+            <!-- ✅ [BUG 1 FIX] Added iOS-friendly input attributes -->
+            <input id="newTitle" type="text" placeholder="Movie" inputmode="text" autocomplete="off" autocapitalize="words" autocorrect="off">
           </div>
           <div class="field">
-            <input id="newDesc" type="text" placeholder="pick a movie and location">
+            <input id="newDesc" type="text" placeholder="pick a movie and location" inputmode="text" autocomplete="off" autocapitalize="sentences" autocorrect="on">
           </div>
           <div class="field">
             <label for="newTag">TAG</label>
@@ -228,7 +227,7 @@
             </select>
           </div>
           <div class="field hidden" id="customTagField">
-            <input id="customTagInput" type="text" placeholder="Enter custom tag">
+            <input id="customTagInput" type="text" placeholder="Enter custom tag" inputmode="text" autocomplete="off" autocapitalize="none">
           </div>
           <div class="actions">
             <button class="btn primary" id="btnAdd">+ ADD MISSION</button>
@@ -261,7 +260,17 @@
         <div class="letter-from">FROM: <span id="letterFrom">--</span></div>
         <div class="letter-timestamp" id="letterTimestamp"></div>
         <div class="letter-content" id="letterContent"></div>
+        <!-- ✅ [FEATURE B] Attachment display in letter -->
+        <div id="letterAttachment" class="letter-attachment hidden"></div>
       </div>
+    </div>
+  </div>
+
+  <!-- ✅ [FEATURE B] Fullscreen attachment modal -->
+  <div class="modal attachment-modal" id="attachmentModal">
+    <div class="attachment-modal-inner">
+      <span class="modal-close" id="closeAttachmentModal">✖</span>
+      <div id="attachmentModalContent"></div>
     </div>
   </div>
 
@@ -294,7 +303,7 @@
     </div>
   </div>
   
-  <!-- ✅ System message edit modal (replaces iOS/Chrome prompt) -->
+  <!-- ✅ System message edit modal with character counter -->
   <div class="modal" id="systemMessageModal" aria-hidden="true">
     <div class="modal-content">
       <div class="modal-header">
@@ -303,8 +312,10 @@
       </div>
 
       <div class="field">
-        <label for="systemMessageInput">SYSTEM MESSAGE</label>
-        <input id="systemMessageInput" type="text" maxlength="80" placeholder="My love" autocomplete="off" />
+        <!-- ✅ [FEATURE E] Character counter -->
+        <label for="systemMessageInput">SYSTEM MESSAGE <span id="charCounter" style="float:right; color: var(--muted);">80 left</span></label>
+        <!-- ✅ [BUG 1 FIX] Added iOS-friendly input attributes -->
+        <input id="systemMessageInput" type="text" maxlength="80" placeholder="My love" autocomplete="off" autocapitalize="sentences" autocorrect="on" inputmode="text" />
       </div>
 
       <div class="actions">
