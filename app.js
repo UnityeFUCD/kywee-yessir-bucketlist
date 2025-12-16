@@ -18,7 +18,25 @@
   // ✅ shared room code
   const ROOM_CODE = "yasir-kylee";
 
+  // ✅ [SUPABASE STORAGE CONFIG]
+  const SUPABASE_URL = "https://pkgrlhwnwqtffdmcyqbk.supabase.co";
+  const SUPABASE_ANON_KEY = "sb_publishable_C58TXKa51lQdWtquVzlVmg_HRPNT0el";
+  const STORAGE_BUCKET = "attachments";
+
   const $ = (id) => document.getElementById(id);
+
+  // ✅ [FEATURE D] Daily rotating emoticons (30 cute ones)
+  const DAILY_EMOTICONS = [
+    "(づ｡◕‿‿◕｡)づ ❤", "ʕ•ᴥ•ʔ ♡", "(◕ᴗ◕✿)", "( ˘▽˘)っ♨", "₍ᐢ.ˬ.ᐢ₎ ♡",
+    "(｡♥‿♥｡)", "(◠‿◠)✌", "ヾ(≧▽≦*)o", "(✿◠‿◠)", "♡(ӦｖӦ｡)",
+    "(っ◔◡◔)っ ♥", "ʕ￫ᴥ￩ʔ", "(◕‿◕)♡", "(´• ω •`)♡", "( ˶ˆᗜˆ˵ )",
+    "(*≧ω≦)", "(ﾉ◕ヮ◕)ﾉ*:・ﾟ✧", "( ͡° ͜ʖ ͡°)♡", "(◍•ᴗ•◍)❤", "♪(´ε` )",
+    "(✧ω✧)", "٩(◕‿◕｡)۶", "(◠ᴗ◠✿)", "ლ(╹◡╹ლ)", "✿◕ ‿ ◕✿",
+    "(っ˘ω˘ς )", "ฅ^•ﻌ•^ฅ", "(=^・ω・^=)", "(*^ω^*)", "( ´ ▽ ` )ﾉ♡"
+  ];
+
+  // ✅ [BUG 2 FIX] Prevent double-trigger of letter animation
+  let letterAnimationInProgress = false;
 
   const exampleActive = { title: "Test Mission (Example)", desc: "This is an example card", tag: "example", done: false, isExample: true };
   const exampleCompleted = { title: "Test Completed (Example)", desc: "This is a completed example", tag: "example", done: true, isExample: true };
@@ -30,48 +48,11 @@
   let lastRemoteUpdatedAt = null;
   let pollTimer = null;
 
-  // ✅ [FEATURE C] Audio unlock + notification sound/vibration
+  // ✅ [FEATURE C] Audio unlock + notification sound using Web Audio API
   let audioUnlocked = false;
-  let notifAudio = null;
+  let audioContext = null;
   let lastNotifTime = 0;
-  const NOTIF_DEBOUNCE_MS = 2000; // don't spam sounds within 2s
-
-  // ✅ [FEATURE D] Daily rotating emoticons (30 cute ones)
-  const DAILY_EMOTICONS = [
-    "(づ｡◕‿‿◕｡)づ ❤",
-    "ʕ•ᴥ•ʔ ♡",
-    "(◕ᴗ◕✿)",
-    "( ˘▽˘)っ♨",
-    "₍ᐢ.ˬ.ᐢ₎ ♡",
-    "(｡♥‿♥｡)",
-    "(◠‿◠)✌",
-    "ヾ(≧▽≦*)o",
-    "(✿◠‿◠)",
-    "♡(ӦｖӦ｡)",
-    "(っ◔◡◔)っ ♥",
-    "ʕ￫ᴥ￩ʔ",
-    "(◕‿◕)♡",
-    "(´• ω •`)♡",
-    "( ˶ˆᗜˆ˵ )",
-    "(*≧ω≦)",
-    "(ﾉ◕ヮ◕)ﾉ*:・ﾟ✧",
-    "( ͡° ͜ʖ ͡°)♡",
-    "(◍•ᴗ•◍)❤",
-    "♪(´ε` )",
-    "(✧ω✧)",
-    "٩(◕‿◕｡)۶",
-    "(◠ᴗ◠✿)",
-    "ლ(╹◡╹ლ)",
-    "✿◕ ‿ ◕✿",
-    "(っ˘ω˘ς )",
-    "ฅ^•ﻌ•^ฅ",
-    "(=^・ω・^=)",
-    "(*^ω^*)",
-    "( ´ ▽ ` )ﾉ♡"
-  ];
-
-  // ✅ [BUG 2 FIX] Prevent double-trigger of letter animation
-  let letterAnimationInProgress = false;
+  const NOTIF_DEBOUNCE_MS = 2000;
 
   // ---------- helpers ----------
   function escapeHtml(str) {
@@ -114,45 +95,63 @@
   function getDailyEmoticon() {
     const today = new Date();
     const dateKey = `${today.getFullYear()}-${String(today.getMonth()+1).padStart(2,'0')}-${String(today.getDate()).padStart(2,'0')}`;
-    // Simple hash from date string
     let hash = 0;
     for (let i = 0; i < dateKey.length; i++) {
       hash = ((hash << 5) - hash) + dateKey.charCodeAt(i);
       hash |= 0;
     }
-    const idx = Math.abs(hash) % DAILY_EMOTICONS.length;
-    return DAILY_EMOTICONS[idx];
+    return DAILY_EMOTICONS[Math.abs(hash) % DAILY_EMOTICONS.length];
   }
 
-  // ✅ [FEATURE C] Unlock audio on first user interaction
+  // ✅ [FEATURE C] Unlock audio on first user interaction - Web Audio API
   function unlockAudio() {
     if (audioUnlocked) return;
-    audioUnlocked = true;
-    // Create and prime the audio element
-    notifAudio = new Audio("data:audio/wav;base64,UklGRl9vT19XQVZFZm10IBAAAAABAAEAQB8AAEAfAAABAAgAZGF0YU" + 
-      "tvT19" + "AAAAAAAA"); // tiny silent audio to unlock
-    notifAudio.volume = 0;
-    notifAudio.play().catch(() => {});
-    // Now load a real bell sound (short chime)
-    notifAudio = new Audio("data:audio/mp3;base64,//uQxAAAAAANIAAAAAExBTUUzLjEwMFVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVf/7kMQAAAosdSB0EQACGQ6kDoAAABVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVU=");
-    notifAudio.volume = 0.5;
+    try {
+      audioContext = new (window.AudioContext || window.webkitAudioContext)();
+      const buffer = audioContext.createBuffer(1, 1, 22050);
+      const source = audioContext.createBufferSource();
+      source.buffer = buffer;
+      source.connect(audioContext.destination);
+      source.start(0);
+      audioUnlocked = true;
+      console.log("Audio unlocked");
+    } catch (e) { console.log("Audio unlock failed:", e); }
   }
 
-  // ✅ [FEATURE C] Play notification sound + vibrate (debounced)
+  // ✅ [FEATURE C] Play notification sound using Web Audio API
   function playNotificationAlert() {
     const now = Date.now();
-    if (now - lastNotifTime < NOTIF_DEBOUNCE_MS) return; // debounce
+    if (now - lastNotifTime < NOTIF_DEBOUNCE_MS) return;
     lastNotifTime = now;
 
-    // Vibrate if supported
-    if (navigator.vibrate) {
-      navigator.vibrate([100, 50, 100]);
-    }
+    if (navigator.vibrate) { try { navigator.vibrate([100, 50, 100]); } catch (e) {} }
 
-    // Play sound if audio unlocked
-    if (audioUnlocked && notifAudio) {
-      notifAudio.currentTime = 0;
-      notifAudio.play().catch(() => {});
+    if (audioUnlocked && audioContext) {
+      try {
+        const osc = audioContext.createOscillator();
+        const gain = audioContext.createGain();
+        osc.connect(gain);
+        gain.connect(audioContext.destination);
+        osc.frequency.value = 800;
+        osc.type = "sine";
+        gain.gain.setValueAtTime(0.3, audioContext.currentTime);
+        gain.gain.exponentialRampToValueAtTime(0.01, audioContext.currentTime + 0.3);
+        osc.start(audioContext.currentTime);
+        osc.stop(audioContext.currentTime + 0.3);
+        setTimeout(() => {
+          if (!audioContext) return;
+          const osc2 = audioContext.createOscillator();
+          const gain2 = audioContext.createGain();
+          osc2.connect(gain2);
+          gain2.connect(audioContext.destination);
+          osc2.frequency.value = 1000;
+          osc2.type = "sine";
+          gain2.gain.setValueAtTime(0.2, audioContext.currentTime);
+          gain2.gain.exponentialRampToValueAtTime(0.01, audioContext.currentTime + 0.2);
+          osc2.start(audioContext.currentTime);
+          osc2.stop(audioContext.currentTime + 0.2);
+        }, 150);
+      } catch (e) { console.log("Sound failed:", e); }
     }
   }
 
@@ -240,12 +239,9 @@
       const from = String(m?.from || "").trim();
       const timestamp = String(m?.timestamp || "").trim();
       const content = normalizeNewlines(m?.content ?? "").trim();
-      // ✅ [FEATURE B] preserve attachment fields
-      const attachment = m?.attachment || null;
-      const attachmentType = m?.attachmentType || null;
       if (!from) continue;
       if (!content) continue; // 🔥 removes blank letters forever
-      cleaned.push({ from, timestamp, content, attachment, attachmentType });
+      cleaned.push({ from, timestamp, content });
     }
     return cleaned;
   }
@@ -428,13 +424,11 @@
     duoMsgs.slice().reverse().forEach(({ m, i }) => {
       const displayName = m.from || "Unknown";
       const isUnread = i > lastRead;
-      // ✅ [FEATURE B] Show attachment indicator
-      const hasAttachment = !!(m.attachment);
 
       const item = document.createElement("div");
       item.className = "notification-item" + (isUnread ? " unread" : "");
       item.innerHTML = `
-        <div class="notification-from">FROM: ${escapeHtml(displayName)} ${hasAttachment ? '📎' : ''}</div>
+        <div class="notification-from">FROM: ${escapeHtml(displayName)}</div>
         <div class="notification-preview">${escapeHtml(String(m.content || "").substring(0, 54))}${String(m.content || "").length > 54 ? "..." : ""}</div>
         <div class="notification-time">${escapeHtml(m.timestamp || "")}</div>
 
@@ -452,10 +446,7 @@
         </div>
       `;
 
-      // ✅ [BUG 2 FIX] Use stopPropagation to prevent double-trigger from nested handlers
-      item.addEventListener("click", (e) => {
-        if (e.target.closest('[data-action]')) return; // let action buttons handle themselves
-        e.stopPropagation();
+      item.addEventListener("click", () => {
         openMessage(i);
         $("notificationDropdown").classList.remove("active");
       });
@@ -498,7 +489,8 @@
       return;
     }
 
-    letterAnimationInProgress = true; // lock
+    // ✅ [BUG 2 FIX] Lock animation
+    letterAnimationInProgress = true;
 
     const displayName = msg.from || "Unknown";
     $("letterFrom").textContent = displayName.toUpperCase();
@@ -513,7 +505,7 @@
         if (isVideo) {
           attachmentContainer.innerHTML = `
             <div class="letter-attachment-label">📎 Video Attachment</div>
-            <video controls class="letter-attachment-media" src="${escapeHtml(msg.attachment)}"></video>
+            <video controls playsinline class="letter-attachment-media" src="${escapeHtml(msg.attachment)}"></video>
           `;
         } else {
           attachmentContainer.innerHTML = `
@@ -535,26 +527,24 @@
       updateNotifications();
     }
 
-    $("letterModal").classList.add("active");
-    
-    // ✅ [BUG 2 FIX] Reset animations properly - force reflow once
+    // ✅ [BUG 1 FIX] Reset animations BEFORE showing modal
     const env = document.querySelector(".letter-envelope");
     const paper = document.querySelector(".letter-paper");
-    if (env) {
-      env.style.animation = "none";
-      void env.offsetHeight; // single reflow
-      env.style.animation = "envelopeOpen 0.5s ease forwards";
-    }
-    if (paper) {
-      paper.style.animation = "none";
-      void paper.offsetHeight; // single reflow
-      paper.style.animation = "letterUnfold 0.5s ease 0.3s forwards";
-    }
+    
+    $("letterModal").classList.remove("active");
+    if (env) env.style.animation = "none";
+    if (paper) paper.style.animation = "none";
+    void (env?.offsetHeight);
+    void (paper?.offsetHeight);
+    
+    requestAnimationFrame(() => {
+      $("letterModal").classList.add("active");
+      if (env) env.style.animation = "envelopeOpen 0.5s ease forwards";
+      if (paper) paper.style.animation = "letterUnfold 0.5s ease 0.3s forwards";
+    });
 
     // ✅ [BUG 2 FIX] Unlock after animation completes
-    setTimeout(() => {
-      letterAnimationInProgress = false;
-    }, 900); // slightly longer than animation duration
+    setTimeout(() => { letterAnimationInProgress = false; }, 900);
   }
 
   // ✅ [FEATURE B] Open attachment in fullscreen modal
@@ -562,9 +552,8 @@
     const modal = $("attachmentModal");
     const content = $("attachmentModalContent");
     if (!modal || !content) return;
-    
     if (type === 'video') {
-      content.innerHTML = `<video controls autoplay class="attachment-fullscreen" src="${escapeHtml(url)}"></video>`;
+      content.innerHTML = `<video controls autoplay playsinline class="attachment-fullscreen" src="${escapeHtml(url)}"></video>`;
     } else {
       content.innerHTML = `<img class="attachment-fullscreen" src="${escapeHtml(url)}" alt="Attachment">`;
     }
@@ -694,10 +683,8 @@
     // ✅ [FEATURE A] Render newest-first (reverse order)
     const reversed = [...messages].reverse();
 
-    reversed.forEach((msg, revIdx) => {
-      const originalIdx = messages.length - 1 - revIdx;
+    reversed.forEach((msg) => {
       const displayName = msg.from || "Unknown";
-      // ✅ [FEATURE B] Show attachment indicator
       const hasAttachment = !!(msg.attachment);
       const el = document.createElement("div");
       el.className = "message-log-item";
@@ -1019,14 +1006,29 @@
     showToast("LOGGED OFF");
   }
 
-  // ✅ [FEATURE B] Convert file to base64 for storage
-  function fileToBase64(file) {
-    return new Promise((resolve, reject) => {
-      const reader = new FileReader();
-      reader.onload = () => resolve(reader.result);
-      reader.onerror = reject;
-      reader.readAsDataURL(file);
+  // ✅ [FEATURE B] Upload file to Supabase Storage
+  async function uploadToSupabase(file) {
+    const timestamp = Date.now();
+    const safeName = file.name.replace(/[^a-zA-Z0-9.-]/g, '_');
+    const filename = `${timestamp}_${safeName}`;
+    const url = `${SUPABASE_URL}/storage/v1/object/${STORAGE_BUCKET}/${filename}`;
+    
+    const res = await fetch(url, {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${SUPABASE_ANON_KEY}`,
+        'Content-Type': file.type,
+        'x-upsert': 'true'
+      },
+      body: file
     });
+    
+    if (!res.ok) {
+      const err = await res.text();
+      throw new Error(`Upload failed: ${err}`);
+    }
+    
+    return `${SUPABASE_URL}/storage/v1/object/public/${STORAGE_BUCKET}/${filename}`;
   }
 
   // ✅ [FEATURE B] Current attachment state
@@ -1037,18 +1039,25 @@
   $("btnOpen").addEventListener("click", openGift);
   $("btnHome").addEventListener("click", goHome);
 
-  // ✅ [BUG 1 FIX] iOS Safari keyboard bug - focus must be synchronous to preserve gesture context
+  // ✅ [BUG 1 FIX] iOS Safari keyboard bug - removed setTimeout, focus must be synchronous to preserve gesture context
 function openSystemMessageModal() {
   const modal = $("systemMessageModal");
   const input = $("systemMessageInput");
-  const current = loadSystemMessage() || "";
-  input.value = current;
+  input.value = loadSystemMessage() || "";
   // ✅ [FEATURE E] Update character counter
-  updateCharCounter(current.length);
+  updateCharCounter(input.value.length);
   modal.classList.add("active");
   modal.setAttribute("aria-hidden", "false");
   // Focus immediately to preserve user gesture context on iOS
   input.focus();
+}
+
+// ✅ [FEATURE E] Update character counter - shows "X / 80"
+function updateCharCounter(len) {
+  const counter = $("charCounter");
+  if (!counter) return;
+  counter.textContent = `${len} / 80`;
+  counter.style.color = len >= 70 ? "var(--accent)" : "var(--muted)";
 }
 
 function closeSystemMessageModal() {
@@ -1057,23 +1066,9 @@ function closeSystemMessageModal() {
   modal.setAttribute("aria-hidden", "true");
 }
 
-// ✅ [FEATURE E] Update character counter
-function updateCharCounter(len) {
-  const counter = $("charCounter");
-  if (!counter) return;
-  const remaining = 80 - len;
-  counter.textContent = `${remaining} left`;
-  counter.style.color = remaining < 10 ? "var(--accent)" : "var(--muted)";
-}
-
 async function saveSystemMessageFromModal() {
   const input = $("systemMessageInput");
   const msg = (input.value || "").trim();
-  // ✅ [FEATURE E] Enforce 80 char limit
-  if (msg.length > 80) {
-    showToast("Message too long (max 80 chars)");
-    return;
-  }
   if (!msg) return showToast("Type a message first.");
   showToast("Updating system message...");
   saveSystemMessageLocalOnly(msg);
@@ -1105,7 +1100,6 @@ $("systemMessageInput").addEventListener("keydown", (e) => {
 $("systemMessageInput").addEventListener("input", (e) => {
   const len = (e.target.value || "").length;
   updateCharCounter(len);
-  // Hard stop at 80 chars (maxlength should handle but just in case)
   if (len > 80) {
     e.target.value = e.target.value.substring(0, 80);
     updateCharCounter(80);
@@ -1277,19 +1271,25 @@ $("userPill").addEventListener("click", () => openWhoModal());
     $("savedMissionsModal").classList.remove("active");
   });
 
-  // ✅ [FEATURE B] Handle attachment file selection
+  // ✅ [FEATURE B] Handle attachment file selection with Supabase Storage
   const attachInput = $("attachmentInput");
   if (attachInput) {
     attachInput.addEventListener("change", async (e) => {
       const file = e.target.files?.[0];
+      const preview = $("attachmentPreview");
+      
       if (!file) {
         pendingAttachment = null;
         pendingAttachmentType = null;
-        $("attachmentPreview").classList.add("hidden");
+        if (preview) preview.classList.add("hidden");
         return;
       }
       
-      // Determine type
+      // ✅ Only one attachment allowed - clear any existing
+      if (pendingAttachment) {
+        showToast("Replacing previous attachment");
+      }
+      
       const isVideo = file.type.startsWith("video/");
       const isImage = file.type.startsWith("image/");
       
@@ -1299,23 +1299,26 @@ $("userPill").addEventListener("click", () => openWhoModal());
         return;
       }
       
-      // Size check (5MB limit for base64)
-      if (file.size > 5 * 1024 * 1024) {
-        showToast("File too large (max 5MB)");
+      // Size check with clear message
+      const maxSize = isVideo ? 50 * 1024 * 1024 : 10 * 1024 * 1024;
+      if (file.size > maxSize) {
+        showToast(isVideo ? "Video too large (max 50MB)" : "Image too large (max 10MB)");
         e.target.value = "";
         return;
       }
       
+      if (preview) {
+        preview.innerHTML = `<span>📎 Uploading ${escapeHtml(file.name)}...</span>`;
+        preview.classList.remove("hidden");
+      }
+      
       try {
-        pendingAttachment = await fileToBase64(file);
+        const publicUrl = await uploadToSupabase(file);
+        pendingAttachment = publicUrl;
         pendingAttachmentType = isVideo ? "video" : "image";
         
-        // Show preview
-        const preview = $("attachmentPreview");
         if (preview) {
           preview.innerHTML = `<span>📎 ${escapeHtml(file.name)}</span><button type="button" class="btn" id="clearAttachment">✕</button>`;
-          preview.classList.remove("hidden");
-          
           $("clearAttachment").addEventListener("click", () => {
             pendingAttachment = null;
             pendingAttachmentType = null;
@@ -1323,10 +1326,14 @@ $("userPill").addEventListener("click", () => openWhoModal());
             preview.classList.add("hidden");
           });
         }
-      } catch {
-        showToast("Failed to read file");
+        showToast("Attachment ready");
+      } catch (err) {
+        console.error("Upload error:", err);
+        showToast("Upload failed: " + (err.message || "Unknown error"));
         pendingAttachment = null;
         pendingAttachmentType = null;
+        e.target.value = "";
+        if (preview) preview.classList.add("hidden");
       }
     });
   }
@@ -1346,7 +1353,7 @@ $("userPill").addEventListener("click", () => openWhoModal());
     const timestamp = formatDT(new Date());
     const messages = loadMessages();
     
-    // ✅ [FEATURE B] Include attachment if present
+    // ✅ [FEATURE B] Include attachment URL if present
     const newMsg = { from, timestamp, content };
     if (pendingAttachment) {
       newMsg.attachment = pendingAttachment;
@@ -1363,8 +1370,8 @@ $("userPill").addEventListener("click", () => openWhoModal());
     // ✅ [FEATURE B] Clear attachment after send
     pendingAttachment = null;
     pendingAttachmentType = null;
-    const attachInput = $("attachmentInput");
-    if (attachInput) attachInput.value = "";
+    const attachInputEl = $("attachmentInput");
+    if (attachInputEl) attachInputEl.value = "";
     const preview = $("attachmentPreview");
     if (preview) preview.classList.add("hidden");
     
@@ -1414,7 +1421,6 @@ $("userPill").addEventListener("click", () => openWhoModal());
     });
   }
   
-  // Close attachment modal on backdrop click
   const attachmentModal = $("attachmentModal");
   if (attachmentModal) {
     attachmentModal.addEventListener("click", (e) => {
@@ -1483,17 +1489,6 @@ ${completed.map(i => `[X] ${i.title} — ${i.desc} (#${i.tag})`).join("\n")}
   // ✅ [FEATURE C] Unlock audio on first user interaction
   document.addEventListener("click", unlockAudio, { once: true });
   document.addEventListener("touchstart", unlockAudio, { once: true });
-
-  // ✅ [BUG 1 FIX] Ensure inputs work on iOS standalone web app
-  // Remove any touch prevention that might block input focus
-  document.addEventListener("touchend", (e) => {
-    // Only allow default behavior for inputs/textareas
-    const tag = e.target.tagName?.toLowerCase();
-    if (tag === "input" || tag === "textarea" || tag === "select") {
-      // Let the default behavior happen
-      return;
-    }
-  }, { passive: true });
 
   // ---------- Init ----------
   (function init() {

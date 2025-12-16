@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
   <title>kywee + yessir bucket list</title>
 
   <!-- ✅ App icon + favicon (iOS + browsers) -->
@@ -11,8 +11,6 @@
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
   <meta name="apple-mobile-web-app-title" content="Bucket List">
-  <!-- ✅ [BUG 1 FIX] Additional iOS web app meta tags for better input handling -->
-  <meta name="format-detection" content="telephone=no">
 
   <link rel="stylesheet" href="styles.css">
 </head>
@@ -185,8 +183,7 @@
           <div class="form">
             <div class="field">
               <label for="customNote">[▸] NEW MESSAGE</label>
-              <!-- ✅ [BUG 1 FIX] Added iOS-friendly input attributes -->
-              <textarea id="customNote" placeholder="// Enter your message here..." inputmode="text" autocomplete="off" autocapitalize="sentences" autocorrect="on" spellcheck="true"></textarea>
+              <textarea id="customNote" placeholder="// Enter your message here..." inputmode="text" autocomplete="off" autocapitalize="sentences"></textarea>
             </div>
             
             <!-- ✅ [FEATURE B] Attachment input -->
@@ -203,11 +200,10 @@
 
           <div class="field">
             <label>[▸] ADD NEW MISSION</label>
-            <!-- ✅ [BUG 1 FIX] Added iOS-friendly input attributes -->
-            <input id="newTitle" type="text" placeholder="Movie" inputmode="text" autocomplete="off" autocapitalize="words" autocorrect="off">
+            <input id="newTitle" type="text" placeholder="Movie" inputmode="text">
           </div>
           <div class="field">
-            <input id="newDesc" type="text" placeholder="pick a movie and location" inputmode="text" autocomplete="off" autocapitalize="sentences" autocorrect="on">
+            <input id="newDesc" type="text" placeholder="pick a movie and location" inputmode="text">
           </div>
           <div class="field">
             <label for="newTag">TAG</label>
@@ -227,7 +223,7 @@
             </select>
           </div>
           <div class="field hidden" id="customTagField">
-            <input id="customTagInput" type="text" placeholder="Enter custom tag" inputmode="text" autocomplete="off" autocapitalize="none">
+            <input id="customTagInput" type="text" placeholder="Enter custom tag" inputmode="text">
           </div>
           <div class="actions">
             <button class="btn primary" id="btnAdd">+ ADD MISSION</button>
@@ -312,10 +308,8 @@
       </div>
 
       <div class="field">
-        <!-- ✅ [FEATURE E] Character counter -->
-        <label for="systemMessageInput">SYSTEM MESSAGE <span id="charCounter" style="float:right; color: var(--muted);">80 left</span></label>
-        <!-- ✅ [BUG 1 FIX] Added iOS-friendly input attributes -->
-        <input id="systemMessageInput" type="text" maxlength="80" placeholder="My love" autocomplete="off" autocapitalize="sentences" autocorrect="on" inputmode="text" />
+        <label for="systemMessageInput">SYSTEM MESSAGE <span id="charCounter" style="float:right; color: var(--muted);">0 / 80</span></label>
+        <input id="systemMessageInput" type="text" maxlength="80" placeholder="My love" autocomplete="off" inputmode="text" />
       </div>
 
       <div class="actions">
