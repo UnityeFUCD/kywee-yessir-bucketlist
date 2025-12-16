@@ -19,9 +19,8 @@
   const ROOM_CODE = "yasir-kylee";
 
   // ✅ [SUPABASE STORAGE CONFIG]
-  // NOTE: Use the LEGACY anon key (starts with eyJ...) from Settings > API > Legacy tab
   const SUPABASE_URL = "https://pkgrlhwnwqtffdmcyqbk.supabase.co";
-  const SUPABASE_ANON_KEY = "PASTE_YOUR_LEGACY_ANON_KEY_HERE"; // Get from Settings > API > Legacy anon, service_role API keys
+  const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InBrZ3JsaHdud3F0ZmZkbWN5cWJrIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjU3MDU2MjMsImV4cCI6MjA4MTI4MTYyM30.aZ8E_BLQW-90-AAJeneXmKnsfZ8LmPkdQ5ERAZ9JHNE";
   const STORAGE_BUCKET = "attachments";
 
   const $ = (id) => document.getElementById(id);
@@ -48,31 +47,6 @@
   // ✅ SMART POLLING state
   let lastRemoteUpdatedAt = null;
   let pollTimer = null;
-
-  // ✅ Per-user dismissed notifications (local only - doesn't delete actual messages)
-  function keyDismissed(user) {
-    return `bucketlist_2026_dismissed_${String(user || "").toLowerCase()}`;
-  }
-  function loadDismissed() {
-    const u = loadUser();
-    if (!u) return [];
-    try { return JSON.parse(localStorage.getItem(keyDismissed(u))) || []; } catch { return []; }
-  }
-  function saveDismissed(arr) {
-    const u = loadUser();
-    if (!u) return;
-    localStorage.setItem(keyDismissed(u), JSON.stringify(arr));
-  }
-  function dismissNotification(msgKey) {
-    const dismissed = loadDismissed();
-    if (!dismissed.includes(msgKey)) {
-      dismissed.push(msgKey);
-      saveDismissed(dismissed);
-    }
-  }
-  function getMsgKey(msg) {
-    return `${msg.from}_${msg.timestamp}_${(msg.content || "").substring(0,20)}`;
-  }
 
   // ---------- helpers ----------
   function escapeHtml(str) {
@@ -328,13 +302,11 @@
     if (!user) return [];
 
     const lastRead = loadLastRead();
-    const dismissed = loadDismissed();
     const idxs = [];
     for (let i = 0; i < messages.length; i++) {
       const from = String(messages[i]?.from || "").trim().toLowerCase();
-      const msgKey = getMsgKey(messages[i]);
-      // Unread if: from duo, index > lastRead, and not dismissed
-      if (from && from !== user && i > lastRead && !dismissed.includes(msgKey)) {
+      // Unread if: from duo and index > lastRead
+      if (from && from !== user && i > lastRead) {
         idxs.push(i);
       }
     }
@@ -391,11 +363,12 @@
     duoMsgs.slice().reverse().forEach(({ m, i }) => {
       const displayName = m.from || "Unknown";
       const isUnread = i > lastRead;
+      const hasAttachment = !!(m.attachment);
 
       const item = document.createElement("div");
       item.className = "notification-item" + (isUnread ? " unread" : "");
       item.innerHTML = `
-        <div class="notification-from">FROM: ${escapeHtml(displayName)}</div>
+        <div class="notification-from">FROM: ${escapeHtml(displayName)} ${hasAttachment ? '📎' : ''}</div>
         <div class="notification-preview">${escapeHtml(String(m.content || "").substring(0, 54))}${String(m.content || "").length > 54 ? "..." : ""}</div>
         <div class="notification-time">${escapeHtml(m.timestamp || "")}</div>
 
@@ -425,13 +398,17 @@
         showToast("Marked read");
       });
 
-      // ✅ FIX: Delete only dismisses notification locally, doesn't delete actual message
-      item.querySelector('[data-action="delete"]').addEventListener("click", (e) => {
+      // ✅ Delete actually removes the message
+      item.querySelector('[data-action="delete"]').addEventListener("click", async (e) => {
         e.stopPropagation();
-        const msgKey = getMsgKey(m);
-        dismissNotification(msgKey);
+        const messagesNow = loadMessages();
+        messagesNow.splice(i, 1);
+        adjustLastReadAfterDelete(i);
+        saveMessages(messagesNow);
+        renderMessages();
         updateNotifications();
-        showToast("Dismissed");
+        showToast("Deleted");
+        await pushRemoteState();
       });
 
       list.appendChild(item);
@@ -488,8 +465,6 @@
     const fromLower = String(msg.from || "").trim().toLowerCase();
     if (userLower && fromLower && fromLower !== userLower) {
       markReadUpTo(index);
-      // ✅ Also dismiss this specific notification so it stays read
-      dismissNotification(getMsgKey(msg));
       updateNotifications();
     }
 
@@ -933,7 +908,7 @@
     pollTimer = setInterval(() => {
       if (document.visibilityState !== "visible") return;
       pullRemoteState({ silent: true });
-    }, 2500); // 2.5s = fast + battery-friendly
+    }, 1500); // 1.5s = near-instant notifications
   }
 
   // ---------- Who modal ----------
@@ -1453,7 +1428,7 @@ ${completed.map(i => `[X] ${i.title} — ${i.desc} (#${i.tag})`).join("\n")}
   });
 
   // ---------- Init ----------
-  (function init() {
+  (async function init() {
     ensureCustomTagsInSelect();
 
     const theme = loadTheme();
@@ -1473,15 +1448,22 @@ ${completed.map(i => `[X] ${i.title} — ${i.desc} (#${i.tag})`).join("\n")}
     updateTracker();
     setInterval(updateTracker, 1000);
 
+    // ✅ Show sync overlay on initial load
+    const overlay = document.createElement("div");
+    overlay.id = "syncOverlay";
+    overlay.innerHTML = `<div class="sync-overlay-content"><div class="sync-spinner"></div><div>SYNCING...</div></div>`;
+    document.body.appendChild(overlay);
+
+    // pull once on load (with overlay)
+    await pullRemoteState({ silent: false });
+    
+    // ✅ Remove overlay after sync
+    overlay.remove();
+
     // start polling always (cover + main stay synced)
     startSmartPolling();
 
-    // pull once on load
-    pullRemoteState({ silent: false });
-
     // ✅ IMPORTANT: remember user on refresh (no re-asking)
-    // - if sessionStorage has user: don't show modal
-    // - if fresh tab/device: modal opens
     if (!hasUser()) {
       stopPresence();
       openWhoModal();
