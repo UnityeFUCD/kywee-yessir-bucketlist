@@ -19,8 +19,9 @@
   const ROOM_CODE = "yasir-kylee";
 
   // ✅ [SUPABASE STORAGE CONFIG]
+  // NOTE: Use the LEGACY anon key (starts with eyJ...) from Settings > API > Legacy tab
   const SUPABASE_URL = "https://pkgrlhwnwqtffdmcyqbk.supabase.co";
-  const SUPABASE_ANON_KEY = "sb_publishable_C58TXKa51lQdWtquVzlVmg_HRPNT0el";
+  const SUPABASE_ANON_KEY = "PASTE_YOUR_LEGACY_ANON_KEY_HERE"; // Get from Settings > API > Legacy anon, service_role API keys
   const STORAGE_BUCKET = "attachments";
 
   const $ = (id) => document.getElementById(id);
@@ -48,11 +49,30 @@
   let lastRemoteUpdatedAt = null;
   let pollTimer = null;
 
-  // ✅ [FEATURE C] Audio unlock + notification sound using Web Audio API
-  let audioUnlocked = false;
-  let audioContext = null;
-  let lastNotifTime = 0;
-  const NOTIF_DEBOUNCE_MS = 2000;
+  // ✅ Per-user dismissed notifications (local only - doesn't delete actual messages)
+  function keyDismissed(user) {
+    return `bucketlist_2026_dismissed_${String(user || "").toLowerCase()}`;
+  }
+  function loadDismissed() {
+    const u = loadUser();
+    if (!u) return [];
+    try { return JSON.parse(localStorage.getItem(keyDismissed(u))) || []; } catch { return []; }
+  }
+  function saveDismissed(arr) {
+    const u = loadUser();
+    if (!u) return;
+    localStorage.setItem(keyDismissed(u), JSON.stringify(arr));
+  }
+  function dismissNotification(msgKey) {
+    const dismissed = loadDismissed();
+    if (!dismissed.includes(msgKey)) {
+      dismissed.push(msgKey);
+      saveDismissed(dismissed);
+    }
+  }
+  function getMsgKey(msg) {
+    return `${msg.from}_${msg.timestamp}_${(msg.content || "").substring(0,20)}`;
+  }
 
   // ---------- helpers ----------
   function escapeHtml(str) {
@@ -101,58 +121,6 @@
       hash |= 0;
     }
     return DAILY_EMOTICONS[Math.abs(hash) % DAILY_EMOTICONS.length];
-  }
-
-  // ✅ [FEATURE C] Unlock audio on first user interaction - Web Audio API
-  function unlockAudio() {
-    if (audioUnlocked) return;
-    try {
-      audioContext = new (window.AudioContext || window.webkitAudioContext)();
-      const buffer = audioContext.createBuffer(1, 1, 22050);
-      const source = audioContext.createBufferSource();
-      source.buffer = buffer;
-      source.connect(audioContext.destination);
-      source.start(0);
-      audioUnlocked = true;
-      console.log("Audio unlocked");
-    } catch (e) { console.log("Audio unlock failed:", e); }
-  }
-
-  // ✅ [FEATURE C] Play notification sound using Web Audio API
-  function playNotificationAlert() {
-    const now = Date.now();
-    if (now - lastNotifTime < NOTIF_DEBOUNCE_MS) return;
-    lastNotifTime = now;
-
-    if (navigator.vibrate) { try { navigator.vibrate([100, 50, 100]); } catch (e) {} }
-
-    if (audioUnlocked && audioContext) {
-      try {
-        const osc = audioContext.createOscillator();
-        const gain = audioContext.createGain();
-        osc.connect(gain);
-        gain.connect(audioContext.destination);
-        osc.frequency.value = 800;
-        osc.type = "sine";
-        gain.gain.setValueAtTime(0.3, audioContext.currentTime);
-        gain.gain.exponentialRampToValueAtTime(0.01, audioContext.currentTime + 0.3);
-        osc.start(audioContext.currentTime);
-        osc.stop(audioContext.currentTime + 0.3);
-        setTimeout(() => {
-          if (!audioContext) return;
-          const osc2 = audioContext.createOscillator();
-          const gain2 = audioContext.createGain();
-          osc2.connect(gain2);
-          gain2.connect(audioContext.destination);
-          osc2.frequency.value = 1000;
-          osc2.type = "sine";
-          gain2.gain.setValueAtTime(0.2, audioContext.currentTime);
-          gain2.gain.exponentialRampToValueAtTime(0.01, audioContext.currentTime + 0.2);
-          osc2.start(audioContext.currentTime);
-          osc2.stop(audioContext.currentTime + 0.2);
-        }, 150);
-      } catch (e) { console.log("Sound failed:", e); }
-    }
   }
 
   // ---------- user (SESSION) ----------
@@ -353,7 +321,6 @@
   }
 
   // ---------- Notifications (duo-only unread) ----------
-  // ✅ [FEATURE C] Track previous unread count to detect new messages
   let prevUnreadCount = 0;
 
   function duoUnreadIndexes(messages) {
@@ -361,10 +328,15 @@
     if (!user) return [];
 
     const lastRead = loadLastRead();
+    const dismissed = loadDismissed();
     const idxs = [];
     for (let i = 0; i < messages.length; i++) {
       const from = String(messages[i]?.from || "").trim().toLowerCase();
-      if (from && from !== user && i > lastRead) idxs.push(i);
+      const msgKey = getMsgKey(messages[i]);
+      // Unread if: from duo, index > lastRead, and not dismissed
+      if (from && from !== user && i > lastRead && !dismissed.includes(msgKey)) {
+        idxs.push(i);
+      }
     }
     return idxs;
   }
@@ -388,11 +360,6 @@
     const list = $("notificationList");
 
     const unreadIdxs = duoUnreadIndexes(messages);
-
-    // ✅ [FEATURE C] Play sound if new unread arrived (not silent pull)
-    if (!silent && unreadIdxs.length > prevUnreadCount && prevUnreadCount >= 0) {
-      playNotificationAlert();
-    }
     prevUnreadCount = unreadIdxs.length;
 
     if (unreadIdxs.length > 0) {
@@ -458,16 +425,13 @@
         showToast("Marked read");
       });
 
-      item.querySelector('[data-action="delete"]').addEventListener("click", async (e) => {
+      // ✅ FIX: Delete only dismisses notification locally, doesn't delete actual message
+      item.querySelector('[data-action="delete"]').addEventListener("click", (e) => {
         e.stopPropagation();
-        const messagesNow = loadMessages();
-        messagesNow.splice(i, 1);
-        adjustLastReadAfterDelete(i);
-        saveMessages(messagesNow);
-        renderMessages();
+        const msgKey = getMsgKey(m);
+        dismissNotification(msgKey);
         updateNotifications();
-        showToast("Deleted");
-        await pushRemoteState(); // immediate
+        showToast("Dismissed");
       });
 
       list.appendChild(item);
@@ -524,6 +488,8 @@
     const fromLower = String(msg.from || "").trim().toLowerCase();
     if (userLower && fromLower && fromLower !== userLower) {
       markReadUpTo(index);
+      // ✅ Also dismiss this specific notification so it stays read
+      dismissNotification(getMsgKey(msg));
       updateNotifications();
     }
 
@@ -1052,12 +1018,12 @@ function openSystemMessageModal() {
   input.focus();
 }
 
-// ✅ [FEATURE E] Update character counter - shows "X / 80"
+// ✅ [FEATURE E] Update character counter - shows "X / 30"
 function updateCharCounter(len) {
   const counter = $("charCounter");
   if (!counter) return;
-  counter.textContent = `${len} / 80`;
-  counter.style.color = len >= 70 ? "var(--accent)" : "var(--muted)";
+  counter.textContent = `${len} / 30`;
+  counter.style.color = len >= 25 ? "var(--accent)" : "var(--muted)";
 }
 
 function closeSystemMessageModal() {
@@ -1100,9 +1066,9 @@ $("systemMessageInput").addEventListener("keydown", (e) => {
 $("systemMessageInput").addEventListener("input", (e) => {
   const len = (e.target.value || "").length;
   updateCharCounter(len);
-  if (len > 80) {
-    e.target.value = e.target.value.substring(0, 80);
-    updateCharCounter(80);
+  if (len > 30) {
+    e.target.value = e.target.value.substring(0, 30);
+    updateCharCounter(30);
   }
 });
 
@@ -1485,10 +1451,6 @@ ${completed.map(i => `[X] ${i.title} — ${i.desc} (#${i.tag})`).join("\n")}
   document.addEventListener("visibilitychange", () => {
     if (document.visibilityState === "visible") pullRemoteState({ silent: false });
   });
-
-  // ✅ [FEATURE C] Unlock audio on first user interaction
-  document.addEventListener("click", unlockAudio, { once: true });
-  document.addEventListener("touchstart", unlockAudio, { once: true });
 
   // ---------- Init ----------
   (function init() {
