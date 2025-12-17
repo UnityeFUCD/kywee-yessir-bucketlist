@@ -891,13 +891,13 @@
 
     if (userIcon) {
       userIcon.classList.remove('fa-regular', 'fa-solid', 'user-yasir', 'user-kylee');
-      userIcon.classList.add(userClass || '');
+      if (userClass) userIcon.classList.add(userClass);
       // If logged in, show solid; otherwise outline
       userIcon.classList.add(user ? 'fa-solid' : 'fa-regular');
     }
     if (duoIcon) {
       duoIcon.classList.remove('fa-regular', 'fa-solid', 'user-yasir', 'user-kylee');
-      duoIcon.classList.add(duoClass || '');
+      if (duoClass) duoIcon.classList.add(duoClass);
       const duoOnline = isOnlineLive(duo?.toLowerCase());
       duoIcon.classList.add(duoOnline ? 'fa-solid' : 'fa-regular');
     }
@@ -1875,10 +1875,9 @@
 
     suppressSync = true;
 
-    // ✅ Check for device conflicts using dedicated function
-    if (state.activeDevices && typeof state.activeDevices === "object") {
+    // Prefer realtime presence; only use payload-based conflict if no live channel
+    if (!presenceChannel && state.activeDevices && typeof state.activeDevices === "object") {
       checkDeviceConflict(state.activeDevices);
-      // Update local copy
       activeDevices = state.activeDevices;
     }
 
@@ -2052,9 +2051,8 @@
         lastPresenceVersion = serverPresenceVersion;
       }
 
-      // ✅ ALWAYS check for device conflicts, even if updated_at hasn't changed
-      // This ensures immediate conflict detection regardless of content changes
-      if (remote.payload.activeDevices || remote.activeDevices) {
+      // Prefer realtime presence for conflicts; only fallback to payload if no live channel
+      if (!presenceChannel && (remote.payload.activeDevices || remote.activeDevices)) {
         const devices = remote.activeDevices || remote.payload.activeDevices;
         const hasConflict = checkDeviceConflict(devices);
         if (hasConflict) {
@@ -2294,7 +2292,8 @@
 
     datesEl.innerHTML = cells.map(c => {
       const cls = ["calendar__date"]; if (c.grey) cls.push("calendar__date--grey"); if (c.today) cls.push("calendar__date--today"); if (c.hasMsg) cls.push("calendar__date--hasmsg"); if (c.urgency) cls.push(`event-${c.urgency}`);
-      return `<div class="${cls.join(' ')}"><span>${c.text}</span></div>`;
+      const eventDot = c.urgency ? '<span class="cal-event-dot"></span>' : '';
+      return `<div class="${cls.join(' ')}"><span>${c.text}</span>${eventDot}</div>`;
     }).join('');
 
     document.getElementById('calMonthSelect').addEventListener('change', renderBigCalendar);

@@ -2594,7 +2594,18 @@ input[type="date"]::-webkit-calendar-picker-indicator {
     .user-yasir { color: #00d4ff; }
     .user-kylee { color: #ff9f43; }
 
-    /* Calendar event urgency colors */
-    .calendar__date.event-green { border-color: #3bff6b; }
-    .calendar__date.event-yellow { border-color: #ffe93b; }
-    .calendar__date.event-red { border-color: #ff3b3b; }
+    /* Big Calendar event dot */
+    .calendar__date { position: relative; }
+    .calendar__date .cal-event-dot {
+      position: absolute;
+      bottom: 4px;
+      left: 50%;
+      transform: translateX(-50%);
+      width: 6px;
+      height: 6px;
+      border-radius: 50%;
+      background: currentColor;
+    }
+    .calendar__date.event-red .cal-event-dot { background: #ff3b3b; box-shadow: 0 0 6px rgba(255,59,59,.6); }
+    .calendar__date.event-yellow .cal-event-dot { background: #ffe93b; box-shadow: 0 0 6px rgba(255,233,59,.6); }
+    .calendar__date.event-green .cal-event-dot { background: #3bff6b; box-shadow: 0 0 6px rgba(59,255,107,.5); }
