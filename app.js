@@ -147,8 +147,9 @@
   // ✅ Prevent double-trigger of letter animation
   let letterAnimationInProgress = false;
 
-  // ✅ REMOVED: exampleActive and exampleCompleted placeholder objects
-  // These were unused scaffolding from before Supabase sync was finalized
+  // ✅ Example items shown in UI (not synced, just for display)
+  const exampleActive = { title: "Example Mission", desc: "This shows how missions look", tag: "example", dueDate: "2025-01-15", done: false, isExample: true };
+  const exampleCompleted = { title: "Example Completed", desc: "Completed missions appear here", tag: "example", done: true, isExample: true };
 
   let selectedSavedMissions = [];
   let currentTheme = "system";
