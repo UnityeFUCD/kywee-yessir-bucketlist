@@ -961,11 +961,17 @@
           livePresenceState = presenceChannel.presenceState();
           handleLivePresenceSync(livePresenceState);
         })
+        .on('presence', { event: 'join' }, () => {
+          livePresenceState = presenceChannel.presenceState();
+          handleLivePresenceSync(livePresenceState);
+          updateUserDuoPills();
+        })
         .on('presence', { event: 'leave' }, () => {
           // When another session leaves, auto-hide conflict if showing
           if (deviceLocked) {
             setTimeout(() => handleLivePresenceSync(presenceChannel.presenceState()), 500);
           }
+          updateUserDuoPills();
         })
         .subscribe(async (status) => {
           if (status === 'SUBSCRIBED') {
@@ -987,8 +993,12 @@
     const myDeviceId = getDeviceId();
     if (!currentUser) return;
 
-    const userPresences = state[currentUser] || [];
-    const conflictingDevices = userPresences.filter(p => p.deviceId !== myDeviceId);
+    const now = Date.now();
+    const userPresences = (state[currentUser] || []).filter(p => {
+      const t = Date.parse(p.onlineAt || 0);
+      return Number.isFinite(t) ? (now - t) <= 60000 : true; // 60s active window
+    });
+    const conflictingDevices = userPresences.filter(p => p.deviceId && p.deviceId !== myDeviceId);
 
     if (conflictingDevices.length > 0 && !deviceLocked) {
       deviceLocked = true;
@@ -2282,17 +2292,16 @@
     }
     for (let d = 1; d <= daysInMonth; d++) {
       const isToday = (selYear===currentYear && selMonth===currentMonth && d===currentDate);
-      const hasMsg = msgDates.has(`${selYear}-${selMonth}-${d}`);
       const dateKey = `${selYear}-${String(selMonth+1).padStart(2,'0')}-${String(d).padStart(2,'0')}`;
       const evt = eventDates[dateKey];
-      const urgency = evt?.urgency || null;
-      cells.push({ text: d, today: isToday, hasMsg, urgency });
+      const hasEvent = !!evt;
+      cells.push({ text: d, today: isToday, hasEvent });
     }
     while (cells.length % 7 !== 0) cells.push({ text: '', grey: true });
 
     datesEl.innerHTML = cells.map(c => {
-      const cls = ["calendar__date"]; if (c.grey) cls.push("calendar__date--grey"); if (c.today) cls.push("calendar__date--today"); if (c.hasMsg) cls.push("calendar__date--hasmsg"); if (c.urgency) cls.push(`event-${c.urgency}`);
-      const eventDot = c.urgency ? '<span class="cal-event-dot"></span>' : '';
+      const cls = ["calendar__date"]; if (c.grey) cls.push("calendar__date--grey"); if (c.today) cls.push("calendar__date--today");
+      const eventDot = c.hasEvent ? '<span class="cal-event-dot"></span>' : '';
       return `<div class="${cls.join(' ')}"><span>${c.text}</span>${eventDot}</div>`;
     }).join('');
 
@@ -2301,8 +2310,14 @@
   }
 
   function closeWhoModal() {
-    $("whoModal").classList.remove("active");
-    $("whoModal").setAttribute("aria-hidden", "true");
+    const modal = $("whoModal");
+    if (!modal) return;
+    // Avoid aria-hidden focus warning
+    if (modal.contains(document.activeElement)) {
+      document.activeElement.blur();
+    }
+    modal.classList.remove("active");
+    modal.setAttribute("aria-hidden", "true");
   }
 
   async function setUserAndStart(name) {
@@ -2475,6 +2490,10 @@ function updateCharCounter(len) {
 
 function closeSystemMessageModal() {
   const modal = $("systemMessageModal");
+  if (!modal) return;
+  if (modal.contains(document.activeElement)) {
+    document.activeElement.blur();
+  }
   modal.classList.remove("active");
   modal.setAttribute("aria-hidden", "true");
 }
