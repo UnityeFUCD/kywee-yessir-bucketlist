@@ -1893,10 +1893,11 @@ input[type="date"]::-webkit-calendar-picker-indicator {
   text-align: center;
 }
 
-.device-conflict-content i {
+.device-conflict-content i.conflict-icon {
   font-size: 48px;
-  color: var(--accent);
+  color: #ff8c42; /* warm orange - visible on dark bg */
   margin-bottom: 20px;
+  display: block;
 }
 
 .device-conflict-content h3 {

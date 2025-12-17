@@ -890,6 +890,10 @@
         lastPresence = res.presence;
         updateUserDuoPills();
       }
+      // ✅ Check for device conflicts in presence response (instant detection)
+      if (res?.activeDevices) {
+        checkDeviceConflict(res.activeDevices);
+      }
     } catch {
       // ignore
     }
@@ -1578,6 +1582,36 @@
   let activeDevices = {};
   let deviceLocked = false;
 
+  // ✅ Dedicated function to check device conflicts (can be called independently)
+  function checkDeviceConflict(serverActiveDevices) {
+    if (!serverActiveDevices || typeof serverActiveDevices !== "object") {
+      return false; // No conflict data
+    }
+    
+    const user = loadUser()?.toLowerCase();
+    const myDeviceId = getDeviceId();
+    
+    if (user && serverActiveDevices[user]) {
+      const serverDevice = serverActiveDevices[user];
+      // If device ID differs, it's a conflict
+      if (serverDevice.deviceId && serverDevice.deviceId !== myDeviceId) {
+        if (!deviceLocked) {
+          deviceLocked = true;
+          showDeviceConflict(user);
+        }
+        return true; // Conflict detected
+      } else {
+        // Same device or no conflict
+        deviceLocked = false;
+        hideDeviceConflict();
+      }
+    } else {
+      deviceLocked = false;
+      hideDeviceConflict();
+    }
+    return false;
+  }
+
   function getLocalState() {
     // ✅ always sanitize before pushing (prevents blank letters from ever syncing)
     const cleanedMessages = sanitizeMessages(loadMessages());
@@ -1626,28 +1660,9 @@
 
     suppressSync = true;
 
-    // ✅ Check for device conflicts (single device per account) - IMMEDIATE, no stale check
+    // ✅ Check for device conflicts using dedicated function
     if (state.activeDevices && typeof state.activeDevices === "object") {
-      const user = loadUser()?.toLowerCase();
-      const myDeviceId = getDeviceId();
-      
-      if (user && state.activeDevices[user]) {
-        const serverDevice = state.activeDevices[user];
-        // If device ID differs, it's a conflict - no stale timeout
-        if (serverDevice.deviceId && serverDevice.deviceId !== myDeviceId) {
-          if (!deviceLocked) {
-            deviceLocked = true;
-            showDeviceConflict(user);
-          }
-        } else {
-          // Same device or no conflict
-          deviceLocked = false;
-          hideDeviceConflict();
-        }
-      } else {
-        deviceLocked = false;
-        hideDeviceConflict();
-      }
+      checkDeviceConflict(state.activeDevices);
       // Update local copy
       activeDevices = state.activeDevices;
     }
@@ -1703,7 +1718,7 @@
     
     overlay.innerHTML = `
       <div class="device-conflict-content">
-        <i class="fas fa-mobile-alt"></i>
+        <i class="fas fa-mobile-alt conflict-icon"></i>
         <h3>Account Active Elsewhere</h3>
         <p>Your "${currentUser.toUpperCase()}" session is active on another device.</p>
         <div class="device-conflict-buttons">
@@ -1724,21 +1739,23 @@
     if (overlay) overlay.classList.remove("active");
   }
 
-  window.forceDeviceTakeover = function() {
+  window.forceDeviceTakeover = async function() {
     deviceLocked = false;
     hideDeviceConflict();
-    // Force push our device as active
-    schedulePush();
+    // ✅ Force push our device as active IMMEDIATELY (not debounced)
+    await pushRemoteState();
     showToast("You are now the active device");
   };
 
-  window.switchToOtherUser = function(otherUser) {
+  window.switchToOtherUser = async function(otherUser) {
     deviceLocked = false;
     hideDeviceConflict();
     // Switch to the other user
     saveUser(otherUser);
     updateUserDuoPills();
-    pullRemoteState({ silent: false });
+    // ✅ Push device claim for new user immediately
+    await pushRemoteState();
+    await pullRemoteState({ silent: false });
     showToast(`Switched to ${otherUser}`);
   };
 
@@ -1788,7 +1805,17 @@
         return;
       }
 
-      // 🔒 Skip if nothing changed (no UI spam)
+      // ✅ ALWAYS check for device conflicts, even if updated_at hasn't changed
+      // This ensures immediate conflict detection regardless of content changes
+      if (remote.payload.activeDevices) {
+        const hasConflict = checkDeviceConflict(remote.payload.activeDevices);
+        if (hasConflict) {
+          // Update local activeDevices even on conflict
+          activeDevices = remote.payload.activeDevices;
+        }
+      }
+
+      // 🔒 Skip full state apply if nothing changed (no UI spam)
       if (remote.updated_at && remote.updated_at === lastRemoteUpdatedAt) {
         if (!silent) setSyncStatus("on");
         return;
@@ -1960,12 +1987,17 @@
     // ✅ Immediate presence/conflict check on login
     showSyncingIndicator();
     await pullRemoteState({ silent: false });
-    hideSyncingIndicator();
     
     // ✅ If device conflict detected, don't proceed
     if (deviceLocked) {
+      hideSyncingIndicator();
       return; // Conflict overlay will be shown
     }
+
+    // ✅ IMMEDIATELY claim this device as active (fixes delayed conflict detection)
+    // This ensures other devices know we're active NOW, not just when content changes
+    await pushRemoteState();
+    hideSyncingIndicator();
 
     startPresence();
     showToast(`USER SET: ${String(name).toUpperCase()}`);
@@ -2863,6 +2895,8 @@ ${completed.map(i => `[X] ${i.title} — ${i.desc} (#${i.tag})`).join("\n")}
       $("closeWhoModal").classList.add("hidden");
     } else {
       $("closeWhoModal").classList.remove("hidden");
+      // ✅ Immediately claim device on page load for existing users
+      await pushRemoteState();
       startPresence();
       updateUserDuoPills();
     }

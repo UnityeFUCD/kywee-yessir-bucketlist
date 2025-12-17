@@ -57,10 +57,12 @@ exports.handler = async (event) => {
 
       const payload = first?.payload || {};
       const presence = payload?.presence || {};
+      const activeDevices = payload?.activeDevices || {};
 
       return json(200, {
         payload,
         presence,
+        activeDevices,
         updated_at: first?.updated_at || null,
       });
     }
@@ -136,10 +138,13 @@ exports.handler = async (event) => {
 
       if (!r.ok) return json(500, { error: "supabase write failed" });
 
+      // ✅ Always return activeDevices so clients can check for conflicts
+      // This enables instant conflict detection even during presence-only pings
       return json(200, {
         ok: true,
         payload: merged,
         presence: merged.presence || {},
+        activeDevices: merged.activeDevices || {},
         updated_at: nextUpdatedAt,
       });
     }
