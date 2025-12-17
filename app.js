@@ -348,51 +348,78 @@
     if (!container) return;
     
     const photos = loadPhotos();
+    
+    // Keep the example bundle
+    const exampleBundle = container.querySelector('.example-bundle');
+    const emptyNote = container.querySelector('.gallery-empty-note');
     container.innerHTML = "";
+    if (exampleBundle) container.appendChild(exampleBundle);
     
     if (photos.length === 0) {
-      container.innerHTML = '<div class="gallery-empty">No memories yet! Upload your first photo 📸</div>';
+      if (emptyNote) container.appendChild(emptyNote);
+      else {
+        const note = document.createElement("div");
+        note.className = "gallery-empty-note";
+        note.textContent = "↑ Click to expand. Your memories will appear below.";
+        container.appendChild(note);
+      }
       return;
     }
     
-    // Group by date
+    // Group photos by mission (or "Unlinked" if no mission)
     const grouped = {};
     photos.forEach(p => {
-      const date = p.date || "Unknown";
-      if (!grouped[date]) grouped[date] = [];
-      grouped[date].push(p);
+      const key = p.mission || "_unlinked_";
+      if (!grouped[key]) grouped[key] = [];
+      grouped[key].push(p);
     });
     
-    // Sort dates newest first
-    const sortedDates = Object.keys(grouped).sort((a, b) => b.localeCompare(a));
-    
-    sortedDates.forEach(date => {
-      const section = document.createElement("div");
-      section.className = "gallery-date-section";
+    // Render each mission bundle
+    Object.keys(grouped).forEach(missionKey => {
+      const missionPhotos = grouped[missionKey];
+      const isUnlinked = missionKey === "_unlinked_";
+      const displayName = isUnlinked ? "Unlinked Photos" : missionKey;
       
-      const dateLabel = formatMissionDate(date) || date;
-      const missionLink = grouped[date][0]?.mission || "";
-      
-      section.innerHTML = `
-        <div class="gallery-date-header">
-          <span class="gallery-date">${escapeHtml(dateLabel)}</span>
-          ${missionLink ? `<span class="gallery-mission-link">📋 ${escapeHtml(missionLink)}</span>` : ''}
+      const bundle = document.createElement("div");
+      bundle.className = "gallery-mission-bundle";
+      bundle.innerHTML = `
+        <div class="bundle-header" onclick="toggleBundle(this)">
+          <span class="bundle-mission"><i class="fa-solid fa-${isUnlinked ? 'images' : 'link'}"></i> ${escapeHtml(displayName)}</span>
+          <span class="bundle-count">${missionPhotos.length} photo${missionPhotos.length !== 1 ? 's' : ''}</span>
+          <span class="bundle-expand"><i class="fas fa-chevron-down"></i></span>
         </div>
-        <div class="gallery-grid"></div>
+        <div class="bundle-photos collapsed">
+          <div class="gallery-grid"></div>
+        </div>
       `;
       
-      const grid = section.querySelector(".gallery-grid");
-      grouped[date].forEach((photo, idx) => {
+      const grid = bundle.querySelector(".gallery-grid");
+      missionPhotos.forEach((photo, idx) => {
         const item = document.createElement("div");
         item.className = "gallery-item";
         item.innerHTML = `<img src="${escapeHtml(photo.url)}" alt="Memory" loading="lazy">`;
-        item.addEventListener("click", () => openPhotoLightbox(photo.url, photos.indexOf(photo)));
+        item.addEventListener("click", () => {
+          // Find absolute index in photos array
+          const absIdx = photos.findIndex(p => p.url === photo.url);
+          openPhotoLightbox(photo.url, absIdx >= 0 ? absIdx : 0);
+        });
         grid.appendChild(item);
       });
       
-      container.appendChild(section);
+      container.appendChild(bundle);
     });
   }
+
+  // ✅ Toggle bundle expand/collapse
+  window.toggleBundle = function(header) {
+    const bundle = header.closest('.gallery-mission-bundle');
+    const photos = bundle.querySelector('.bundle-photos');
+    const icon = header.querySelector('.bundle-expand i');
+    
+    photos.classList.toggle('collapsed');
+    icon.classList.toggle('fa-chevron-down');
+    icon.classList.toggle('fa-chevron-up');
+  };
 
   let lightboxIndex = 0;
   let allPhotos = [];
@@ -1125,6 +1152,11 @@
 
       container.appendChild(el);
     });
+    
+    // ✅ Update photo mission select when completed missions change
+    if (typeof populatePhotoMissionSelect === 'function') {
+      populatePhotoMissionSelect();
+    }
   }
 
   let lastMsgCount = 0;
@@ -2044,12 +2076,36 @@ $("userPill").addEventListener("click", () => openWhoModal());
       const date = photoDateInput?.value || new Date().toISOString().split('T')[0];
       const mission = photoMissionSelect?.value || "";
       
+      // ✅ Check max 5 photos per mission
+      if (mission) {
+        const existingPhotos = loadPhotos().filter(p => p.mission === mission);
+        const remaining = 5 - existingPhotos.length;
+        if (remaining <= 0) {
+          showToast(`Max 5 photos per mission! "${mission}" is full.`);
+          photoInput.value = "";
+          return;
+        }
+        if (files.length > remaining) {
+          showToast(`Can only add ${remaining} more photo(s) to "${mission}"`);
+        }
+      }
+      
       photoUploadBtn.disabled = true;
-      photoUploadBtn.textContent = "Uploading...";
+      photoUploadBtn.innerHTML = '<i class="fa-solid fa-upload"></i> Uploading...';
       
       let successCount = 0;
+      const photos = loadPhotos();
       
       for (const file of files) {
+        // Check limit again inside loop
+        if (mission) {
+          const currentCount = photos.filter(p => p.mission === mission).length;
+          if (currentCount >= 5) {
+            showToast(`Max 5 reached for "${mission}"`);
+            break;
+          }
+        }
+        
         if (!file.type.startsWith("image/") && !file.type.startsWith("video/")) {
           showToast(`Skipped ${file.name} - not an image/video`);
           continue;
@@ -2057,7 +2113,6 @@ $("userPill").addEventListener("click", () => openWhoModal());
         
         try {
           const url = await uploadPhotoToSupabase(file);
-          const photos = loadPhotos();
           photos.push({
             url,
             date,
@@ -2066,7 +2121,6 @@ $("userPill").addEventListener("click", () => openWhoModal());
             uploadedAt: new Date().toISOString(),
             type: file.type.startsWith("video/") ? "video" : "image"
           });
-          savePhotos(photos);
           successCount++;
         } catch (err) {
           console.error("Photo upload error:", err);
@@ -2074,30 +2128,30 @@ $("userPill").addEventListener("click", () => openWhoModal());
         }
       }
       
-      photoInput.value = "";
-      photoUploadBtn.disabled = false;
-      photoUploadBtn.textContent = "📸 Upload Photos";
-      
       if (successCount > 0) {
+        savePhotos(photos);
         showToast(`${successCount} photo(s) uploaded!`);
         renderPhotoGallery();
       }
+      
+      photoInput.value = "";
+      photoUploadBtn.disabled = false;
+      photoUploadBtn.innerHTML = '<i class="fa-solid fa-upload"></i> Upload Photos';
     });
   }
   
-  // Populate mission select for photo linking
+  // Populate mission select for photo linking - ONLY COMPLETED missions (not example)
   function populatePhotoMissionSelect() {
-    if (!photoMissionSelect) return;
-    const active = loadActive();
-    const completed = loadCompleted().filter(c => !c.isExample);
-    const all = [...active, ...completed];
+    const select = $("photoMission");
+    if (!select) return;
+    const completed = loadCompleted().filter(c => !c.isExample); // Only real completed missions
     
-    photoMissionSelect.innerHTML = '<option value="">No mission linked</option>';
-    all.forEach(m => {
+    select.innerHTML = '<option value="">No mission linked</option>';
+    completed.forEach(m => {
       const opt = document.createElement("option");
       opt.value = m.title;
       opt.textContent = m.title;
-      photoMissionSelect.appendChild(opt);
+      select.appendChild(opt);
     });
   }
   populatePhotoMissionSelect();

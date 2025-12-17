@@ -19,26 +19,50 @@ exports.handler = async (event) => {
   try {
     const limit = event.queryStringParameters?.limit || 12;
     
-    const response = await fetch(
-      `https://developers.medal.tv/v1/latest?userName=${encodeURIComponent(MEDAL_USERNAME)}&limit=${limit}`,
-      {
-        headers: {
-          'Authorization': MEDAL_API_KEY
-        }
+    // Try with userId parameter (Medal expects numeric ID or username)
+    // The API endpoint for latest clips by user
+    const apiUrl = `https://developers.medal.tv/v1/latest?userId=${encodeURIComponent(MEDAL_USERNAME)}&limit=${limit}`;
+    
+    console.log("Fetching Medal clips from:", apiUrl);
+    
+    const response = await fetch(apiUrl, {
+      headers: {
+        'Authorization': MEDAL_API_KEY,
+        'Content-Type': 'application/json'
       }
-    );
+    });
+
+    const responseText = await response.text();
+    console.log("Medal API response status:", response.status);
+    console.log("Medal API response:", responseText.substring(0, 500));
 
     if (!response.ok) {
-      const errorText = await response.text();
-      console.error("Medal API error:", response.status, errorText);
+      console.error("Medal API error:", response.status, responseText);
       return {
         statusCode: response.status,
         headers,
-        body: JSON.stringify({ error: "Medal API error", details: errorText })
+        body: JSON.stringify({ 
+          error: "Medal API error", 
+          status: response.status,
+          details: responseText,
+          attemptedUrl: apiUrl
+        })
       };
     }
 
-    const data = await response.json();
+    let data;
+    try {
+      data = JSON.parse(responseText);
+    } catch (e) {
+      return {
+        statusCode: 500,
+        headers,
+        body: JSON.stringify({ error: "Invalid JSON response", raw: responseText.substring(0, 200) })
+      };
+    }
+    
+    // Log what we got
+    console.log("Medal clips found:", data.contentObjects?.length || 0);
     
     return {
       statusCode: 200,

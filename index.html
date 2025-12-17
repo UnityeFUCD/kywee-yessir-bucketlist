@@ -5,6 +5,9 @@
   <meta name="viewport" content="width=device-width,initial-scale=1" />
   <title>kywee + yessir bucket list</title>
 
+  <!-- ✅ Font Awesome for icons -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+
   <!-- ✅ App icon + favicon (iOS + browsers) -->
   <link rel="apple-touch-icon" href="/app-icon.png">
   <link rel="icon" type="image/png" href="/app-icon.png">
@@ -244,20 +247,20 @@
           <h2>[▸] MEMORIES_GALLERY</h2>
         </div>
         <div class="cardBody">
-          <p class="note">// Upload and view your shared photos & videos</p>
+          <p class="note">// Upload photos linked to completed missions (max 5 per mission)</p>
           
           <div class="photo-upload-section">
             <div class="photo-upload-row">
               <input type="file" id="photoInput" accept="image/*,video/*" multiple hidden>
-              <button class="btn primary" id="photoUploadBtn">📸 Upload Photos</button>
+              <button class="btn primary" id="photoUploadBtn"><i class="fa-solid fa-upload"></i> Upload Photos</button>
             </div>
             <div class="photo-upload-options">
               <div class="field">
-                <label for="photoDate">📅 Date</label>
+                <label for="photoDate"><i class="fas fa-calendar"></i> Date</label>
                 <input type="date" id="photoDate">
               </div>
               <div class="field">
-                <label for="photoMission">📋 Link to Mission</label>
+                <label for="photoMission"><i class="fa-solid fa-link"></i> Link to Completed Mission</label>
                 <select id="photoMission">
                   <option value="">No mission linked</option>
                 </select>
@@ -266,7 +269,22 @@
           </div>
           
           <div id="photoGallery" class="photo-gallery">
-            <div class="gallery-empty">No memories yet! Upload your first photo 📸</div>
+            <!-- Example bundled photos -->
+            <div class="gallery-mission-bundle example-bundle">
+              <div class="bundle-header" onclick="toggleBundle(this)">
+                <span class="bundle-mission"><i class="fa-solid fa-link"></i> Example Date Night</span>
+                <span class="bundle-count">3 photos</span>
+                <span class="bundle-expand"><i class="fas fa-chevron-down"></i></span>
+              </div>
+              <div class="bundle-photos collapsed">
+                <div class="gallery-grid">
+                  <div class="gallery-item"><img src="https://placehold.co/200x200/1a1a2e/ff6b9d?text=Photo+1" alt="Example"></div>
+                  <div class="gallery-item"><img src="https://placehold.co/200x200/1a1a2e/ff6b9d?text=Photo+2" alt="Example"></div>
+                  <div class="gallery-item"><img src="https://placehold.co/200x200/1a1a2e/ff6b9d?text=Photo+3" alt="Example"></div>
+                </div>
+              </div>
+            </div>
+            <div class="gallery-empty-note">↑ Click to expand. Your memories will appear below.</div>
           </div>
         </div>
       </div>
@@ -275,13 +293,13 @@
       <div class="card">
         <div class="cardHeader">
           <h2>[▸] MEDAL_CLIPS</h2>
-          <button class="btn" id="refreshMedal" title="Refresh clips">🔄</button>
+          <button class="btn" id="refreshMedal" title="Refresh clips"><i class="fa fa-refresh"></i></button>
         </div>
         <div class="cardBody">
           <p class="note">// Your latest gaming clips from Medal.tv</p>
           
           <div id="medalClips" class="medal-grid">
-            <div class="medal-empty">Configure your Medal API key to see clips!</div>
+            <div class="medal-empty">Loading clips...</div>
           </div>
         </div>
       </div>
@@ -316,8 +334,9 @@
         <div class="letter-content" id="letterContent"></div>
         <!-- ✅ Attachment display in letter -->
         <div id="letterAttachment" class="letter-attachment hidden"></div>
+        <!-- ✅ Swipe hint INSIDE paper, moves with content -->
+        <div class="letter-swipe-hint">↕ SWIPE TO BROWSE LETTERS</div>
       </div>
-      <div class="letter-swipe-hint">↕ Swipe to browse letters</div>
     </div>
   </div>
 
