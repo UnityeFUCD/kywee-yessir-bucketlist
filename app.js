@@ -68,7 +68,8 @@
   const PHOTOS_BUCKET = "photos";
 
   // ✅ Initialize Supabase client for Realtime Presence (WebSocket)
-  const supabase = window.supabase ? window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY) : null;
+  // Avoid clashing with CDN's global `supabase` identifier
+  const sbClient = window.supabase ? window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY) : null;
 
   const $ = (id) => document.getElementById(id);
 
@@ -900,7 +901,7 @@
   let livePresenceState = {};
 
   function initLivePresence() {
-    if (!supabase) {
+    if (!sbClient) {
       console.log("Supabase client not available, using polling only");
       return;
     }
@@ -910,11 +911,11 @@
 
     // Clean up existing channel if any
     if (presenceChannel) {
-      try { supabase.removeChannel(presenceChannel); } catch(e) {}
+      try { sbClient.removeChannel(presenceChannel); } catch(e) {}
     }
 
     try {
-      presenceChannel = supabase.channel(`presence:${ROOM_CODE}`, {
+      presenceChannel = sbClient.channel(`presence:${ROOM_CODE}`, {
         config: { presence: { key: user } }
       });
 
@@ -962,10 +963,10 @@
   }
 
   function stopLivePresence() {
-    if (presenceChannel && supabase) {
+    if (presenceChannel && sbClient) {
       try {
         presenceChannel.untrack();
-        supabase.removeChannel(presenceChannel);
+        sbClient.removeChannel(presenceChannel);
       } catch(e) {}
       presenceChannel = null;
     }
@@ -1921,7 +1922,7 @@
     deviceLocked = false;
     hideDeviceConflict();
     // ✅ Re-track WebSocket presence to claim this device
-    if (presenceChannel && supabase) {
+    if (presenceChannel && sbClient) {
       try {
         await presenceChannel.track({
           deviceId: getDeviceId(),
@@ -3191,11 +3192,15 @@ ${completed.map(i => `[X] ${i.title} — ${i.desc} (#${i.tag})`).join("\n")}
     overlay.innerHTML = `<div class="sync-overlay-content"><div class="sync-spinner"></div><div>SYNCING...</div></div>`;
     document.body.appendChild(overlay);
 
-    // pull once on load (with overlay)
-    await pullRemoteState({ silent: false });
-    
-    // ✅ Remove overlay after sync
-    overlay.remove();
+    // pull once on load (with overlay) — always remove overlay
+    try {
+      await pullRemoteState({ silent: false });
+    } catch (e) {
+      console.warn("Initial sync failed", e);
+      setSyncStatus("error");
+    } finally {
+      overlay.remove();
+    }
 
     // start polling always (cover + main stay synced)
     startSmartPolling();
