@@ -1689,6 +1689,11 @@
 
   // ---------- cover/main toggle ----------
   function openGift() {
+    if (!hasUser()) {
+      showToast("Pick USER first");
+      openWhoModal();
+      return;
+    }
     $("cover").classList.add("hidden");
     $("main").classList.remove("hidden");
     $("btnHome").classList.remove("hidden");
@@ -2239,6 +2244,7 @@
         return `${d.getFullYear()}-${d.getMonth()}-${d.getDate()}`;
       }).filter(Boolean)
     );
+    const eventDates = getEventDates();
 
     // State from selects if already rendered
     const selMonthEl = document.getElementById('calMonthSelect');
@@ -2279,12 +2285,15 @@
     for (let d = 1; d <= daysInMonth; d++) {
       const isToday = (selYear===currentYear && selMonth===currentMonth && d===currentDate);
       const hasMsg = msgDates.has(`${selYear}-${selMonth}-${d}`);
-      cells.push({ text: d, today: isToday, hasMsg });
+      const dateKey = `${selYear}-${String(selMonth+1).padStart(2,'0')}-${String(d).padStart(2,'0')}`;
+      const evt = eventDates[dateKey];
+      const urgency = evt?.urgency || null;
+      cells.push({ text: d, today: isToday, hasMsg, urgency });
     }
     while (cells.length % 7 !== 0) cells.push({ text: '', grey: true });
 
     datesEl.innerHTML = cells.map(c => {
-      const cls = ["calendar__date"]; if (c.grey) cls.push("calendar__date--grey"); if (c.today) cls.push("calendar__date--today"); if (c.hasMsg) cls.push("calendar__date--hasmsg");
+      const cls = ["calendar__date"]; if (c.grey) cls.push("calendar__date--grey"); if (c.today) cls.push("calendar__date--today"); if (c.hasMsg) cls.push("calendar__date--hasmsg"); if (c.urgency) cls.push(`event-${c.urgency}`);
       return `<div class="${cls.join(' ')}"><span>${c.text}</span></div>`;
     }).join('');
 

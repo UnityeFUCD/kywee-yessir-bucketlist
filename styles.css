@@ -2591,5 +2591,10 @@ input[type="date"]::-webkit-calendar-picker-indicator {
     }
 
     /* User color accents for icons */
-    .user-yasir { color: #ff8a00; }
-    .user-kylee { color: #4ea1ff; }
+    .user-yasir { color: #00d4ff; }
+    .user-kylee { color: #ff9f43; }
+
+    /* Calendar event urgency colors */
+    .calendar__date.event-green { border-color: #3bff6b; }
+    .calendar__date.event-yellow { border-color: #ffe93b; }
+    .calendar__date.event-red { border-color: #ff3b3b; }
