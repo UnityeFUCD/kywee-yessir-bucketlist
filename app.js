@@ -7,6 +7,7 @@
   const KEY_THEME = "bucketlist_2026_theme";
   const KEY_SYSTEM_MESSAGE = "bucketlist_2026_system_message";
   const KEY_LAST_VERSION_SEEN = "bucketlist_2026_last_version";
+  const KEY_PHOTOS = "bucketlist_2026_photos";
 
   // ✅ VERSION HISTORY for system update notifications
   const VERSION_HISTORY = [
@@ -64,6 +65,11 @@
   const SUPABASE_URL = "https://pkgrlhwnwqtffdmcyqbk.supabase.co";
   const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InBrZ3JsaHdud3F0ZmZkbWN5cWJrIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjU3MDU2MjMsImV4cCI6MjA4MTI4MTYyM30.aZ8E_BLQW-90-AAJeneXmKnsfZ8LmPkdQ5ERAZ9JHNE";
   const STORAGE_BUCKET = "attachments";
+  const PHOTOS_BUCKET = "photos";
+
+  // ✅ [MEDAL API CONFIG] - Replace with your actual values!
+  const MEDAL_API_KEY = "YOUR_MEDAL_API_KEY_HERE"; // Get from medal.tv/developers
+  const MEDAL_USER_ID = "YOUR_MEDAL_USER_ID_HERE"; // Your Medal user ID
 
   const $ = (id) => document.getElementById(id);
 
@@ -274,6 +280,8 @@
     const u = loadUser();
     if (!u) return;
     localStorage.setItem(keyLastRead(u), String(n));
+    // ✅ Sync to server so other devices get updated read state
+    schedulePush();
   }
 
   function clampLastReadToMessagesLen(len) {
@@ -310,6 +318,229 @@
 
   function loadCustomTags() { return loadArray(KEY_CUSTOM_TAGS); }
   function saveCustomTags(tags) { saveArray(KEY_CUSTOM_TAGS, tags); }
+
+  // ✅ Photo Gallery functions
+  function loadPhotos() { return loadArray(KEY_PHOTOS); }
+  function savePhotos(photos) { saveArray(KEY_PHOTOS, photos); }
+
+  async function uploadPhotoToSupabase(file) {
+    const timestamp = Date.now();
+    const safeName = file.name.replace(/[^a-zA-Z0-9.-]/g, '_');
+    const filename = `${timestamp}_${safeName}`;
+    const url = `${SUPABASE_URL}/storage/v1/object/${PHOTOS_BUCKET}/${filename}`;
+    
+    const res = await fetch(url, {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${SUPABASE_ANON_KEY}`,
+        'Content-Type': file.type,
+        'x-upsert': 'true'
+      },
+      body: file
+    });
+    
+    if (!res.ok) {
+      const err = await res.text();
+      throw new Error(`Upload failed: ${err}`);
+    }
+    
+    return `${SUPABASE_URL}/storage/v1/object/public/${PHOTOS_BUCKET}/${filename}`;
+  }
+
+  function renderPhotoGallery() {
+    const container = $("photoGallery");
+    if (!container) return;
+    
+    const photos = loadPhotos();
+    container.innerHTML = "";
+    
+    if (photos.length === 0) {
+      container.innerHTML = '<div class="gallery-empty">No memories yet! Upload your first photo 📸</div>';
+      return;
+    }
+    
+    // Group by date
+    const grouped = {};
+    photos.forEach(p => {
+      const date = p.date || "Unknown";
+      if (!grouped[date]) grouped[date] = [];
+      grouped[date].push(p);
+    });
+    
+    // Sort dates newest first
+    const sortedDates = Object.keys(grouped).sort((a, b) => b.localeCompare(a));
+    
+    sortedDates.forEach(date => {
+      const section = document.createElement("div");
+      section.className = "gallery-date-section";
+      
+      const dateLabel = formatMissionDate(date) || date;
+      const missionLink = grouped[date][0]?.mission || "";
+      
+      section.innerHTML = `
+        <div class="gallery-date-header">
+          <span class="gallery-date">${escapeHtml(dateLabel)}</span>
+          ${missionLink ? `<span class="gallery-mission-link">📋 ${escapeHtml(missionLink)}</span>` : ''}
+        </div>
+        <div class="gallery-grid"></div>
+      `;
+      
+      const grid = section.querySelector(".gallery-grid");
+      grouped[date].forEach((photo, idx) => {
+        const item = document.createElement("div");
+        item.className = "gallery-item";
+        item.innerHTML = `<img src="${escapeHtml(photo.url)}" alt="Memory" loading="lazy">`;
+        item.addEventListener("click", () => openPhotoLightbox(photo.url, photos.indexOf(photo)));
+        grid.appendChild(item);
+      });
+      
+      container.appendChild(section);
+    });
+  }
+
+  let lightboxIndex = 0;
+  let allPhotos = [];
+
+  function openPhotoLightbox(url, index) {
+    const modal = $("photoLightbox");
+    const img = $("lightboxImage");
+    if (!modal || !img) return;
+    
+    allPhotos = loadPhotos();
+    lightboxIndex = index;
+    
+    img.src = url;
+    modal.classList.add("active");
+    updateLightboxCounter();
+  }
+
+  function updateLightboxCounter() {
+    const counter = $("lightboxCounter");
+    if (counter) {
+      counter.textContent = `${lightboxIndex + 1} / ${allPhotos.length}`;
+    }
+  }
+
+  function closeLightbox() {
+    const modal = $("photoLightbox");
+    if (modal) modal.classList.remove("active");
+  }
+
+  function lightboxPrev() {
+    if (lightboxIndex > 0) {
+      lightboxIndex--;
+      $("lightboxImage").src = allPhotos[lightboxIndex].url;
+      updateLightboxCounter();
+    }
+  }
+
+  function lightboxNext() {
+    if (lightboxIndex < allPhotos.length - 1) {
+      lightboxIndex++;
+      $("lightboxImage").src = allPhotos[lightboxIndex].url;
+      updateLightboxCounter();
+    }
+  }
+
+  // ✅ Medal API functions
+  let medalClips = [];
+
+  async function fetchMedalClips() {
+    if (MEDAL_API_KEY === "YOUR_MEDAL_API_KEY_HERE" || MEDAL_USER_ID === "YOUR_MEDAL_USER_ID_HERE") {
+      console.log("Medal API not configured");
+      return;
+    }
+    
+    try {
+      const res = await fetch(`https://developers.medal.tv/v1/latest?userId=${MEDAL_USER_ID}&limit=12`, {
+        headers: {
+          'Authorization': MEDAL_API_KEY
+        }
+      });
+      
+      if (!res.ok) {
+        console.error("Medal API error:", res.status);
+        return;
+      }
+      
+      const data = await res.json();
+      medalClips = data.contentObjects || [];
+      renderMedalClips();
+    } catch (err) {
+      console.error("Medal fetch error:", err);
+    }
+  }
+
+  function renderMedalClips() {
+    const container = $("medalClips");
+    if (!container) return;
+    
+    if (medalClips.length === 0) {
+      container.innerHTML = '<div class="medal-empty">No clips found. Check your Medal API settings!</div>';
+      return;
+    }
+    
+    container.innerHTML = "";
+    
+    medalClips.forEach(clip => {
+      const item = document.createElement("div");
+      item.className = "medal-clip";
+      
+      const thumbnail = clip.thumbnail || clip.contentThumbnail || "";
+      const title = clip.contentTitle || "Untitled Clip";
+      const game = clip.categoryName || clip.gameName || "";
+      const url = clip.directClipUrl || clip.contentUrl || `https://medal.tv/clips/${clip.contentId}`;
+      
+      item.innerHTML = `
+        <div class="medal-thumbnail" style="background-image: url('${escapeHtml(thumbnail)}')">
+          <div class="medal-play">▶</div>
+        </div>
+        <div class="medal-info">
+          <div class="medal-title">${escapeHtml(title)}</div>
+          ${game ? `<div class="medal-game">${escapeHtml(game)}</div>` : ''}
+        </div>
+      `;
+      
+      item.addEventListener("click", () => {
+        openMedalClip(clip);
+      });
+      
+      container.appendChild(item);
+    });
+  }
+
+  function openMedalClip(clip) {
+    const modal = $("medalModal");
+    const content = $("medalModalContent");
+    if (!modal || !content) return;
+    
+    // Use embed URL if available
+    const embedUrl = clip.embedIframeUrl || `https://medal.tv/clip/${clip.contentId}/embed`;
+    
+    content.innerHTML = `
+      <iframe 
+        src="${escapeHtml(embedUrl)}" 
+        width="100%" 
+        height="400" 
+        frameborder="0" 
+        allowfullscreen
+        allow="autoplay"
+      ></iframe>
+      <div class="medal-modal-info">
+        <h4>${escapeHtml(clip.contentTitle || "Clip")}</h4>
+        <a href="https://medal.tv/clips/${clip.contentId}" target="_blank" class="btn">View on Medal</a>
+      </div>
+    `;
+    
+    modal.classList.add("active");
+  }
+
+  function closeMedalModal() {
+    const modal = $("medalModal");
+    const content = $("medalModalContent");
+    if (modal) modal.classList.remove("active");
+    if (content) content.innerHTML = ""; // Stop video
+  }
 
   function loadTheme() { return localStorage.getItem(KEY_THEME) || "system"; }
   function saveTheme(theme) { localStorage.setItem(KEY_THEME, theme); }
@@ -1103,6 +1334,17 @@
       clampLastReadToMessagesLen(cleanedMessages.length);
     }
 
+    // ✅ Build readState from both users' localStorage
+    const readState = {};
+    ["yasir", "kylee"].forEach(u => {
+      const raw = localStorage.getItem(keyLastRead(u));
+      const n = Number(raw);
+      if (Number.isFinite(n)) readState[u] = n;
+    });
+
+    // ✅ Build photos array
+    const photos = loadPhotos();
+
     return {
       active: loadActive(),
       saved: loadSaved(),
@@ -1110,6 +1352,8 @@
       messages: cleanedMessages,
       customTags: loadCustomTags(),
       systemMessage: loadSystemMessage(),
+      readState,
+      photos,
     };
   }
 
@@ -1125,6 +1369,24 @@
     if (Array.isArray(state.completed)) localStorage.setItem(KEY_COMPLETED, JSON.stringify(state.completed));
     if (Array.isArray(state.customTags)) localStorage.setItem(KEY_CUSTOM_TAGS, JSON.stringify(state.customTags));
     if (typeof state.systemMessage === "string") localStorage.setItem(KEY_SYSTEM_MESSAGE, state.systemMessage);
+
+    // ✅ Apply readState from server (syncs across devices!)
+    if (state.readState && typeof state.readState === "object") {
+      const user = loadUser()?.toLowerCase();
+      if (user && typeof state.readState[user] === "number") {
+        const serverRead = state.readState[user];
+        const localRead = loadLastRead();
+        // Take the higher of server vs local (never go backwards)
+        if (serverRead > localRead) {
+          localStorage.setItem(keyLastRead(user), String(serverRead));
+        }
+      }
+    }
+
+    // ✅ Apply photos from server
+    if (Array.isArray(state.photos)) {
+      localStorage.setItem(KEY_PHOTOS, JSON.stringify(state.photos));
+    }
 
     // ✅ sanitize messages from remote too
     if (Array.isArray(state.messages)) {
@@ -1203,7 +1465,8 @@
       renderActive();
       renderCompleted();
       renderMessages(); // do NOT autoscroll on remote updates
-      // ✅ [FEATURE C] Pass silent flag to avoid sound on background pulls
+      renderPhotoGallery(); // ✅ Sync photos across devices
+      // ✅ Pass silent flag to avoid sound on background pulls
       updateNotifications({ silent });
       updateUserDuoPills();
 
@@ -1768,6 +2031,129 @@ $("userPill").addEventListener("click", () => openWhoModal());
     });
   }
 
+  // ✅ Photo Gallery handlers
+  const photoUploadBtn = $("photoUploadBtn");
+  const photoInput = $("photoInput");
+  const photoDateInput = $("photoDate");
+  const photoMissionSelect = $("photoMission");
+  
+  if (photoUploadBtn && photoInput) {
+    photoUploadBtn.addEventListener("click", () => photoInput.click());
+    
+    photoInput.addEventListener("change", async (e) => {
+      const files = Array.from(e.target.files || []);
+      if (files.length === 0) return;
+      
+      const date = photoDateInput?.value || new Date().toISOString().split('T')[0];
+      const mission = photoMissionSelect?.value || "";
+      
+      photoUploadBtn.disabled = true;
+      photoUploadBtn.textContent = "Uploading...";
+      
+      let successCount = 0;
+      
+      for (const file of files) {
+        if (!file.type.startsWith("image/") && !file.type.startsWith("video/")) {
+          showToast(`Skipped ${file.name} - not an image/video`);
+          continue;
+        }
+        
+        try {
+          const url = await uploadPhotoToSupabase(file);
+          const photos = loadPhotos();
+          photos.push({
+            url,
+            date,
+            mission,
+            uploadedBy: loadUser(),
+            uploadedAt: new Date().toISOString(),
+            type: file.type.startsWith("video/") ? "video" : "image"
+          });
+          savePhotos(photos);
+          successCount++;
+        } catch (err) {
+          console.error("Photo upload error:", err);
+          showToast(`Failed: ${file.name}`);
+        }
+      }
+      
+      photoInput.value = "";
+      photoUploadBtn.disabled = false;
+      photoUploadBtn.textContent = "📸 Upload Photos";
+      
+      if (successCount > 0) {
+        showToast(`${successCount} photo(s) uploaded!`);
+        renderPhotoGallery();
+      }
+    });
+  }
+  
+  // Populate mission select for photo linking
+  function populatePhotoMissionSelect() {
+    if (!photoMissionSelect) return;
+    const active = loadActive();
+    const completed = loadCompleted().filter(c => !c.isExample);
+    const all = [...active, ...completed];
+    
+    photoMissionSelect.innerHTML = '<option value="">No mission linked</option>';
+    all.forEach(m => {
+      const opt = document.createElement("option");
+      opt.value = m.title;
+      opt.textContent = m.title;
+      photoMissionSelect.appendChild(opt);
+    });
+  }
+  populatePhotoMissionSelect();
+
+  // ✅ Photo Lightbox handlers
+  const lightboxClose = $("lightboxClose");
+  const lightboxPrevBtn = $("lightboxPrev");
+  const lightboxNextBtn = $("lightboxNext");
+  const photoLightbox = $("photoLightbox");
+  
+  if (lightboxClose) lightboxClose.addEventListener("click", closeLightbox);
+  if (lightboxPrevBtn) lightboxPrevBtn.addEventListener("click", lightboxPrev);
+  if (lightboxNextBtn) lightboxNextBtn.addEventListener("click", lightboxNext);
+  if (photoLightbox) {
+    photoLightbox.addEventListener("click", (e) => {
+      if (e.target === photoLightbox) closeLightbox();
+    });
+    
+    // Swipe support for lightbox
+    let lbTouchStartX = 0;
+    photoLightbox.addEventListener("touchstart", (e) => {
+      lbTouchStartX = e.touches[0].clientX;
+    }, { passive: true });
+    
+    photoLightbox.addEventListener("touchend", (e) => {
+      const diff = lbTouchStartX - e.changedTouches[0].clientX;
+      if (Math.abs(diff) > 50) {
+        if (diff > 0) lightboxNext();
+        else lightboxPrev();
+      }
+    }, { passive: true });
+  }
+
+  // ✅ Medal Modal handlers
+  const medalModalClose = $("medalModalClose");
+  const medalModal = $("medalModal");
+  
+  if (medalModalClose) medalModalClose.addEventListener("click", closeMedalModal);
+  if (medalModal) {
+    medalModal.addEventListener("click", (e) => {
+      if (e.target === medalModal) closeMedalModal();
+    });
+  }
+
+  // ✅ Refresh Medal clips button
+  const refreshMedalBtn = $("refreshMedal");
+  if (refreshMedalBtn) {
+    refreshMedalBtn.addEventListener("click", () => {
+      showToast("Refreshing clips...");
+      fetchMedalClips();
+    });
+  }
+
   $("btnDownloadText").addEventListener("click", () => {
     const active = loadActive();
     const completed = loadCompleted().filter(c => !c.isExample);
@@ -1865,6 +2251,12 @@ ${completed.map(i => `[X] ${i.title} — ${i.desc} (#${i.tag})`).join("\n")}
       checkSystemUpdates();
       checkUpcomingEvents();
     }, 1000);
+
+    // ✅ Render photo gallery
+    renderPhotoGallery();
+
+    // ✅ Fetch Medal clips (if configured)
+    fetchMedalClips();
 
     // ✅ IMPORTANT: remember user on refresh (no re-asking)
     if (!hasUser()) {

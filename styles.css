@@ -1525,3 +1525,354 @@ input[type="date"]::-webkit-calendar-picker-indicator {
   white-space: pre;
   text-align: center;
 }
+
+/* ============================================
+   PHOTO GALLERY STYLES (Mobile-First)
+   ============================================ */
+
+.photo-upload-section {
+  margin-bottom: 20px;
+  padding: 16px;
+  border: 1px dashed var(--border);
+  background: rgba(255,107,157,0.02);
+}
+
+.photo-upload-row {
+  display: flex;
+  justify-content: center;
+  margin-bottom: 12px;
+}
+
+.photo-upload-options {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+}
+
+@media (max-width: 500px) {
+  .photo-upload-options {
+    grid-template-columns: 1fr;
+  }
+}
+
+.photo-gallery {
+  margin-top: 16px;
+}
+
+.gallery-empty {
+  text-align: center;
+  padding: 40px 20px;
+  color: var(--muted);
+  font-size: 12px;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+}
+
+.gallery-date-section {
+  margin-bottom: 24px;
+}
+
+.gallery-date-header {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 12px;
+  padding-bottom: 8px;
+  border-bottom: 1px solid var(--border);
+}
+
+.gallery-date {
+  font-weight: 700;
+  font-size: 12px;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  color: var(--accent);
+}
+
+.gallery-mission-link {
+  font-size: 10px;
+  color: var(--muted);
+  background: rgba(255,107,157,0.1);
+  padding: 4px 8px;
+  border-radius: 2px;
+}
+
+.gallery-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(100px, 1fr));
+  gap: 8px;
+}
+
+@media (min-width: 600px) {
+  .gallery-grid {
+    grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+    gap: 12px;
+  }
+}
+
+.gallery-item {
+  aspect-ratio: 1;
+  overflow: hidden;
+  cursor: pointer;
+  border: 2px solid var(--border);
+  transition: all 0.15s ease;
+}
+
+.gallery-item:hover {
+  border-color: var(--accent);
+  transform: scale(1.02);
+}
+
+.gallery-item img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+/* ============================================
+   PHOTO LIGHTBOX (Mobile-Friendly)
+   ============================================ */
+
+.lightbox-modal {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0,0,0,0.95);
+  z-index: 4000;
+  display: none;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 20px;
+}
+
+.lightbox-modal.active {
+  display: flex;
+}
+
+.lightbox-close {
+  position: absolute;
+  top: 20px;
+  right: 20px;
+  font-size: 24px;
+  color: #fff;
+  cursor: pointer;
+  z-index: 10;
+  width: 44px;
+  height: 44px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.lightbox-nav {
+  position: absolute;
+  bottom: 30px;
+  left: 50%;
+  transform: translateX(-50%);
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  z-index: 10;
+}
+
+.lightbox-btn {
+  width: 50px;
+  height: 50px;
+  border: 2px solid rgba(255,255,255,0.3);
+  background: rgba(0,0,0,0.5);
+  color: #fff;
+  font-size: 18px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+  transition: all 0.15s ease;
+}
+
+.lightbox-btn:hover {
+  border-color: var(--accent);
+  background: rgba(255,107,157,0.2);
+}
+
+.lightbox-counter {
+  color: #fff;
+  font-size: 14px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+}
+
+#lightboxImage {
+  max-width: 100%;
+  max-height: calc(100vh - 150px);
+  object-fit: contain;
+}
+
+.lightbox-hint {
+  position: absolute;
+  bottom: 10px;
+  left: 50%;
+  transform: translateX(-50%);
+  color: rgba(255,255,255,0.4);
+  font-size: 10px;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+}
+
+/* ============================================
+   MEDAL CLIPS STYLES
+   ============================================ */
+
+.medal-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+  gap: 12px;
+}
+
+@media (min-width: 600px) {
+  .medal-grid {
+    grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+    gap: 16px;
+  }
+}
+
+.medal-empty {
+  grid-column: 1 / -1;
+  text-align: center;
+  padding: 40px 20px;
+  color: var(--muted);
+  font-size: 12px;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+}
+
+.medal-clip {
+  background: var(--bg);
+  border: 2px solid var(--border);
+  cursor: pointer;
+  transition: all 0.15s ease;
+  overflow: hidden;
+}
+
+.medal-clip:hover {
+  border-color: var(--accent);
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(255,107,157,0.2);
+}
+
+.medal-thumbnail {
+  aspect-ratio: 16/9;
+  background-size: cover;
+  background-position: center;
+  position: relative;
+}
+
+.medal-play {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  width: 50px;
+  height: 50px;
+  background: rgba(0,0,0,0.7);
+  border: 2px solid #fff;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 18px;
+  color: #fff;
+  transition: all 0.15s ease;
+}
+
+.medal-clip:hover .medal-play {
+  background: var(--accent);
+  border-color: var(--accent);
+  transform: translate(-50%, -50%) scale(1.1);
+}
+
+.medal-info {
+  padding: 10px;
+}
+
+.medal-title {
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  color: var(--text);
+  line-height: 1.3;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+.medal-game {
+  font-size: 9px;
+  color: var(--muted);
+  margin-top: 4px;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+/* ============================================
+   MEDAL MODAL
+   ============================================ */
+
+.medal-modal .medal-modal-inner {
+  background: var(--bg-card);
+  border: 2px solid var(--border);
+  max-width: 700px;
+  width: 95%;
+  max-height: 90vh;
+  overflow-y: auto;
+  padding: 0;
+  position: relative;
+}
+
+.medal-modal .modal-close {
+  position: absolute;
+  top: 10px;
+  right: 10px;
+  z-index: 10;
+  background: rgba(0,0,0,0.5);
+  width: 36px;
+  height: 36px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+}
+
+.medal-modal-info {
+  padding: 16px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.medal-modal-info h4 {
+  font-size: 12px;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  margin: 0;
+}
+
+.medal-modal iframe {
+  display: block;
+  width: 100%;
+  min-height: 350px;
+}
+
+@media (max-width: 500px) {
+  .medal-modal iframe {
+    min-height: 250px;
+  }
+}

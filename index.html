@@ -237,6 +237,54 @@
           <div class="footer">[ COMPILED FOR ONE SPECIAL KITTEN ]</div>
         </div>
       </div>
+
+      <!-- ✅ PHOTO MEMORIES GALLERY -->
+      <div class="card">
+        <div class="cardHeader">
+          <h2>[▸] MEMORIES_GALLERY</h2>
+        </div>
+        <div class="cardBody">
+          <p class="note">// Upload and view your shared photos & videos</p>
+          
+          <div class="photo-upload-section">
+            <div class="photo-upload-row">
+              <input type="file" id="photoInput" accept="image/*,video/*" multiple hidden>
+              <button class="btn primary" id="photoUploadBtn">📸 Upload Photos</button>
+            </div>
+            <div class="photo-upload-options">
+              <div class="field">
+                <label for="photoDate">📅 Date</label>
+                <input type="date" id="photoDate">
+              </div>
+              <div class="field">
+                <label for="photoMission">📋 Link to Mission</label>
+                <select id="photoMission">
+                  <option value="">No mission linked</option>
+                </select>
+              </div>
+            </div>
+          </div>
+          
+          <div id="photoGallery" class="photo-gallery">
+            <div class="gallery-empty">No memories yet! Upload your first photo 📸</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ✅ MEDAL CLIPS FEED -->
+      <div class="card">
+        <div class="cardHeader">
+          <h2>[▸] MEDAL_CLIPS</h2>
+          <button class="btn" id="refreshMedal" title="Refresh clips">🔄</button>
+        </div>
+        <div class="cardBody">
+          <p class="note">// Your latest gaming clips from Medal.tv</p>
+          
+          <div id="medalClips" class="medal-grid">
+            <div class="medal-empty">Configure your Medal API key to see clips!</div>
+          </div>
+        </div>
+      </div>
     </section>
   </div>
 
@@ -278,6 +326,26 @@
     <div class="attachment-modal-inner">
       <span class="modal-close" id="closeAttachmentModal">✖</span>
       <div id="attachmentModalContent"></div>
+    </div>
+  </div>
+
+  <!-- ✅ Photo Lightbox Modal -->
+  <div class="lightbox-modal" id="photoLightbox">
+    <div class="lightbox-close" id="lightboxClose">✖</div>
+    <div class="lightbox-nav">
+      <button class="lightbox-btn" id="lightboxPrev">◀</button>
+      <span class="lightbox-counter" id="lightboxCounter">1 / 1</span>
+      <button class="lightbox-btn" id="lightboxNext">▶</button>
+    </div>
+    <img id="lightboxImage" src="" alt="Photo">
+    <div class="lightbox-hint">← Swipe to browse →</div>
+  </div>
+
+  <!-- ✅ Medal Clip Modal -->
+  <div class="modal medal-modal" id="medalModal">
+    <div class="medal-modal-inner">
+      <span class="modal-close" id="medalModalClose">✖</span>
+      <div id="medalModalContent"></div>
     </div>
   </div>
 
