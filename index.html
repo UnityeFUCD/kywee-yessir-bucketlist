@@ -16,6 +16,9 @@
   <meta name="apple-mobile-web-app-title" content="Bucket List">
 
   <link rel="stylesheet" href="styles.css">
+  
+  <!-- ✅ Supabase JS Client for Realtime Presence (WebSocket) -->
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 </head>
 
 <body>
@@ -51,14 +54,27 @@
           </div>
         </div>
 
-        <span class="pill clickable" id="userPill" title="Click to switch user">
-          <span class="dot gray" id="userDot"></span>
+        <!-- ✅ UPDATED: User pill with presence icon -->
+        <span class="pill clickable user-pill" id="userPill" title="Click to switch user">
+          <span class="presence-icon-wrap">
+            <i class="fa-regular fa-user" id="userIcon"></i>
+            <span class="dot gray presence-dot" id="userDot"></span>
+          </span>
           <span id="userText">USER: --</span>
         </span>
 
-        <span class="pill clickable" id="duoPill" title="Click to view letters from duo">
-          <span class="dot gray" id="duoDot"></span>
+        <!-- ✅ UPDATED: Duo pill with presence icon (colored when online) -->
+        <span class="pill clickable duo-pill" id="duoPill" title="Click to view letters from duo">
+          <span class="presence-icon-wrap">
+            <i class="fa-regular fa-user" id="duoIcon"></i>
+            <span class="dot gray presence-dot" id="duoDot"></span>
+          </span>
           <span id="duoText">DUO: --</span>
+        </span>
+
+        <!-- ✅ Envelope icon for messages -->
+        <span class="pill clickable envelope-pill" id="envelopePill" title="View messages">
+          <i class="fa-solid fa-envelope"></i>
         </span>
 
         <span class="pill" id="syncPill" title="Sync status">
@@ -192,59 +208,26 @@
             <!-- ✅ [FEATURE B] Attachment input -->
             <div class="field attachment-field">
               <label for="attachmentInput">📎 ATTACH IMAGE/VIDEO</label>
-              <input type="file" id="attachmentInput" accept="image/*,video/*" />
-              <div id="attachmentPreview" class="attachment-preview hidden"></div>
+              <div class="attachment-upload">
+                <input type="file" id="attachmentInput" accept="image/*,video/*" hidden>
+                <button type="button" class="btn btn-small" id="attachmentBtn">Choose File</button>
+                <span class="attachment-name" id="attachmentName">No file chosen</span>
+                <button type="button" class="btn btn-small btn-clear hidden" id="attachmentClear">✕</button>
+              </div>
             </div>
-            
-            <button class="btn primary" id="btnSaveNote">SEND LETTER</button>
-          </div>
 
-          <hr />
-
-          <div class="field">
-            <label>[▸] ADD NEW MISSION</label>
-            <input id="newTitle" type="text" placeholder="Movie" inputmode="text">
+            <div class="actions">
+              <button class="btn primary" id="btnSend">SEND MESSAGE</button>
+            </div>
           </div>
-          <div class="field">
-            <input id="newDesc" type="text" placeholder="pick a movie and location" inputmode="text">
-          </div>
-          <div class="field">
-            <label for="newTag">TAG</label>
-            <select id="newTag">
-              <option value="date">date</option>
-              <option value="travel">travel</option>
-              <option value="cozy">cozy</option>
-              <option value="food">food</option>
-              <option value="home">home</option>
-              <option value="romantic">romantic</option>
-              <option value="fun">fun</option>
-              <option value="tradition">tradition</option>
-              <option value="music">music</option>
-              <option value="new">new</option>
-              <option value="heart">heart</option>
-              <option value="custom">Custom...</option>
-            </select>
-          </div>
-          <div class="field hidden" id="customTagField">
-            <input id="customTagInput" type="text" placeholder="Enter custom tag" inputmode="text">
-          </div>
-          <div class="field">
-            <label for="newDueDate"><i class="fas fa-calendar"></i> DUE DATE (optional)</label>
-            <input id="newDueDate" type="date">
-          </div>
-          <div class="actions">
-            <button class="btn primary" id="btnAdd">+ ADD MISSION</button>
-            <button class="btn" id="btnClearFields">CLEAR FIELDS</button>
-          </div>
-
-          <div class="footer">[ COMPILED FOR ONE SPECIAL KITTEN ]</div>
         </div>
       </div>
-
-      <!-- ✅ PHOTO MEMORIES GALLERY -->
+      
+      <!-- ✅ PHOTO GALLERY -->
       <div class="card">
         <div class="cardHeader">
-          <h2>[▸] MEMORIES_GALLERY</h2>
+          <h2>[▸] PHOTO_GALLERY</h2>
+          <span class="pill">MEMORIES</span>
         </div>
         <div class="cardBody">
           <p class="note">// Max 5 photos per mission. Upload multiple times. Unlinked photos = unlimited.</p>
