@@ -2321,6 +2321,8 @@
   }
 
   async function setUserAndStart(name) {
+    // Ensure prior presence channel is cleanly removed before switching keys
+    try { stopLivePresence(); } catch {}
     saveUser(name);
 
     $("closeWhoModal").classList.remove("hidden");
@@ -2561,6 +2563,15 @@ $("systemMessageInput").addEventListener("input", (e) => {
     // ✅ Get due date if set
     const dueDateInput = $("newDueDate");
     const dueDate = dueDateInput ? dueDateInput.value : null;
+    // Past-date prompt: do not add silently
+    if (dueDate) {
+      const today = new Date(); today.setHours(0,0,0,0);
+      const d = new Date(dueDate + 'T00:00:00');
+      if (d < today) {
+        const proceed = window.confirm('That due date is in the past. Do you want to keep it anyway?');
+        if (!proceed) return; // Let user change date first
+      }
+    }
 
     if (tag === "custom") {
       tag = $("customTagInput").value.trim() || "custom";
