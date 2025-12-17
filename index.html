@@ -35,7 +35,7 @@
 
           <div class="notification-dropdown" id="notificationDropdown">
             <div class="notification-header">
-              <span>MESSAGES</span>
+              <span>NOTIFICATIONS</span>
               <div class="notif-head-actions">
                 <button class="notif-mini-btn" id="btnNotifClearAll" title="Mark all read">
                   <svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
@@ -53,7 +53,7 @@
           <span id="userText">USER: --</span>
         </span>
 
-        <span class="pill" id="duoPill" title="Duo status">
+        <span class="pill clickable" id="duoPill" title="Click to view letters from duo">
           <span class="dot gray" id="duoDot"></span>
           <span id="duoText">DUO: --</span>
         </span>
@@ -256,13 +256,20 @@
   <div class="letter-modal" id="letterModal">
     <div class="letter-envelope">
       <div class="letter-close" id="closeLetterModal">✖</div>
+      <!-- ✅ Navigation for TikTok-style swipe -->
+      <div class="letter-nav">
+        <button class="letter-nav-btn" id="letterPrev" title="Newer letter">▲</button>
+        <span class="letter-counter" id="letterCounter">1 / 1</span>
+        <button class="letter-nav-btn" id="letterNext" title="Older letter">▼</button>
+      </div>
       <div class="letter-paper">
         <div class="letter-from">FROM: <span id="letterFrom">--</span></div>
         <div class="letter-timestamp" id="letterTimestamp"></div>
         <div class="letter-content" id="letterContent"></div>
-        <!-- ✅ [FEATURE B] Attachment display in letter -->
+        <!-- ✅ Attachment display in letter -->
         <div id="letterAttachment" class="letter-attachment hidden"></div>
       </div>
+      <div class="letter-swipe-hint">↕ Swipe to browse letters</div>
     </div>
   </div>
 

@@ -31,6 +31,32 @@
     return `bucketlist_2026_lastread_${String(user || "").toLowerCase()}`;
   }
 
+  // ✅ per-user dismissed notifications (local only - doesn't delete messages)
+  function keyDismissed(user) {
+    return `bucketlist_2026_dismissed_${String(user || "").toLowerCase()}`;
+  }
+  function loadDismissed() {
+    const u = loadUser();
+    if (!u) return [];
+    try { return JSON.parse(localStorage.getItem(keyDismissed(u))) || []; } catch { return []; }
+  }
+  function saveDismissed(arr) {
+    const u = loadUser();
+    if (!u) return;
+    localStorage.setItem(keyDismissed(u), JSON.stringify(arr));
+  }
+  function dismissNotification(msgId) {
+    const dismissed = loadDismissed();
+    if (!dismissed.includes(msgId)) {
+      dismissed.push(msgId);
+      saveDismissed(dismissed);
+    }
+  }
+  function getMsgId(msg, idx) {
+    // Unique ID based on content + timestamp + index
+    return `${msg.timestamp}_${idx}_${(msg.content || "").substring(0,20)}`;
+  }
+
   // ✅ shared room code
   const ROOM_CODE = "yasir-kylee";
 
@@ -41,20 +67,83 @@
 
   const $ = (id) => document.getElementById(id);
 
-  // ✅ [FEATURE D] Daily rotating emoticons (30 cute ones)
+  // ✅ Daily rotating ASCII art emoticons (larger braille art)
   const DAILY_EMOTICONS = [
-    "(づ｡◕‿‿◕｡)づ ❤", "ʕ•ᴥ•ʔ ♡", "(◕ᴗ◕✿)", "( ˘▽˘)っ♨", "₍ᐢ.ˬ.ᐢ₎ ♡",
-    "(｡♥‿♥｡)", "(◠‿◠)✌", "ヾ(≧▽≦*)o", "(✿◠‿◠)", "♡(ӦｖӦ｡)",
-    "(っ◔◡◔)っ ♥", "ʕ￫ᴥ￩ʔ", "(◕‿◕)♡", "(´• ω •`)♡", "( ˶ˆᗜˆ˵ )",
-    "(*≧ω≦)", "(ﾉ◕ヮ◕)ﾉ*:・ﾟ✧", "( ͡° ͜ʖ ͡°)♡", "(◍•ᴗ•◍)❤", "♪(´ε` )",
-    "(✧ω✧)", "٩(◕‿◕｡)۶", "(◠ᴗ◠✿)", "ლ(╹◡╹ლ)", "✿◕ ‿ ◕✿",
-    "(っ˘ω˘ς )", "ฅ^•ﻌ•^ฅ", "(=^・ω・^=)", "(*^ω^*)", "( ´ ▽ ` )ﾉ♡"
+`⠀⠀⠀⠀⠀⠀⠀⠀⣀⣀⣀⣀⣀⣀⣀⣀⠀⠀⠀⠀⠀⠀⠀
+⠀⠀⠀⠀⣠⣴⣾⣿⣿⣿⣿⣿⣿⣿⣿⣿⣷⣦⣄⠀⠀⠀⠀
+⠀⠀⣠⣾⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣷⣄⠀⠀
+⠀⣼⣿⣿⣿⣿⣿⣿⠟⠁⠀⠀⠈⠻⣿⣿⣿⣿⣿⣿⣿⣧⠀
+⢰⣿⣿⣿⣿⣿⣿⠃⠀⣠⣤⣤⣄⠀⠘⣿⣿⣿⣿⣿⣿⣿⡆
+⣿⣿⣿⣿⣿⣿⡏⠀⠀⠿⠀⠀⠿⠀⠀⢹⣿⣿⣿⣿⣿⣿⣿
+⣿⣿⣿⣿⣿⣿⣇⠀⠀⠀⠀⠀⠀⠀⠀⣸⣿⣿⣿⣿⣿⣿⣿
+⠸⣿⣿⣿⣿⣿⣿⣆⠀⠀⢀⣀⡀⠀⣰⣿⣿⣿⣿⣿⣿⣿⠇
+⠀⠻⣿⣿⣿⣿⣿⣿⣿⣶⣤⣤⣴⣾⣿⣿⣿⣿⣿⣿⣿⠟⠀
+⠀⠀⠈⠛⢿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⡿⠛⠁⠀⠀
+⠀⠀⠀⠀⠀⠀⠉⠙⠛⠿⠿⠿⠿⠛⠛⠉⠁⠀⠀⠀⠀⠀⠀
+         💕 LOVE 💕`,
+`⠀⠀⠀⠀⠀⠀⣀⣤⣴⣶⣶⣶⣦⣤⣀⠀⠀⠀⠀⠀⠀
+⠀⠀⠀⠀⣠⣾⣿⣿⣿⣿⣿⣿⣿⣿⣿⣷⣄⠀⠀⠀⠀
+⠀⠀⠀⣼⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣧⠀⠀⠀
+⠀⠀⢰⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⡆⠀⠀
+⠀⠀⣿⣿⣿⡏⠉⠀⠀⠉⠉⠉⠀⠀⠉⢹⣿⣿⣿⠀⠀
+⠀⠀⣿⣿⣿⡇⠀⣷⠀⠀⠀⠀⠀⣾⠀⢸⣿⣿⣿⠀⠀
+⠀⠀⣿⣿⣿⣇⠀⠀⠀⣀⣀⣀⠀⠀⠀⣸⣿⣿⣿⠀⠀
+⠀⠀⢿⣿⣿⣿⣆⠀⠀⠛⠛⠀⠀⠀⣰⣿⣿⣿⡿⠀⠀
+⠀⠀⠘⣿⣿⣿⣿⣷⣤⣀⣀⣀⣤⣾⣿⣿⣿⣿⠃⠀⠀
+⠀⠀⠀⠈⠻⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⠟⠁⠀⠀⠀
+⠀⠀⠀⠀⠀⠀⠉⠛⠻⠿⠿⠿⠟⠛⠉⠀⠀⠀⠀⠀⠀
+         🥰 CUTE 🥰`,
+`⠀⠀⣀⣤⣴⣶⣶⣶⣶⣶⣶⣦⣤⣀⠀⠀
+⣠⣾⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣷⣄
+⣿⣿⣿⡿⠛⠉⠉⠉⠉⠉⠉⠛⢿⣿⣿⣿
+⣿⣿⠏⠀⣠⣶⣦⠀⣠⣶⣦⠀⠀⢻⣿⣿
+⣿⣿⠀⠀⠹⣿⡿⠀⠹⣿⡿⠀⠀⠀⣿⣿
+⣿⣿⣆⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⣰⣿⣿
+⠻⣿⣿⣿⣶⣤⣤⣤⣤⣤⣤⣶⣿⣿⣿⠟
+⠀⠈⠛⠿⣿⣿⣿⣿⣿⣿⣿⣿⠿⠛⠁⠀
+         ✨ HAPPY ✨`,
+`⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿
+⣿⣿⣿⣿⠿⠛⠛⠛⠛⠛⠛⠿⣿⣿⣿⣿
+⣿⣿⠟⠁⠀⣀⣀⠀⠀⣀⣀⠀⠈⠻⣿⣿
+⣿⡏⠀⠀⠀⣿⣿⠀⠀⣿⣿⠀⠀⠀⢹⣿
+⣿⡇⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⢸⣿
+⣿⣿⡄⠀⠀⠀⢀⣀⣀⡀⠀⠀⠀⢠⣿⣿
+⣿⣿⣿⣶⣤⣤⣤⣤⣤⣤⣤⣤⣶⣿⣿⣿
+⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿
+         🌟 SMILE 🌟`,
+`⠀⠀⠀⣠⣴⣶⣶⣶⣶⣦⣄⠀⠀⠀
+⠀⢀⣾⣿⣿⣿⣿⣿⣿⣿⣿⣷⡀⠀
+⠀⣼⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣧⠀
+⢠⣿⣿⠋⠀⠀❤️⠀⠀❤️⢹⣿⡄
+⢸⣿⣿⠀⠀⠀⠀⠀⠀⠀⠀⠀⣿⡇
+⠘⣿⣿⣧⡀⠀⠀⠀⠀⠀⢀⣼⣿⠃
+⠀⠻⣿⣿⣿⣶⣤⣤⣴⣶⣿⣿⠟⠀
+⠀⠀⠈⠛⠿⣿⣿⣿⣿⠿⠛⠁⠀⠀
+       💖 KISSES 💖`,
+`⠀⠀⠀⠀⢀⣀⣀⣀⣀⣀⡀⠀⠀⠀⠀
+⠀⠀⢀⣴⣿⣿⣿⣿⣿⣿⣿⣦⡀⠀⠀
+⠀⣴⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣦⠀
+⣼⣿⣿⣿⡟⠁⠀⠀⠈⢻⣿⣿⣿⣿⣧
+⣿⣿⣿⣿⠀⠀⣶⣶⠀⠀⣿⣿⣿⣿⣿
+⣿⣿⣿⣿⣷⣄⠀⠀⣠⣾⣿⣿⣿⣿⣿
+⢻⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⡟
+⠀⠙⠿⣿⣿⣿⣿⣿⣿⣿⣿⣿⠿⠋⠀
+       💝 SWEET 💝`,
+`⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿
+⣿⣿⡿⠛⠛⠛⠛⠛⠛⠛⠛⠛⢿⣿⣿⣿
+⣿⣿⠀⠀⣴⣶⠀⠀⣴⣶⠀⠀⠀⣿⣿⣿
+⣿⣿⠀⠀⠛⠋⠀⠀⠛⠋⠀⠀⠀⣿⣿⣿
+⣿⣿⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⣿⣿⣿
+⣿⣿⣇⠀⠀⠲⠶⠶⠖⠀⠀⠀⣸⣿⣿⣿
+⣿⣿⣿⣷⣤⣀⣀⣀⣀⣤⣤⣾⣿⣿⣿⣿
+⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿
+        🎀 PRETTY 🎀`
   ];
 
-  // ✅ [BUG 2 FIX] Prevent double-trigger of letter animation
+  // ✅ Prevent double-trigger of letter animation
   let letterAnimationInProgress = false;
 
-  const exampleActive = { title: "Test Mission (Example)", desc: "This is an example card", tag: "example", done: false, isExample: true };
+  const exampleActive = { title: "Test Mission (Example)", desc: "This is an example card", tag: "example", dueDate: "2025-01-15", done: false, isExample: true };
   const exampleCompleted = { title: "Test Completed (Example)", desc: "This is a completed example", tag: "example", done: true, isExample: true };
 
   let selectedSavedMissions = [];
@@ -246,7 +335,14 @@
       const content = normalizeNewlines(m?.content ?? "").trim();
       if (!from) continue;
       if (!content) continue; // 🔥 removes blank letters forever
-      cleaned.push({ from, timestamp, content });
+      
+      const cleanMsg = { from, timestamp, content };
+      // ✅ PRESERVE attachment fields!
+      if (m.attachment) {
+        cleanMsg.attachment = m.attachment;
+        cleanMsg.attachmentType = m.attachmentType || 'image';
+      }
+      cleaned.push(cleanMsg);
     }
     return cleaned;
   }
@@ -357,19 +453,22 @@
     }
   }
 
-  // ---------- Notifications (duo-only unread) ----------
+  // ---------- Notifications ----------
   let prevUnreadCount = 0;
 
+  // Get unread message indexes (excluding dismissed)
   function duoUnreadIndexes(messages) {
     const user = loadUser().trim().toLowerCase();
     if (!user) return [];
 
     const lastRead = loadLastRead();
+    const dismissed = loadDismissed();
     const idxs = [];
     for (let i = 0; i < messages.length; i++) {
       const from = String(messages[i]?.from || "").trim().toLowerCase();
-      // Unread if: from duo and index > lastRead
-      if (from && from !== user && i > lastRead) {
+      const msgId = getMsgId(messages[i], i);
+      // Unread if: from duo, index > lastRead, and not dismissed
+      if (from && from !== user && i > lastRead && !dismissed.includes(msgId)) {
         idxs.push(i);
       }
     }
@@ -388,17 +487,60 @@
     if (deletedIndex <= cur) saveLastRead(cur - 1);
   }
 
+  // ✅ Update DUO pill with unread count (messages)
+  function updateDuoUnreadBadge() {
+    const messages = loadMessages();
+    const unreadIdxs = duoUnreadIndexes(messages);
+    const duoPill = $("duoPill");
+    const duoText = $("duoText");
+    
+    if (!duoPill || !duoText) return;
+    
+    const user = loadUser().trim().toLowerCase();
+    const duoName = user === "yasir" ? "KYLEE" : user === "kylee" ? "YASIR" : "DUO";
+    
+    if (unreadIdxs.length > 0) {
+      duoText.textContent = `DUO: ${duoName} (${unreadIdxs.length})`;
+      duoPill.classList.add("has-unread");
+    } else {
+      duoText.textContent = `DUO: ${duoName}`;
+      duoPill.classList.remove("has-unread");
+    }
+  }
+
+  // ✅ Bell notifications - system updates only (not messages)
   function updateNotifications(opts = {}) {
     const { silent = false } = opts;
-    const messages = loadMessages();
     const badge = $("notificationBadge");
     const list = $("notificationList");
 
-    const unreadIdxs = duoUnreadIndexes(messages);
-    prevUnreadCount = unreadIdxs.length;
+    // ✅ Update DUO pill for messages
+    updateDuoUnreadBadge();
 
-    if (unreadIdxs.length > 0) {
-      badge.textContent = unreadIdxs.length;
+    // ✅ Bell only shows system notifications (updates, events)
+    const systemNotifs = [];
+    
+    // Check for upcoming events
+    const now = new Date();
+    const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+    UPCOMING_EVENTS.forEach(event => {
+      const eventDate = new Date(event.date + "T00:00:00");
+      const diffMs = eventDate - today;
+      const diffDays = Math.round(diffMs / (1000 * 60 * 60 * 24));
+      
+      if (diffDays >= 0 && diffDays <= 7) {
+        systemNotifs.push({
+          type: "event",
+          title: event.title,
+          subtitle: diffDays === 0 ? "Today!" : diffDays === 1 ? "Tomorrow" : `In ${diffDays} days`,
+          icon: "📅"
+        });
+      }
+    });
+
+    // Show badge if system notifications exist
+    if (systemNotifs.length > 0) {
+      badge.textContent = systemNotifs.length;
       badge.classList.remove("hidden");
     } else {
       badge.classList.add("hidden");
@@ -406,76 +548,136 @@
 
     list.innerHTML = "";
 
-    if (!hasUser()) {
-      list.innerHTML = '<div style="padding: 20px; text-align: center; color: var(--muted); font-size: 11px;">Pick USER first</div>';
+    if (systemNotifs.length === 0) {
+      list.innerHTML = '<div style="padding: 20px; text-align: center; color: var(--muted); font-size: 11px;">No notifications</div>';
       return;
     }
 
-    const userLower = loadUser().trim().toLowerCase();
-    const duoMsgs = messages
-      .map((m, i) => ({ m, i }))
-      .filter(x => String(x.m?.from || "").trim().toLowerCase() !== userLower);
-
-    if (duoMsgs.length === 0) {
-      list.innerHTML = '<div style="padding: 20px; text-align: center; color: var(--muted); font-size: 11px;">No duo messages yet</div>';
-      return;
-    }
-
-    const lastRead = loadLastRead();
-
-    duoMsgs.slice().reverse().forEach(({ m, i }) => {
-      const displayName = m.from || "Unknown";
-      const isUnread = i > lastRead;
-      const hasAttachment = !!(m.attachment);
-
+    systemNotifs.forEach(notif => {
       const item = document.createElement("div");
-      item.className = "notification-item" + (isUnread ? " unread" : "");
+      item.className = "notification-item system-notif";
       item.innerHTML = `
-        <div class="notification-from">FROM: ${escapeHtml(displayName)} ${hasAttachment ? '📎' : ''}</div>
-        <div class="notification-preview">${escapeHtml(String(m.content || "").substring(0, 54))}${String(m.content || "").length > 54 ? "..." : ""}</div>
-        <div class="notification-time">${escapeHtml(m.timestamp || "")}</div>
-
-        <div class="notification-actions">
-          <button class="notif-mini-btn" title="Mark read" data-action="read">
-            <svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-              <path d="M12 5c-7 0-11 7-11 7s4 7 11 7 11-7 11-7-4-7-11-7zm0 12a5 5 0 1 1 0-10 5 5 0 0 1 0 10zm0-2.5a2.5 2.5 0 1 0 0-5 2.5 2.5 0 0 0 0 5z"/>
-            </svg>
-          </button>
-          <button class="notif-mini-btn" title="Delete" data-action="delete">
-            <svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-              <path d="M6 7h12l-1 14H7L6 7zm3-3h6l1 2H8l1-2z"/>
-            </svg>
-          </button>
-        </div>
+        <div class="notification-from">${notif.icon} ${escapeHtml(notif.title)}</div>
+        <div class="notification-preview">${escapeHtml(notif.subtitle)}</div>
       `;
-
-      item.addEventListener("click", () => {
-        openMessage(i);
-        $("notificationDropdown").classList.remove("active");
-      });
-
-      item.querySelector('[data-action="read"]').addEventListener("click", (e) => {
-        e.stopPropagation();
-        markReadUpTo(i);
-        updateNotifications();
-        showToast("Marked read");
-      });
-
-      // ✅ Delete actually removes the message
-      item.querySelector('[data-action="delete"]').addEventListener("click", async (e) => {
-        e.stopPropagation();
-        const messagesNow = loadMessages();
-        messagesNow.splice(i, 1);
-        adjustLastReadAfterDelete(i);
-        saveMessages(messagesNow);
-        renderMessages();
-        updateNotifications();
-        showToast("Deleted");
-        await pushRemoteState();
-      });
-
       list.appendChild(item);
     });
+  }
+
+  // ✅ Letter Viewer State (for TikTok-style swipe)
+  let letterViewerIndex = 0;
+  let duoLetters = [];
+
+  function openLetterViewer() {
+    const messages = loadMessages();
+    const userLower = loadUser().trim().toLowerCase();
+    
+    // Get all duo messages (from partner)
+    duoLetters = messages
+      .map((m, i) => ({ msg: m, idx: i }))
+      .filter(x => String(x.msg?.from || "").trim().toLowerCase() !== userLower && normalizeNewlines(x.msg?.content ?? "").trim())
+      .reverse(); // newest first
+    
+    if (duoLetters.length === 0) {
+      showToast("No letters from your duo yet");
+      return;
+    }
+    
+    letterViewerIndex = 0;
+    showLetterAt(letterViewerIndex, true); // true = first open, show animation
+  }
+
+  function showLetterAt(viewerIdx, animate = false) {
+    if (viewerIdx < 0 || viewerIdx >= duoLetters.length) return;
+    
+    const { msg, idx } = duoLetters[viewerIdx];
+    letterViewerIndex = viewerIdx;
+    
+    const displayName = msg.from || "Unknown";
+    $("letterFrom").textContent = displayName.toUpperCase();
+    $("letterTimestamp").textContent = msg.timestamp || "";
+    $("letterContent").textContent = normalizeNewlines(msg.content ?? "").trim();
+    
+    // Update counter
+    const counter = $("letterCounter");
+    if (counter) {
+      counter.textContent = `${viewerIdx + 1} / ${duoLetters.length}`;
+    }
+
+    // Show attachment if present
+    const attachmentContainer = $("letterAttachment");
+    if (attachmentContainer) {
+      if (msg.attachment) {
+        const isVideo = msg.attachmentType === 'video';
+        if (isVideo) {
+          attachmentContainer.innerHTML = `
+            <div class="letter-attachment-label">📎 Video Attachment</div>
+            <video controls playsinline class="letter-attachment-media" src="${escapeHtml(msg.attachment)}"></video>
+          `;
+        } else {
+          attachmentContainer.innerHTML = `
+            <div class="letter-attachment-label">📎 Image Attachment</div>
+            <img class="letter-attachment-media" src="${escapeHtml(msg.attachment)}" alt="Attachment" onclick="openAttachmentModal('${escapeHtml(msg.attachment)}', 'image')">
+          `;
+        }
+        attachmentContainer.classList.remove("hidden");
+      } else {
+        attachmentContainer.innerHTML = "";
+        attachmentContainer.classList.add("hidden");
+      }
+    }
+
+    // Mark as read
+    const userLower = loadUser().trim().toLowerCase();
+    const fromLower = String(msg.from || "").trim().toLowerCase();
+    if (userLower && fromLower && fromLower !== userLower) {
+      markReadUpTo(idx);
+      updateNotifications();
+    }
+
+    const modal = $("letterModal");
+    const env = document.querySelector(".letter-envelope");
+    const paper = document.querySelector(".letter-paper");
+
+    if (animate) {
+      // First open - show animation
+      letterAnimationInProgress = true;
+      modal.classList.remove("active");
+      if (env) env.classList.remove("open");
+      if (paper) paper.classList.remove("open");
+      void modal.offsetHeight;
+      
+      requestAnimationFrame(() => {
+        modal.classList.add("active");
+        if (env) env.classList.add("open");
+        setTimeout(() => {
+          if (paper) paper.classList.add("open");
+        }, 300);
+      });
+      
+      setTimeout(() => { letterAnimationInProgress = false; }, 900);
+    } else {
+      // Seamless transition - no animation, just update content
+      modal.classList.add("active");
+      if (env) env.classList.add("open");
+      if (paper) paper.classList.add("open");
+    }
+  }
+
+  function nextLetter() {
+    if (letterViewerIndex < duoLetters.length - 1) {
+      showLetterAt(letterViewerIndex + 1, false);
+    } else {
+      showToast("No more letters");
+    }
+  }
+
+  function prevLetter() {
+    if (letterViewerIndex > 0) {
+      showLetterAt(letterViewerIndex - 1, false);
+    } else {
+      showToast("This is the newest letter");
+    }
   }
 
   function openMessage(index) {
@@ -1109,9 +1311,10 @@
     return `${SUPABASE_URL}/storage/v1/object/public/${STORAGE_BUCKET}/${filename}`;
   }
 
-  // ✅ [FEATURE B] Current attachment state
+  // ✅ Current attachment state
   let pendingAttachment = null;
   let pendingAttachmentType = null;
+  let isUploading = false; // Guard against sending before upload completes
 
   // ---------- Wire up events ----------
   $("btnOpen").addEventListener("click", openGift);
@@ -1398,8 +1601,14 @@ $("userPill").addEventListener("click", () => openWhoModal());
         preview.classList.remove("hidden");
       }
       
+      // ✅ Set uploading flag
+      isUploading = true;
+      
       try {
+        console.log("Starting upload for:", file.name, file.type, file.size);
         const publicUrl = await uploadToSupabase(file);
+        console.log("Upload success! URL:", publicUrl);
+        
         pendingAttachment = publicUrl;
         pendingAttachmentType = isVideo ? "video" : "image";
         
@@ -1412,7 +1621,7 @@ $("userPill").addEventListener("click", () => openWhoModal());
             preview.classList.add("hidden");
           });
         }
-        showToast("Attachment ready");
+        showToast("Attachment ready!");
       } catch (err) {
         console.error("Upload error:", err);
         showToast("Upload failed: " + (err.message || "Unknown error"));
@@ -1420,12 +1629,20 @@ $("userPill").addEventListener("click", () => openWhoModal());
         pendingAttachmentType = null;
         e.target.value = "";
         if (preview) preview.classList.add("hidden");
+      } finally {
+        isUploading = false;
       }
     });
   }
 
   $("btnSaveNote").addEventListener("click", () => {
     if (!hasUser()) { showToast("Pick USER first"); return; }
+    
+    // ✅ Prevent sending while upload is in progress
+    if (isUploading) {
+      showToast("Wait for attachment to finish uploading...");
+      return;
+    }
 
     const content = normalizeNewlines($("customNote").value).trim();
     if (!content) {
@@ -1439,21 +1656,25 @@ $("userPill").addEventListener("click", () => openWhoModal());
     const timestamp = formatDT(new Date());
     const messages = loadMessages();
     
-    // ✅ [FEATURE B] Include attachment URL if present
+    // ✅ Capture attachment BEFORE clearing (important!)
+    const attachmentUrl = pendingAttachment;
+    const attachmentType = pendingAttachmentType;
+    
     const newMsg = { from, timestamp, content };
-    if (pendingAttachment) {
-      newMsg.attachment = pendingAttachment;
-      newMsg.attachmentType = pendingAttachmentType;
+    if (attachmentUrl) {
+      newMsg.attachment = attachmentUrl;
+      newMsg.attachmentType = attachmentType;
+      console.log("Sending message with attachment:", attachmentUrl);
     }
     messages.push(newMsg);
 
-    // ✅ sanitize immediately (prevents any empty record)
+    // ✅ sanitize immediately (preserves attachment fields)
     const cleaned = sanitizeMessages(messages);
     localStorage.setItem(KEY_MESSAGES, JSON.stringify(cleaned));
 
     $("customNote").value = "";
     
-    // ✅ [FEATURE B] Clear attachment after send
+    // ✅ Clear attachment AFTER capturing
     pendingAttachment = null;
     pendingAttachmentType = null;
     const attachInputEl = $("attachmentInput");
@@ -1463,25 +1684,20 @@ $("userPill").addEventListener("click", () => openWhoModal());
     
     renderMessages({ autoScroll: true });
     updateNotifications();
-    showToast("Letter sent");
+    showToast("Letter sent" + (attachmentUrl ? " with attachment" : ""));
     schedulePush();
   });
 
+  // ✅ Envelope button opens letter viewer
   $("envelopeBtn").addEventListener("click", () => {
     if (!hasUser()) { showToast("Pick USER first"); return; }
+    openLetterViewer();
+  });
 
-    const messages = loadMessages();
-    const userLower = loadUser().trim().toLowerCase();
-
-    let idx = -1;
-    for (let i = messages.length - 1; i >= 0; i--) {
-      const fromLower = String(messages[i]?.from || "").trim().toLowerCase();
-      const c = normalizeNewlines(messages[i]?.content ?? "").trim();
-      if (fromLower && fromLower !== userLower && c) { idx = i; break; }
-    }
-
-    if (idx >= 0) openMessage(idx);
-    else showToast("No duo letters yet");
+  // ✅ DUO pill click opens letter viewer
+  $("duoPill").addEventListener("click", () => {
+    if (!hasUser()) { showToast("Pick USER first"); return; }
+    openLetterViewer();
   });
 
   $("notificationBell").addEventListener("click", () => {
@@ -1504,6 +1720,36 @@ $("userPill").addEventListener("click", () => openWhoModal());
     
     letterAnimationInProgress = false;
   });
+
+  // ✅ Letter navigation buttons
+  const prevBtn = $("letterPrev");
+  const nextBtn = $("letterNext");
+  if (prevBtn) prevBtn.addEventListener("click", (e) => { e.stopPropagation(); prevLetter(); });
+  if (nextBtn) nextBtn.addEventListener("click", (e) => { e.stopPropagation(); nextLetter(); });
+
+  // ✅ Swipe support for letter viewer
+  let touchStartY = 0;
+  const letterModal = $("letterModal");
+  if (letterModal) {
+    letterModal.addEventListener("touchstart", (e) => {
+      touchStartY = e.touches[0].clientY;
+    }, { passive: true });
+    
+    letterModal.addEventListener("touchend", (e) => {
+      const touchEndY = e.changedTouches[0].clientY;
+      const diff = touchStartY - touchEndY;
+      
+      if (Math.abs(diff) > 50) { // minimum swipe distance
+        if (diff > 0) {
+          // Swipe up = next (older) letter
+          nextLetter();
+        } else {
+          // Swipe down = previous (newer) letter
+          prevLetter();
+        }
+      }
+    }, { passive: true });
+  }
 
   // ✅ [FEATURE B] Close attachment modal
   const closeAttachmentModal = $("closeAttachmentModal");
