@@ -1419,6 +1419,90 @@
   border-radius: 2px;
 }
 
+/* ✅ Calendar event indicators */
+.mini-cal-day.has-event {
+  position: relative;
+  cursor: pointer;
+}
+
+.cal-event-dot {
+  position: absolute;
+  bottom: 1px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 4px;
+  height: 4px;
+  border-radius: 50%;
+  background: currentColor;
+}
+
+.mini-cal-day.event-red {
+  color: #ff3b3b;
+  font-weight: 700;
+}
+
+.mini-cal-day.event-red .cal-event-dot {
+  background: #ff3b3b;
+  box-shadow: 0 0 4px rgba(255,59,59,.6);
+}
+
+.mini-cal-day.event-yellow {
+  color: #ffe93b;
+}
+
+.mini-cal-day.event-yellow .cal-event-dot {
+  background: #ffe93b;
+  box-shadow: 0 0 4px rgba(255,233,59,.6);
+}
+
+.mini-cal-day.event-green .cal-event-dot {
+  background: #3bff6b;
+  box-shadow: 0 0 4px rgba(59,255,107,.4);
+}
+
+/* Don't override today styling for red events - make it stand out */
+.mini-cal-day.today.event-red {
+  background: #ff3b3b;
+  color: #000;
+}
+
+.mini-cal-day.today.event-yellow {
+  background: #ffe93b;
+  color: #000;
+}
+
+/* ✅ Mission urgency badges */
+.urgency-badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  font-size: 12px;
+  font-weight: 700;
+  margin-left: 6px;
+  animation: urgencyPulse 1.5s infinite ease-in-out;
+}
+
+.urgency-badge.urgency-red {
+  background: #ff3b3b;
+  color: #000;
+  box-shadow: 0 0 8px rgba(255,59,59,.5);
+}
+
+.urgency-badge.urgency-yellow {
+  background: #ffe93b;
+  color: #000;
+  box-shadow: 0 0 8px rgba(255,233,59,.4);
+  animation: none; /* Yellow doesn't pulse */
+}
+
+@keyframes urgencyPulse {
+  0%, 100% { transform: scale(1); opacity: 1; }
+  50% { transform: scale(1.15); opacity: 0.9; }
+}
+
 /* ✅ Mission date display */
 .item-date {
   font-size: 9px;

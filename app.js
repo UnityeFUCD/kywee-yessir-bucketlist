@@ -863,24 +863,12 @@
     $("duoText").textContent = user ? `DUO: ${duo.toUpperCase()}` : "DUO: --";
     $("envelopeLabel").textContent = user ? `DUO: ${duo.toUpperCase()}` : "DUO";
 
-    setDot($("userDot"), user ? "green" : "gray", false);
-
-    if (!user || !lastPresence) {
-      setDot($("duoDot"), "gray", false);
-      return;
-    }
-
-    const duoKey = normalizePerson(duo);
-    const ts = lastPresence?.[duoKey];
-    if (!ts) {
-      setDot($("duoDot"), "gray", false);
-      return;
-    }
-
-    const t = new Date(ts).getTime();
-    const age = Date.now() - t;
-    if (Number.isFinite(age) && age <= 45000) setDot($("duoDot"), "green", false);
-    else setDot($("duoDot"), "gray", false);
+    // ✅ Simplified: Hide presence dots entirely (just show user/duo names)
+    // Conflict detection still works separately via checkDeviceConflict()
+    const userDot = $("userDot");
+    const duoDot = $("duoDot");
+    if (userDot) userDot.style.display = "none";
+    if (duoDot) duoDot.style.display = "none";
   }
 
   async function presencePing() {
@@ -917,17 +905,8 @@
     }
   }
 
-  // ✅ Local presence dot refresh (independent of network)
-  // This ensures dots decay from green → gray based on time alone
-  let presenceDotTimer = null;
-  function startPresenceDotRefresh() {
-    if (presenceDotTimer) return;
-    presenceDotTimer = setInterval(() => {
-      updateUserDuoPills();
-    }, 3000); // Check every 3 seconds for faster status decay
-  }
-  // Start immediately
-  startPresenceDotRefresh();
+  // ✅ Presence is now simplified - no online/offline dots
+  // Conflict detection still works via checkDeviceConflict() in pullRemoteState/presencePing
 
   // ---------- Notifications ----------
   let prevUnreadCount = 0;
@@ -1283,8 +1262,23 @@
       const el = document.createElement("div");
       el.className = "item" + (it.isExample ? " example" : "");
       
-      // ✅ Format date if present
-      const dateDisplay = it.dueDate ? `<span class="item-date"><i class="fas fa-calendar"></i> ${formatMissionDate(it.dueDate)}</span>` : '';
+      // ✅ Format date and calculate urgency
+      let dateDisplay = '';
+      let urgencyIndicator = '';
+      
+      if (it.dueDate) {
+        const days = daysUntil(it.dueDate);
+        const urgency = getUrgencyLevel(days);
+        
+        dateDisplay = `<span class="item-date"><i class="fas fa-calendar"></i> ${formatMissionDate(it.dueDate)}</span>`;
+        
+        // Add urgency indicator for missions due soon
+        if (urgency === "red") {
+          urgencyIndicator = `<span class="urgency-badge urgency-red" title="Due today or tomorrow!">!</span>`;
+        } else if (urgency === "yellow") {
+          urgencyIndicator = `<span class="urgency-badge urgency-yellow" title="Due in 2-3 days">•</span>`;
+        }
+      }
       
       el.innerHTML = `
         <input type="checkbox" ${it.done ? "checked" : ""} ${it.isExample ? "disabled" : ""} aria-label="Mark done">
@@ -1293,6 +1287,7 @@
             <span>${escapeHtml(it.title)}</span>
             <span class="itag">${escapeHtml(it.tag || "idea")}</span>
             ${dateDisplay}
+            ${urgencyIndicator}
           </div>
           <p class="idesc">${escapeHtml(it.desc || "")}</p>
         </div>
@@ -1445,7 +1440,75 @@
     return "";
   }
 
-  // ✅ Mini calendar for message log
+  // ✅ Calculate days until a date (0 = today, negative = past)
+  function daysUntil(dateStr) {
+    if (!dateStr) return null;
+    try {
+      const target = new Date(dateStr + "T00:00:00");
+      const today = new Date();
+      today.setHours(0, 0, 0, 0);
+      const diff = target.getTime() - today.getTime();
+      return Math.ceil(diff / (1000 * 60 * 60 * 24));
+    } catch {
+      return null;
+    }
+  }
+
+  // ✅ Get urgency level based on days until due
+  // Returns: "red" (0-1 days), "yellow" (2-3 days), "green" (4+ days), null (no date/past)
+  function getUrgencyLevel(daysLeft) {
+    if (daysLeft === null || daysLeft < 0) return null;
+    if (daysLeft <= 1) return "red";
+    if (daysLeft <= 3) return "yellow";
+    return "green";
+  }
+
+  // ✅ Get all dates with events (missions + upcoming events)
+  function getEventDates() {
+    const eventMap = {}; // { "YYYY-MM-DD": { urgency: "red"|"yellow"|"green", titles: [] } }
+    
+    // Add mission due dates
+    const missions = loadActive();
+    missions.forEach(m => {
+      if (m.dueDate) {
+        const days = daysUntil(m.dueDate);
+        const urgency = getUrgencyLevel(days);
+        if (urgency) {
+          if (!eventMap[m.dueDate]) {
+            eventMap[m.dueDate] = { urgency, titles: [] };
+          } else {
+            // Take the most urgent level
+            const levels = ["red", "yellow", "green"];
+            if (levels.indexOf(urgency) < levels.indexOf(eventMap[m.dueDate].urgency)) {
+              eventMap[m.dueDate].urgency = urgency;
+            }
+          }
+          eventMap[m.dueDate].titles.push(m.title);
+        }
+      }
+    });
+    
+    // Add upcoming events
+    UPCOMING_EVENTS.forEach(event => {
+      const days = daysUntil(event.date);
+      const urgency = getUrgencyLevel(days);
+      if (urgency) {
+        if (!eventMap[event.date]) {
+          eventMap[event.date] = { urgency, titles: [] };
+        } else {
+          const levels = ["red", "yellow", "green"];
+          if (levels.indexOf(urgency) < levels.indexOf(eventMap[event.date].urgency)) {
+            eventMap[event.date].urgency = urgency;
+          }
+        }
+        eventMap[event.date].titles.push(event.title);
+      }
+    });
+    
+    return eventMap;
+  }
+
+  // ✅ Mini calendar for message log (with event indicators)
   function renderMiniCalendar() {
     const now = new Date();
     const year = now.getFullYear();
@@ -1457,6 +1520,9 @@
     
     const firstDay = new Date(year, month, 1).getDay();
     const daysInMonth = new Date(year, month + 1, 0).getDate();
+    
+    // Get event dates for this month
+    const eventDates = getEventDates();
     
     let html = `<div class="mini-calendar">
       <div class="mini-cal-header">${monthNames[month]} ${year}</div>
@@ -1472,7 +1538,16 @@
     // Days of month
     for (let d = 1; d <= daysInMonth; d++) {
       const isToday = d === today;
-      html += `<span class="mini-cal-day${isToday ? ' today' : ''}">${d}</span>`;
+      const dateStr = `${year}-${String(month + 1).padStart(2, '0')}-${String(d).padStart(2, '0')}`;
+      const event = eventDates[dateStr];
+      
+      let classes = "mini-cal-day";
+      if (isToday) classes += " today";
+      if (event) classes += ` has-event event-${event.urgency}`;
+      
+      const tooltip = event ? `title="${event.titles.join(', ')}"` : '';
+      
+      html += `<span class="${classes}" ${tooltip}>${d}${event ? '<span class="cal-event-dot"></span>' : ''}</span>`;
     }
     
     html += `</div></div>`;
