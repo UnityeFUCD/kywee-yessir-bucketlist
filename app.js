@@ -912,6 +912,18 @@
     }
   }
 
+  // ✅ Local presence dot refresh (independent of network)
+  // This ensures dots decay from green → gray based on time alone
+  let presenceDotTimer = null;
+  function startPresenceDotRefresh() {
+    if (presenceDotTimer) return;
+    presenceDotTimer = setInterval(() => {
+      updateUserDuoPills();
+    }, 5000); // Check every 5 seconds for status decay
+  }
+  // Start immediately
+  startPresenceDotRefresh();
+
   // ---------- Notifications ----------
   let prevUnreadCount = 0;
 
@@ -1802,7 +1814,14 @@
       const remote = await remoteGetState();
       if (!remote || !remote.payload) {
         if (!silent) setSyncStatus("on");
+        // ✅ Still update presence dots (time-based decay)
+        updateUserDuoPills();
         return;
+      }
+
+      // ✅ Update lastPresence from response (for dot calculations)
+      if (remote.presence) {
+        lastPresence = remote.presence;
       }
 
       // ✅ ALWAYS check for device conflicts, even if updated_at hasn't changed
@@ -1814,6 +1833,9 @@
           activeDevices = remote.payload.activeDevices;
         }
       }
+
+      // ✅ ALWAYS update presence dots (they're time-based, need constant refresh)
+      updateUserDuoPills();
 
       // 🔒 Skip full state apply if nothing changed (no UI spam)
       if (remote.updated_at && remote.updated_at === lastRemoteUpdatedAt) {
@@ -1836,7 +1858,7 @@
       renderPhotoGallery(); // ✅ Sync photos across devices
       // ✅ Pass silent flag to avoid sound on background pulls
       updateNotifications({ silent });
-      updateUserDuoPills();
+      // updateUserDuoPills already called above
 
       setSyncStatus("on");
 
@@ -2003,7 +2025,24 @@
     showToast(`USER SET: ${String(name).toUpperCase()}`);
   }
 
-  function logOffUser() {
+  async function logOffUser() {
+    // ✅ Send explicit offline signal BEFORE clearing user
+    // This lets other devices know immediately (not waiting for 45s timeout)
+    const currentUser = loadUser();
+    if (currentUser) {
+      try {
+        // Clear our device from activeDevices and mark presence as old
+        const user = currentUser.toLowerCase();
+        if (activeDevices[user]) {
+          delete activeDevices[user];
+        }
+        // Push the cleared activeDevices immediately
+        await pushRemoteState();
+      } catch {
+        // Ignore errors on logout
+      }
+    }
+    
     clearUser();
     stopPresence();
     updateUserDuoPills();
@@ -2531,9 +2570,26 @@ $("userPill").addEventListener("click", () => openWhoModal());
   const photoCountHint = $("photoCountHint");
   const stagedCountEl = $("stagedCount");
   const missionCapacityEl = $("missionCapacity");
+  const stagingCapacityEl = $("stagingCapacity");
   
   // Staged files waiting to be uploaded
   let stagedFiles = [];
+  
+  // ✅ Update staging header to show capacity for selected mission
+  function updateStagingCapacity() {
+    if (!stagingCapacityEl || !photoMissionSelect) return;
+    
+    const mission = photoMissionSelect.value;
+    if (!mission) {
+      stagingCapacityEl.textContent = "• Allowed: Unlimited";
+      stagingCapacityEl.className = "staging-capacity unlimited";
+    } else {
+      const existingCount = loadPhotos().filter(p => p.mission === mission).length;
+      const remaining = Math.max(0, 5 - existingCount);
+      stagingCapacityEl.textContent = `• Allowed for "${mission}": ${remaining}`;
+      stagingCapacityEl.className = remaining <= 0 ? "staging-capacity full" : "staging-capacity";
+    }
+  }
   
   function updateStagedCount() {
     if (stagedCountEl) stagedCountEl.textContent = stagedFiles.length;
@@ -2546,25 +2602,32 @@ $("userPill").addEventListener("click", () => openWhoModal());
         photoSelectBtn.innerHTML = '<i class="fa-solid fa-upload"></i> Select Photos';
       }
     }
+    
+    // ✅ Also update staging capacity display
+    updateStagingCapacity();
   }
   
   function updateMissionCapacity() {
     if (!missionCapacityEl || !photoMissionSelect) return;
     
     const mission = photoMissionSelect.value;
+    
+    // ✅ Show "unlimited" for unlinked photos
     if (!mission) {
-      missionCapacityEl.textContent = "";
+      missionCapacityEl.textContent = "✓ Unlinked = unlimited uploads";
+      missionCapacityEl.className = "mission-capacity unlimited";
       return;
     }
     
     const existingCount = loadPhotos().filter(p => p.mission === mission).length;
     const remaining = 5 - existingCount;
     
+    // ✅ Clearer labeling: "On this mission: X/5 saved"
     if (remaining <= 0) {
-      missionCapacityEl.textContent = "⚠️ This mission is full (5/5)";
+      missionCapacityEl.textContent = "⚠️ Mission full: 5/5 saved";
       missionCapacityEl.className = "mission-capacity full";
     } else {
-      missionCapacityEl.textContent = `${existingCount}/5 photos (${remaining} more allowed)`;
+      missionCapacityEl.textContent = `On this mission: ${existingCount}/5 saved (${remaining} slots left)`;
       missionCapacityEl.className = "mission-capacity";
     }
   }
@@ -2639,7 +2702,10 @@ $("userPill").addEventListener("click", () => openWhoModal());
   
   // Update capacity when mission changes
   if (photoMissionSelect) {
-    photoMissionSelect.addEventListener("change", updateMissionCapacity);
+    photoMissionSelect.addEventListener("change", () => {
+      updateMissionCapacity();
+      updateStagingCapacity();
+    });
   }
   
   // Clear all staged files
@@ -2676,11 +2742,11 @@ $("userPill").addEventListener("click", () => openWhoModal());
         const existingPhotos = loadPhotos().filter(p => p.mission === mission);
         const remaining = 5 - existingPhotos.length;
         if (remaining <= 0) {
-          showToast(`This mission is full (5/5 photos)`);
+          showToast(`Mission full (5/5). Select "No mission linked" for unlimited.`);
           return;
         }
         if (stagedFiles.length > remaining) {
-          showToast(`Can only add ${remaining} more photo(s). Remove ${stagedFiles.length - remaining} from staging.`);
+          showToast(`Only ${remaining} slot(s) left. Remove ${stagedFiles.length - remaining} or select "No mission linked".`);
           return;
         }
       }

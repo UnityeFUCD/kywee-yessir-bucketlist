@@ -1601,6 +1601,8 @@ input[type="date"]::-webkit-calendar-picker-indicator {
   display: flex;
   justify-content: space-between;
   align-items: center;
+  flex-wrap: wrap;
+  gap: 8px;
   margin-bottom: 12px;
   font-size: 12px;
   text-transform: uppercase;
@@ -1798,6 +1800,25 @@ input[type="date"]::-webkit-calendar-picker-indicator {
 }
 
 .mission-capacity.full {
+  color: #ff3366;
+}
+
+.mission-capacity.unlimited {
+  color: #3bff6b;
+}
+
+/* ✅ Staging capacity display in header */
+.staging-capacity {
+  font-size: 11px;
+  color: var(--muted);
+  margin-left: 8px;
+}
+
+.staging-capacity.unlimited {
+  color: #3bff6b;
+}
+
+.staging-capacity.full {
   color: #ff3366;
 }
 

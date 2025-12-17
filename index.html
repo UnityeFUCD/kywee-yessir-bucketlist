@@ -247,7 +247,7 @@
           <h2>[▸] MEMORIES_GALLERY</h2>
         </div>
         <div class="cardBody">
-          <p class="note">// Upload photos linked to completed missions (max 5 per mission)</p>
+          <p class="note">// Max 5 photos per mission. Upload multiple times. Unlinked photos = unlimited.</p>
           
           <div class="photo-upload-section">
             <div class="photo-upload-row">
@@ -259,7 +259,8 @@
             <!-- Staging area for photos before submit -->
             <div id="photoStagingArea" class="photo-staging hidden">
               <div class="staging-header">
-                <span>Photos to upload: <span id="stagedCount">0</span></span>
+                <span>Staged: <span id="stagedCount">0</span> photos</span>
+                <span class="staging-capacity" id="stagingCapacity"></span>
                 <button class="btn btn-small" id="clearStagingBtn">Clear All</button>
               </div>
               <div id="stagingPreview" class="staging-preview"></div>
