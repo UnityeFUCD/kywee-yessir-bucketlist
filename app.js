@@ -859,6 +859,22 @@
     return "";
   }
 
+  function isOnlineLive(nameLower) {
+    try {
+      if (!nameLower) return false;
+      // Use live presence if available
+      if (typeof presenceChannel !== 'undefined' && presenceChannel) {
+        const st = presenceChannel.presenceState?.() || {};
+        return Array.isArray(st[nameLower]) && st[nameLower].length > 0;
+      }
+      // Fallback to lastPresence timestamp (<=45s old = online)
+      const ts = lastPresence?.[nameLower];
+      if (!ts) return false;
+      const age = Date.now() - new Date(ts).getTime();
+      return Number.isFinite(age) && age <= 45000;
+    } catch { return false; }
+  }
+
   function updateUserDuoPills() {
     const user = loadUser().trim();
     const duo = getDuoName(user);
@@ -867,12 +883,33 @@
     $("duoText").textContent = user ? `DUO: ${duo.toUpperCase()}` : "DUO: --";
     $("envelopeLabel").textContent = user ? `DUO: ${duo.toUpperCase()}` : "DUO";
 
-    // ✅ Simplified: Hide presence dots entirely (just show user/duo names)
-    // Conflict detection still works separately via checkDeviceConflict()
+    // Icon styles
+    const userIcon = $("userIcon");
+    const duoIcon = $("duoIcon");
+    const userClass = getUserColorClass(user);
+    const duoClass = getUserColorClass(duo);
+
+    if (userIcon) {
+      userIcon.classList.remove('fa-regular', 'fa-solid', 'user-yasir', 'user-kylee');
+      userIcon.classList.add(userClass || '');
+      // If logged in, show solid; otherwise outline
+      userIcon.classList.add(user ? 'fa-solid' : 'fa-regular');
+    }
+    if (duoIcon) {
+      duoIcon.classList.remove('fa-regular', 'fa-solid', 'user-yasir', 'user-kylee');
+      duoIcon.classList.add(duoClass || '');
+      const duoOnline = isOnlineLive(duo?.toLowerCase());
+      duoIcon.classList.add(duoOnline ? 'fa-solid' : 'fa-regular');
+    }
+
+    // Dots reflect sync status if desired; keep visible but color by online
     const userDot = $("userDot");
     const duoDot = $("duoDot");
-    if (userDot) userDot.style.display = "none";
-    if (duoDot) duoDot.style.display = "none";
+    if (userDot) { userDot.className = 'dot ' + (user ? 'green' : 'gray'); }
+    if (duoDot) {
+      const duoOnline = isOnlineLive(duo?.toLowerCase());
+      duoDot.className = 'dot ' + (duoOnline ? 'green' : 'gray');
+    }
   }
 
   async function presencePing() {
@@ -960,6 +997,8 @@
       deviceLocked = false;
       hideDeviceConflict();
     }
+    // Update pill icons/dots on every presence sync
+    updateUserDuoPills();
   }
 
   function stopLivePresence() {
@@ -1476,13 +1515,6 @@
     const container = $("messageLog");
     container.innerHTML = "";
 
-    // ✅ Mini calendar header
-    const calendarHtml = renderMiniCalendar();
-    const calendarDiv = document.createElement("div");
-    calendarDiv.className = "mini-calendar-wrapper";
-    calendarDiv.innerHTML = calendarHtml;
-    container.appendChild(calendarDiv);
-
     // ✅ [FEATURE A] Render newest-first (reverse order)
     const reversed = [...messages].reverse();
 
@@ -1514,6 +1546,8 @@
       if (container.classList.contains("scroll")) container.scrollTop = 0;
     }
     lastMsgCount = messages.length;
+    // Keep big calendar in sync with new messages
+    renderBigCalendar();
   }
 
   // ✅ Get user-specific color class
@@ -2185,6 +2219,77 @@
     if (logoffBtn) {
       logoffBtn.classList.toggle("hidden", !hasUser());
     }
+  }
+
+  // ✅ Big calendar above message log
+  function renderBigCalendar() {
+    const cal = $("bigCalendar");
+    if (!cal) return;
+    const now = new Date();
+    const currentYear = now.getFullYear();
+    const currentMonth = now.getMonth();
+    const currentDate = now.getDate();
+
+    // Load messages to mark days with messages
+    const msgs = loadMessages();
+    const msgDates = new Set(
+      msgs.map(m => {
+        const d = new Date(m.timestamp || Date.now());
+        if (isNaN(d)) return null;
+        return `${d.getFullYear()}-${d.getMonth()}-${d.getDate()}`;
+      }).filter(Boolean)
+    );
+
+    // State from selects if already rendered
+    const selMonthEl = document.getElementById('calMonthSelect');
+    const selYearEl = document.getElementById('calYearSelect');
+    let selMonth = selMonthEl ? Number(selMonthEl.value) : currentMonth;
+    let selYear = selYearEl ? Number(selYearEl.value) : currentYear;
+
+    const months = ["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"];
+    const years = [currentYear - 1, currentYear, currentYear + 1];
+    cal.innerHTML = `
+      <div class="calendar__opts">
+        <select id="calMonthSelect" name="calendar__month">
+          ${months.map((m,i)=>`<option value="${i}" ${i===selMonth?'selected':''}>${m}</option>`).join('')}
+        </select>
+        <select id="calYearSelect" name="calendar__year">
+          ${years.map(y=>`<option value="${y}" ${y===selYear?'selected':''}>${y}</option>`).join('')}
+        </select>
+      </div>
+      <div class="calendar__body">
+        <div class="calendar__days">
+          <div>Su</div><div>Mo</div><div>Tu</div><div>We</div><div>Th</div><div>Fr</div><div>Sa</div>
+        </div>
+        <div class="calendar__dates" id="calDates"></div>
+      </div>
+    `;
+
+    const firstDay = new Date(selYear, selMonth, 1);
+    const startDow = firstDay.getDay();
+    const daysInMonth = new Date(selYear, selMonth + 1, 0).getDate();
+    const prevMonthDays = new Date(selYear, selMonth, 0).getDate();
+
+    const datesEl = document.getElementById('calDates');
+    const cells = [];
+    for (let i = 0; i < startDow; i++) {
+      const d = prevMonthDays - startDow + 1 + i;
+      cells.push({ text: d, grey: true });
+    }
+    for (let d = 1; d <= daysInMonth; d++) {
+      const isToday = (selYear===currentYear && selMonth===currentMonth && d===currentDate);
+      const hasMsg = msgDates.has(`${selYear}-${selMonth}-${d}`);
+      cells.push({ text: d, today: isToday, hasMsg });
+    }
+    while (cells.length % 7 !== 0) cells.push({ text: '', grey: true });
+
+    datesEl.innerHTML = cells.map(c => {
+      const cls = ["calendar__date"]; if (c.grey) cls.push("calendar__date--grey"); if (c.today) cls.push("calendar__date--today"); if (c.hasMsg) cls.push("calendar__date--hasmsg");
+      return `<div class="${cls.join(' ')}"><span>${c.text}</span></div>`;
+    }).join('');
+
+    document.getElementById('calMonthSelect').addEventListener('change', renderBigCalendar);
+    document.getElementById('calYearSelect').addEventListener('change', renderBigCalendar);
   }
 
   function closeWhoModal() {
@@ -3216,6 +3321,9 @@ ${completed.map(i => `[X] ${i.title} — ${i.desc} (#${i.tag})`).join("\n")}
 
     // ✅ Fetch Medal clips (if configured)
     fetchMedalClips();
+
+    // ✅ Render big calendar initially
+    renderBigCalendar();
 
     // ✅ IMPORTANT: remember user on refresh (no re-asking)
     if (!hasUser()) {
