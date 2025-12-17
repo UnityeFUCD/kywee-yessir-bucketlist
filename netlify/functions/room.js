@@ -1,8 +1,9 @@
-// netlify/functions/room.js
+﻿// netlify/functions/room.js
 // Stores/loads the shared state in Supabase (server-side key stays secret in Netlify env)
 
 const TABLE = "bucket_rooms";
 
+const DEVICE_TTL_MS = Number(process.env.DEVICE_TTL_MS || 20000);
 function json(statusCode, body) {
   return {
     statusCode,
@@ -58,7 +59,7 @@ exports.handler = async (event) => {
       const payload = first?.payload || {};
       const presence = payload?.presence || {};
       const activeDevices = payload?.activeDevices || {};
-      // ✅ Return presenceVersion so clients can detect presence-only changes
+      // âœ… Return presenceVersion so clients can detect presence-only changes
       const presenceVersion = payload?.presenceVersion || 0;
 
       return json(200, {
@@ -107,7 +108,7 @@ exports.handler = async (event) => {
       // Merge main payload if provided
       if (isPayloadWrite) {
         merged = { ...merged, ...payloadIn };
-        // ✅ Check if activeDevices changed (for presenceVersion bump)
+        // âœ… Check if activeDevices changed (for presenceVersion bump)
         if (payloadIn.activeDevices !== undefined) {
           presenceChanged = true;
         }
@@ -124,18 +125,30 @@ exports.handler = async (event) => {
         }
       }
 
-      // ✅ Increment presenceVersion when presence or activeDevices changes
+      // âœ… Increment presenceVersion when presence or activeDevices changes
       // This lets clients detect changes even when updated_at doesn't bump
       if (presenceChanged) {
         merged.presenceVersion = (merged.presenceVersion || 0) + 1;
       }
 
-      // ✅ IMPORTANT:
+      // âœ… IMPORTANT:
       // - Only bump updated_at when payload changes (not presence pings)
       let nextUpdatedAt = existingUpdatedAt;
       if (isPayloadWrite) nextUpdatedAt = new Date().toISOString();
       if (!nextUpdatedAt) nextUpdatedAt = new Date().toISOString(); // first create
 
+      // prune stale activeDevices by TTL (server-side auto-resolve)
+      if (merged.activeDevices && typeof merged.activeDevices === "object") {
+        const now = Date.now();
+        for (const u of Object.keys(merged.activeDevices)) {
+          const rec = merged.activeDevices[u] || {};
+          const last = Number(rec.lastActive || 0);
+          if (!Number.isFinite(last) || (now - last) > DEVICE_TTL_MS) {
+            delete merged.activeDevices[u];
+            presenceChanged = true;
+          }
+        }
+      }
       const upsertUrl = `${SUPABASE_URL}/rest/v1/${TABLE}?on_conflict=room`;
 
       const r = await fetch(upsertUrl, {
@@ -153,7 +166,7 @@ exports.handler = async (event) => {
 
       if (!r.ok) return json(500, { error: "supabase write failed" });
 
-      // ✅ Always return presenceVersion so clients can track presence changes
+      // âœ… Always return presenceVersion so clients can track presence changes
       return json(200, {
         ok: true,
         payload: merged,
