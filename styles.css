@@ -1412,6 +1412,14 @@
   padding: 2px 6px;
   border: 1px solid var(--border);
   background: rgba(255,107,157,.05);
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.item-date i {
+  font-size: 8px;
+  color: var(--accent);
 }
 
 /* ✅ Date input styling */
@@ -1550,12 +1558,227 @@ input[type="date"]::-webkit-calendar-picker-indicator {
   display: grid;
   grid-template-columns: 1fr 1fr;
   gap: 12px;
+  margin-bottom: 12px;
 }
 
 @media (max-width: 500px) {
   .photo-upload-options {
     grid-template-columns: 1fr;
   }
+}
+
+/* ============================================
+   PHOTO STAGING AREA
+   ============================================ */
+
+.photo-staging {
+  margin-top: 16px;
+  padding: 16px;
+  border: 2px solid var(--accent);
+  background: rgba(255,107,157,0.05);
+}
+
+.photo-staging.hidden {
+  display: none;
+}
+
+.staging-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 12px;
+  font-size: 12px;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  font-weight: 700;
+}
+
+.staging-preview {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  margin-bottom: 16px;
+  max-height: 200px;
+  overflow-y: auto;
+}
+
+.staging-item {
+  position: relative;
+  width: 80px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+}
+
+.staging-thumb {
+  width: 80px;
+  height: 80px;
+  object-fit: cover;
+  border: 2px solid var(--border);
+}
+
+.staging-name {
+  font-size: 9px;
+  color: var(--muted);
+  text-align: center;
+  word-break: break-all;
+}
+
+.staging-remove {
+  position: absolute;
+  top: -6px;
+  right: -6px;
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  background: var(--accent);
+  color: #fff;
+  border: none;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 10px;
+}
+
+.staging-remove:hover {
+  background: #ff3366;
+}
+
+.btn-small {
+  padding: 6px 10px;
+  font-size: 10px;
+}
+
+/* ============================================
+   DELETE CONFIRMATION MODAL
+   ============================================ */
+
+.delete-confirm-modal {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0,0,0,0.8);
+  z-index: 5000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 20px;
+}
+
+.delete-confirm-content {
+  background: var(--bg-card);
+  border: 2px solid var(--accent);
+  padding: 24px;
+  max-width: 400px;
+  text-align: center;
+}
+
+.delete-confirm-content p {
+  margin-bottom: 20px;
+  font-size: 14px;
+  line-height: 1.5;
+}
+
+.delete-confirm-actions {
+  display: flex;
+  gap: 12px;
+  justify-content: center;
+}
+
+.btn-danger {
+  background: #ff3366;
+  border-color: #ff3366;
+  color: #fff;
+}
+
+.btn-danger:hover {
+  background: #cc2952;
+  border-color: #cc2952;
+}
+
+/* ============================================
+   GALLERY ITEM DELETE BUTTON
+   ============================================ */
+
+.gallery-item {
+  position: relative;
+}
+
+.gallery-item-delete {
+  position: absolute;
+  top: 4px;
+  right: 4px;
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  background: rgba(0,0,0,0.7);
+  color: #fff;
+  border: none;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 10px;
+  opacity: 0;
+  transition: opacity 0.15s ease;
+}
+
+.gallery-item:hover .gallery-item-delete {
+  opacity: 1;
+}
+
+.gallery-item-delete:hover {
+  background: #ff3366;
+}
+
+/* ============================================
+   BUNDLE HEADER LAYOUT
+   ============================================ */
+
+.bundle-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 12px 16px;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.bundle-header-left {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex: 1;
+}
+
+.bundle-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.bundle-delete-btn {
+  width: 28px;
+  height: 28px;
+  border: 1px solid var(--border);
+  background: transparent;
+  color: var(--muted);
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 11px;
+  transition: all 0.15s ease;
+}
+
+.bundle-delete-btn:hover {
+  border-color: #ff3366;
+  color: #ff3366;
+  background: rgba(255,51,102,0.1);
 }
 
 .photo-gallery {

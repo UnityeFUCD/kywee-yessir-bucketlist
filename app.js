@@ -382,27 +382,50 @@
       
       const bundle = document.createElement("div");
       bundle.className = "gallery-mission-bundle";
+      bundle.dataset.mission = missionKey;
       bundle.innerHTML = `
-        <div class="bundle-header" onclick="toggleBundle(this)">
-          <span class="bundle-mission"><i class="fa-solid fa-${isUnlinked ? 'images' : 'link'}"></i> ${escapeHtml(displayName)}</span>
-          <span class="bundle-count">${missionPhotos.length} photo${missionPhotos.length !== 1 ? 's' : ''}</span>
-          <span class="bundle-expand"><i class="fas fa-chevron-down"></i></span>
+        <div class="bundle-header">
+          <div class="bundle-header-left" onclick="toggleBundle(this.parentElement)">
+            <span class="bundle-mission"><i class="fa-solid fa-${isUnlinked ? 'images' : 'link'}"></i> ${escapeHtml(displayName)}</span>
+            <span class="bundle-count">${missionPhotos.length} photo${missionPhotos.length !== 1 ? 's' : ''}</span>
+          </div>
+          <div class="bundle-actions">
+            <button class="bundle-delete-btn" title="Delete all photos in this bundle"><i class="fas fa-trash"></i></button>
+            <span class="bundle-expand" onclick="toggleBundle(this.closest('.bundle-header'))"><i class="fas fa-chevron-down"></i></span>
+          </div>
         </div>
         <div class="bundle-photos collapsed">
           <div class="gallery-grid"></div>
         </div>
       `;
       
+      // Delete bundle handler
+      bundle.querySelector(".bundle-delete-btn").addEventListener("click", (e) => {
+        e.stopPropagation();
+        showDeleteConfirm(missionKey, displayName);
+      });
+      
       const grid = bundle.querySelector(".gallery-grid");
       missionPhotos.forEach((photo, idx) => {
         const item = document.createElement("div");
         item.className = "gallery-item";
-        item.innerHTML = `<img src="${escapeHtml(photo.url)}" alt="Memory" loading="lazy">`;
-        item.addEventListener("click", () => {
-          // Find absolute index in photos array
+        item.innerHTML = `
+          <img src="${escapeHtml(photo.url)}" alt="Memory" loading="lazy">
+          <button class="gallery-item-delete" title="Delete this photo"><i class="fas fa-times"></i></button>
+        `;
+        
+        // Click to open lightbox
+        item.querySelector("img").addEventListener("click", () => {
           const absIdx = photos.findIndex(p => p.url === photo.url);
           openPhotoLightbox(photo.url, absIdx >= 0 ? absIdx : 0);
         });
+        
+        // Delete single photo
+        item.querySelector(".gallery-item-delete").addEventListener("click", (e) => {
+          e.stopPropagation();
+          showDeleteConfirm("_single_", photo.url, photo);
+        });
+        
         grid.appendChild(item);
       });
       
@@ -410,11 +433,65 @@
     });
   }
 
+  // ✅ Delete confirmation modal
+  function showDeleteConfirm(type, identifier, photoObj = null) {
+    const existing = document.querySelector(".delete-confirm-modal");
+    if (existing) existing.remove();
+    
+    const modal = document.createElement("div");
+    modal.className = "delete-confirm-modal";
+    
+    let message = "";
+    if (type === "_single_") {
+      message = "Delete this photo? This is permanent.";
+    } else if (type === "_unlinked_") {
+      message = "Delete ALL unlinked photos? This is permanent.";
+    } else {
+      message = `Delete ALL photos from "${identifier}"? This is permanent.`;
+    }
+    
+    modal.innerHTML = `
+      <div class="delete-confirm-content">
+        <p>${escapeHtml(message)}</p>
+        <div class="delete-confirm-actions">
+          <button class="btn" id="cancelDeleteBtn">Cancel</button>
+          <button class="btn btn-danger" id="confirmDeleteBtn"><i class="fas fa-trash"></i> Delete</button>
+        </div>
+      </div>
+    `;
+    
+    document.body.appendChild(modal);
+    
+    modal.querySelector("#cancelDeleteBtn").addEventListener("click", () => modal.remove());
+    modal.querySelector("#confirmDeleteBtn").addEventListener("click", () => {
+      let photos = loadPhotos();
+      
+      if (type === "_single_" && photoObj) {
+        // Delete single photo by URL
+        photos = photos.filter(p => p.url !== identifier);
+      } else {
+        // Delete all photos in this mission/unlinked group
+        const missionKey = type === "_unlinked_" ? "" : type;
+        photos = photos.filter(p => (p.mission || "") !== (missionKey === "_unlinked_" ? "" : missionKey));
+      }
+      
+      savePhotos(photos);
+      renderPhotoGallery();
+      showToast("Deleted!");
+      modal.remove();
+    });
+    
+    // Close on backdrop click
+    modal.addEventListener("click", (e) => {
+      if (e.target === modal) modal.remove();
+    });
+  }
+
   // ✅ Toggle bundle expand/collapse
   window.toggleBundle = function(header) {
     const bundle = header.closest('.gallery-mission-bundle');
     const photos = bundle.querySelector('.bundle-photos');
-    const icon = header.querySelector('.bundle-expand i');
+    const icon = bundle.querySelector('.bundle-expand i');
     
     photos.classList.toggle('collapsed');
     icon.classList.toggle('fa-chevron-down');
@@ -1054,7 +1131,7 @@
       el.className = "item" + (it.isExample ? " example" : "");
       
       // ✅ Format date if present
-      const dateDisplay = it.dueDate ? `<span class="item-date">📅 ${formatMissionDate(it.dueDate)}</span>` : '';
+      const dateDisplay = it.dueDate ? `<span class="item-date"><i class="fas fa-calendar"></i> ${formatMissionDate(it.dueDate)}</span>` : '';
       
       el.innerHTML = `
         <input type="checkbox" ${it.done ? "checked" : ""} ${it.isExample ? "disabled" : ""} aria-label="Mark done">
@@ -2060,57 +2137,132 @@ $("userPill").addEventListener("click", () => openWhoModal());
     });
   }
 
-  // ✅ Photo Gallery handlers
-  const photoUploadBtn = $("photoUploadBtn");
+  // ✅ Photo Gallery handlers with staging area
+  const photoSelectBtn = $("photoSelectBtn");
   const photoInput = $("photoInput");
   const photoDateInput = $("photoDate");
   const photoMissionSelect = $("photoMission");
+  const photoStagingArea = $("photoStagingArea");
+  const stagingPreview = $("stagingPreview");
+  const clearStagingBtn = $("clearStagingBtn");
+  const photoSubmitBtn = $("photoSubmitBtn");
   
-  if (photoUploadBtn && photoInput) {
-    photoUploadBtn.addEventListener("click", () => photoInput.click());
+  // Staged files waiting to be uploaded
+  let stagedFiles = [];
+  
+  function renderStagingPreview() {
+    if (!stagingPreview) return;
+    stagingPreview.innerHTML = "";
     
-    photoInput.addEventListener("change", async (e) => {
+    stagedFiles.forEach((file, idx) => {
+      const item = document.createElement("div");
+      item.className = "staging-item";
+      
+      // Create thumbnail
+      const url = URL.createObjectURL(file);
+      const isVideo = file.type.startsWith("video/");
+      
+      item.innerHTML = `
+        ${isVideo 
+          ? `<video src="${url}" class="staging-thumb"></video>`
+          : `<img src="${url}" class="staging-thumb" alt="Preview">`
+        }
+        <span class="staging-name">${escapeHtml(file.name.substring(0, 20))}${file.name.length > 20 ? '...' : ''}</span>
+        <button class="staging-remove" data-idx="${idx}" title="Remove"><i class="fas fa-times"></i></button>
+      `;
+      
+      // Remove button handler
+      item.querySelector(".staging-remove").addEventListener("click", (e) => {
+        e.stopPropagation();
+        const removeIdx = parseInt(e.currentTarget.dataset.idx);
+        stagedFiles.splice(removeIdx, 1);
+        renderStagingPreview();
+        if (stagedFiles.length === 0) {
+          photoStagingArea.classList.add("hidden");
+        }
+      });
+      
+      stagingPreview.appendChild(item);
+    });
+  }
+  
+  if (photoSelectBtn && photoInput) {
+    photoSelectBtn.addEventListener("click", () => photoInput.click());
+    
+    photoInput.addEventListener("change", (e) => {
       const files = Array.from(e.target.files || []);
       if (files.length === 0) return;
       
-      const date = photoDateInput?.value || new Date().toISOString().split('T')[0];
+      // Add to staged files
+      files.forEach(file => {
+        if (file.type.startsWith("image/") || file.type.startsWith("video/")) {
+          stagedFiles.push(file);
+        }
+      });
+      
+      if (stagedFiles.length > 0) {
+        photoStagingArea.classList.remove("hidden");
+        renderStagingPreview();
+        
+        // Set default date to today if not set
+        if (!photoDateInput.value) {
+          photoDateInput.value = new Date().toISOString().split('T')[0];
+        }
+      }
+      
+      // Reset input so same file can be selected again
+      photoInput.value = "";
+    });
+  }
+  
+  // Clear all staged files
+  if (clearStagingBtn) {
+    clearStagingBtn.addEventListener("click", () => {
+      stagedFiles = [];
+      stagingPreview.innerHTML = "";
+      photoStagingArea.classList.add("hidden");
+      photoDateInput.value = "";
+      photoMissionSelect.value = "";
+    });
+  }
+  
+  // Submit staged photos
+  if (photoSubmitBtn) {
+    photoSubmitBtn.addEventListener("click", async () => {
+      if (stagedFiles.length === 0) {
+        showToast("No photos to upload!");
+        return;
+      }
+      
+      const date = photoDateInput?.value;
+      if (!date) {
+        showToast("Please select a date!");
+        return;
+      }
+      
       const mission = photoMissionSelect?.value || "";
       
-      // ✅ Check max 5 photos per mission
+      // Check max 5 photos per mission
       if (mission) {
         const existingPhotos = loadPhotos().filter(p => p.mission === mission);
         const remaining = 5 - existingPhotos.length;
         if (remaining <= 0) {
           showToast(`Max 5 photos per mission! "${mission}" is full.`);
-          photoInput.value = "";
           return;
         }
-        if (files.length > remaining) {
-          showToast(`Can only add ${remaining} more photo(s) to "${mission}"`);
+        if (stagedFiles.length > remaining) {
+          showToast(`Can only add ${remaining} more photo(s) to "${mission}". Remove some.`);
+          return;
         }
       }
       
-      photoUploadBtn.disabled = true;
-      photoUploadBtn.innerHTML = '<i class="fa-solid fa-upload"></i> Uploading...';
+      photoSubmitBtn.disabled = true;
+      photoSubmitBtn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Uploading...';
       
       let successCount = 0;
       const photos = loadPhotos();
       
-      for (const file of files) {
-        // Check limit again inside loop
-        if (mission) {
-          const currentCount = photos.filter(p => p.mission === mission).length;
-          if (currentCount >= 5) {
-            showToast(`Max 5 reached for "${mission}"`);
-            break;
-          }
-        }
-        
-        if (!file.type.startsWith("image/") && !file.type.startsWith("video/")) {
-          showToast(`Skipped ${file.name} - not an image/video`);
-          continue;
-        }
-        
+      for (const file of stagedFiles) {
         try {
           const url = await uploadPhotoToSupabase(file);
           photos.push({
@@ -2134,9 +2286,15 @@ $("userPill").addEventListener("click", () => openWhoModal());
         renderPhotoGallery();
       }
       
-      photoInput.value = "";
-      photoUploadBtn.disabled = false;
-      photoUploadBtn.innerHTML = '<i class="fa-solid fa-upload"></i> Upload Photos';
+      // Clear staging
+      stagedFiles = [];
+      stagingPreview.innerHTML = "";
+      photoStagingArea.classList.add("hidden");
+      photoDateInput.value = "";
+      photoMissionSelect.value = "";
+      
+      photoSubmitBtn.disabled = false;
+      photoSubmitBtn.innerHTML = '<i class="fa-solid fa-check"></i> Submit Photos';
     });
   }
   
