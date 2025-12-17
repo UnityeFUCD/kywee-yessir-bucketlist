@@ -67,10 +67,6 @@
   const STORAGE_BUCKET = "attachments";
   const PHOTOS_BUCKET = "photos";
 
-  // ✅ [MEDAL API CONFIG] - Replace with your actual values!
-  const MEDAL_API_KEY = "YOUR_MEDAL_API_KEY_HERE"; // Get from medal.tv/developers
-  const MEDAL_USER_ID = "YOUR_MEDAL_USER_ID_HERE"; // Your Medal user ID
-
   const $ = (id) => document.getElementById(id);
 
   // ✅ Daily rotating ASCII art emoticons (larger braille art)
@@ -446,28 +442,29 @@
   let medalClips = [];
 
   async function fetchMedalClips() {
-    if (MEDAL_API_KEY === "YOUR_MEDAL_API_KEY_HERE" || MEDAL_USER_ID === "YOUR_MEDAL_USER_ID_HERE") {
-      console.log("Medal API not configured");
-      return;
-    }
-    
     try {
-      const res = await fetch(`https://developers.medal.tv/v1/latest?userId=${MEDAL_USER_ID}&limit=12`, {
-        headers: {
-          'Authorization': MEDAL_API_KEY
-        }
-      });
+      // Use our Netlify function proxy to avoid CORS issues
+      const res = await fetch(`/.netlify/functions/medal?limit=12`);
       
       if (!res.ok) {
         console.error("Medal API error:", res.status);
+        const container = $("medalClips");
+        if (container) {
+          container.innerHTML = '<div class="medal-empty">Could not load clips. Try refreshing!</div>';
+        }
         return;
       }
       
       const data = await res.json();
       medalClips = data.contentObjects || [];
+      console.log("Medal clips loaded:", medalClips.length);
       renderMedalClips();
     } catch (err) {
       console.error("Medal fetch error:", err);
+      const container = $("medalClips");
+      if (container) {
+        container.innerHTML = '<div class="medal-empty">Could not load clips. Check console for errors.</div>';
+      }
     }
   }
 
