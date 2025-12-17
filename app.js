@@ -6,6 +6,22 @@
   const KEY_CUSTOM_TAGS = "bucketlist_2026_custom_tags";
   const KEY_THEME = "bucketlist_2026_theme";
   const KEY_SYSTEM_MESSAGE = "bucketlist_2026_system_message";
+  const KEY_LAST_VERSION_SEEN = "bucketlist_2026_last_version";
+
+  // ✅ VERSION HISTORY for system update notifications
+  const VERSION_HISTORY = [
+    { version: "1.0.0", date: "2024-12-15", note: "Initial release with missions, messages, and sync" },
+    { version: "1.1.0", date: "2024-12-16", note: "Added attachments, daily emoticons, and character limits" },
+    { version: "1.2.0", date: "2024-12-17", note: "New: Mini calendar, date picker, user colors, and stacking toasts" }
+  ];
+  const CURRENT_VERSION = "1.2.0";
+
+  // ✅ UPCOMING EVENTS (add your special dates here!)
+  const UPCOMING_EVENTS = [
+    { date: "2025-01-01", title: "New Year's Day 🎉" },
+    { date: "2025-02-14", title: "Valentine's Day 💕" },
+    { date: "2025-12-25", title: "Christmas 🎄" }
+  ];
 
   // ✅ session user (per-tab). persists on refresh, new tab asks again.
   const SESSION_USER_KEY = "bucketlist_2026_session_user";
@@ -58,12 +74,59 @@
       .replaceAll("'", "&#039;");
   }
 
-  function showToast(message) {
+  // ✅ Toast container for stacking notifications
+  function ensureToastContainer() {
+    let container = document.getElementById("toastContainer");
+    if (!container) {
+      container = document.createElement("div");
+      container.id = "toastContainer";
+      document.body.appendChild(container);
+    }
+    return container;
+  }
+
+  function showToast(message, type = "default") {
+    const container = ensureToastContainer();
     const toast = document.createElement("div");
-    toast.className = "toast";
+    toast.className = `toast toast-${type}`;
     toast.textContent = message;
-    document.body.appendChild(toast);
-    setTimeout(() => toast.remove(), 3000);
+    container.appendChild(toast);
+    
+    // Auto remove after 3s
+    setTimeout(() => {
+      toast.classList.add("toast-exit");
+      setTimeout(() => toast.remove(), 300);
+    }, 3000);
+  }
+
+  // ✅ Check for system updates (new version)
+  function checkSystemUpdates() {
+    const lastSeen = localStorage.getItem(KEY_LAST_VERSION_SEEN);
+    if (lastSeen !== CURRENT_VERSION) {
+      const latest = VERSION_HISTORY[VERSION_HISTORY.length - 1];
+      showToast(`🆕 Update v${latest.version}: ${latest.note}`, "info");
+      localStorage.setItem(KEY_LAST_VERSION_SEEN, CURRENT_VERSION);
+    }
+  }
+
+  // ✅ Check for upcoming events (3 days & 24 hours out)
+  function checkUpcomingEvents() {
+    const now = new Date();
+    const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+    
+    UPCOMING_EVENTS.forEach(event => {
+      const eventDate = new Date(event.date + "T00:00:00");
+      const diffMs = eventDate - today;
+      const diffDays = Math.round(diffMs / (1000 * 60 * 60 * 24));
+      
+      if (diffDays === 3) {
+        showToast(`📅 3 days until ${event.title}!`, "event");
+      } else if (diffDays === 1) {
+        showToast(`⏰ Tomorrow: ${event.title}!`, "event");
+      } else if (diffDays === 0) {
+        showToast(`🎉 Today is ${event.title}!`, "event");
+      }
+    });
   }
 
   function normalizeNewlines(str) {
@@ -416,7 +479,7 @@
   }
 
   function openMessage(index) {
-    // ✅ [BUG 2 FIX] Guard against double-trigger
+    // ✅ Guard against double-trigger
     if (letterAnimationInProgress) return;
 
     const messages = loadMessages();
@@ -425,12 +488,10 @@
 
     const safeContent = normalizeNewlines(msg.content ?? "").trim();
     if (!safeContent) {
-      // ✅ never open blank letters again
-      showToast("That letter is empty (cleaned)");
+      showToast("That letter is empty");
       return;
     }
 
-    // ✅ [BUG 2 FIX] Lock animation
     letterAnimationInProgress = true;
 
     const displayName = msg.from || "Unknown";
@@ -438,7 +499,7 @@
     $("letterTimestamp").textContent = msg.timestamp || "";
     $("letterContent").textContent = safeContent;
 
-    // ✅ [FEATURE B] Show attachment in letter if present
+    // ✅ Show attachment in letter if present
     const attachmentContainer = $("letterAttachment");
     if (attachmentContainer) {
       if (msg.attachment) {
@@ -468,23 +529,30 @@
       updateNotifications();
     }
 
-    // ✅ [BUG 1 FIX] Reset animations BEFORE showing modal
+    // ✅ CLEAN ANIMATION: Remove all classes, force reflow, then add .open
+    const modal = $("letterModal");
     const env = document.querySelector(".letter-envelope");
     const paper = document.querySelector(".letter-paper");
     
-    $("letterModal").classList.remove("active");
-    if (env) env.style.animation = "none";
-    if (paper) paper.style.animation = "none";
-    void (env?.offsetHeight);
-    void (paper?.offsetHeight);
+    // Reset state
+    modal.classList.remove("active");
+    if (env) env.classList.remove("open");
+    if (paper) paper.classList.remove("open");
     
+    // Force reflow
+    void modal.offsetHeight;
+    
+    // Trigger animation via classes
     requestAnimationFrame(() => {
-      $("letterModal").classList.add("active");
-      if (env) env.style.animation = "envelopeOpen 0.5s ease forwards";
-      if (paper) paper.style.animation = "letterUnfold 0.5s ease 0.3s forwards";
+      modal.classList.add("active");
+      if (env) env.classList.add("open");
+      // Delay paper animation slightly
+      setTimeout(() => {
+        if (paper) paper.classList.add("open");
+      }, 300);
     });
 
-    // ✅ [BUG 2 FIX] Unlock after animation completes
+    // Unlock after animation completes
     setTimeout(() => { letterAnimationInProgress = false; }, 900);
   }
 
@@ -527,12 +595,17 @@
     withExample.forEach((it, idx) => {
       const el = document.createElement("div");
       el.className = "item" + (it.isExample ? " example" : "");
+      
+      // ✅ Format date if present
+      const dateDisplay = it.dueDate ? `<span class="item-date">📅 ${formatMissionDate(it.dueDate)}</span>` : '';
+      
       el.innerHTML = `
         <input type="checkbox" ${it.done ? "checked" : ""} ${it.isExample ? "disabled" : ""} aria-label="Mark done">
         <div class="itext">
           <div class="ititle">
             <span>${escapeHtml(it.title)}</span>
             <span class="itag">${escapeHtml(it.tag || "idea")}</span>
+            ${dateDisplay}
           </div>
           <p class="idesc">${escapeHtml(it.desc || "")}</p>
         </div>
@@ -568,6 +641,17 @@
 
       container.appendChild(el);
     });
+  }
+
+  // ✅ Format mission date nicely
+  function formatMissionDate(dateStr) {
+    if (!dateStr) return "";
+    try {
+      const d = new Date(dateStr + "T00:00:00");
+      return d.toLocaleDateString(undefined, { month: "short", day: "numeric" });
+    } catch {
+      return dateStr;
+    }
   }
 
   function renderCompleted() {
@@ -621,17 +705,28 @@
     const container = $("messageLog");
     container.innerHTML = "";
 
+    // ✅ Mini calendar header
+    const calendarHtml = renderMiniCalendar();
+    const calendarDiv = document.createElement("div");
+    calendarDiv.className = "mini-calendar-wrapper";
+    calendarDiv.innerHTML = calendarHtml;
+    container.appendChild(calendarDiv);
+
     // ✅ [FEATURE A] Render newest-first (reverse order)
     const reversed = [...messages].reverse();
 
     reversed.forEach((msg) => {
       const displayName = msg.from || "Unknown";
       const hasAttachment = !!(msg.attachment);
+      
+      // ✅ User-specific colors
+      const userClass = getUserColorClass(msg.from);
+      
       const el = document.createElement("div");
-      el.className = "message-log-item";
+      el.className = `message-log-item ${userClass}`;
       el.innerHTML = `
         <div class="message-log-header">
-          <span>FROM: ${escapeHtml(displayName)} ${hasAttachment ? '<span class="attachment-badge" title="Has attachment">📎</span>' : ''}</span>
+          <span class="message-from-name">FROM: ${escapeHtml(displayName)} ${hasAttachment ? '<span class="attachment-badge" title="Has attachment">📎</span>' : ''}</span>
           <span>${escapeHtml(msg.timestamp || "")}</span>
         </div>
         <div class="message-log-content">${escapeHtml(msg.content || "")}</div>
@@ -648,6 +743,48 @@
       if (container.classList.contains("scroll")) container.scrollTop = 0;
     }
     lastMsgCount = messages.length;
+  }
+
+  // ✅ Get user-specific color class
+  function getUserColorClass(userName) {
+    const name = String(userName || "").trim().toLowerCase();
+    if (name === "yasir") return "user-yasir";
+    if (name === "kylee") return "user-kylee";
+    return "";
+  }
+
+  // ✅ Mini calendar for message log
+  function renderMiniCalendar() {
+    const now = new Date();
+    const year = now.getFullYear();
+    const month = now.getMonth();
+    const today = now.getDate();
+    
+    const monthNames = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
+    const dayNames = ["Su", "Mo", "Tu", "We", "Th", "Fr", "Sa"];
+    
+    const firstDay = new Date(year, month, 1).getDay();
+    const daysInMonth = new Date(year, month + 1, 0).getDate();
+    
+    let html = `<div class="mini-calendar">
+      <div class="mini-cal-header">${monthNames[month]} ${year}</div>
+      <div class="mini-cal-days">`;
+    
+    dayNames.forEach(d => { html += `<span class="mini-cal-dayname">${d}</span>`; });
+    
+    // Empty cells before first day
+    for (let i = 0; i < firstDay; i++) {
+      html += `<span class="mini-cal-day empty"></span>`;
+    }
+    
+    // Days of month
+    for (let d = 1; d <= daysInMonth; d++) {
+      const isToday = d === today;
+      html += `<span class="mini-cal-day${isToday ? ' today' : ''}">${d}</span>`;
+    }
+    
+    html += `</div></div>`;
+    return html;
   }
 
   function ensureCustomTagsInSelect() {
@@ -1061,6 +1198,10 @@ $("userPill").addEventListener("click", () => openWhoModal());
     const desc = $("newDesc").value.trim();
     const tagSelect = $("newTag");
     let tag = tagSelect.value;
+    
+    // ✅ Get due date if set
+    const dueDateInput = $("newDueDate");
+    const dueDate = dueDateInput ? dueDateInput.value : null;
 
     if (tag === "custom") {
       tag = $("customTagInput").value.trim() || "custom";
@@ -1078,6 +1219,7 @@ $("userPill").addEventListener("click", () => openWhoModal());
     if (!title) return alert("Add a title first");
 
     const mission = { title, desc, tag, done: false };
+    if (dueDate) mission.dueDate = dueDate;
 
     const active = loadActive();
     active.push(mission);
@@ -1095,6 +1237,7 @@ $("userPill").addEventListener("click", () => openWhoModal());
     $("newTag").value = "date";
     $("customTagInput").value = "";
     $("customTagField").classList.add("hidden");
+    if (dueDateInput) dueDateInput.value = "";
 
     renderActive();
   });
@@ -1105,6 +1248,8 @@ $("userPill").addEventListener("click", () => openWhoModal());
     $("newTag").value = "date";
     $("customTagInput").value = "";
     $("customTagField").classList.add("hidden");
+    const dueDateInput = $("newDueDate");
+    if (dueDateInput) dueDateInput.value = "";
   });
 
   $("newTag").addEventListener("change", (e) => {
@@ -1349,8 +1494,14 @@ $("userPill").addEventListener("click", () => openWhoModal());
   });
 
   $("closeLetterModal").addEventListener("click", () => {
-    $("letterModal").classList.remove("active");
-    // ✅ [BUG 2 FIX] Reset animation lock when closing
+    const modal = $("letterModal");
+    const env = document.querySelector(".letter-envelope");
+    const paper = document.querySelector(".letter-paper");
+    
+    modal.classList.remove("active");
+    if (env) env.classList.remove("open");
+    if (paper) paper.classList.remove("open");
+    
     letterAnimationInProgress = false;
   });
 
@@ -1436,7 +1587,7 @@ ${completed.map(i => `[X] ${i.title} — ${i.desc} (#${i.tag})`).join("\n")}
 
     renderSystemMessage(loadSystemMessage());
     
-    // ✅ [FEATURE D] Set daily emoticon
+    // ✅ Set daily emoticon
     const emoticonEl = $("dailyEmoticon");
     if (emoticonEl) {
       emoticonEl.textContent = getDailyEmoticon();
@@ -1462,6 +1613,12 @@ ${completed.map(i => `[X] ${i.title} — ${i.desc} (#${i.tag})`).join("\n")}
 
     // start polling always (cover + main stay synced)
     startSmartPolling();
+
+    // ✅ Check for system updates and upcoming events
+    setTimeout(() => {
+      checkSystemUpdates();
+      checkUpcomingEvents();
+    }, 1000);
 
     // ✅ IMPORTANT: remember user on refresh (no re-asking)
     if (!hasUser()) {
