@@ -153,6 +153,7 @@
 
   // ✅ SMART POLLING state
   let lastRemoteUpdatedAt = null;
+  let lastPresenceVersion = 0;
   let pollTimer = null;
 
   // ---------- helpers ----------
@@ -890,6 +891,10 @@
         lastPresence = res.presence;
         updateUserDuoPills();
       }
+      // ✅ Track presenceVersion from server
+      if (res?.presenceVersion !== undefined) {
+        lastPresenceVersion = res.presenceVersion;
+      }
       // ✅ Check for device conflicts in presence response (instant detection)
       if (res?.activeDevices) {
         checkDeviceConflict(res.activeDevices);
@@ -919,7 +924,7 @@
     if (presenceDotTimer) return;
     presenceDotTimer = setInterval(() => {
       updateUserDuoPills();
-    }, 5000); // Check every 5 seconds for status decay
+    }, 3000); // Check every 3 seconds for faster status decay
   }
   // Start immediately
   startPresenceDotRefresh();
@@ -1824,13 +1829,20 @@
         lastPresence = remote.presence;
       }
 
+      // ✅ Check presenceVersion - if changed, presence/activeDevices updated
+      const serverPresenceVersion = remote.presenceVersion || remote.payload?.presenceVersion || 0;
+      const presenceChanged = serverPresenceVersion !== lastPresenceVersion;
+      if (presenceChanged) {
+        lastPresenceVersion = serverPresenceVersion;
+      }
+
       // ✅ ALWAYS check for device conflicts, even if updated_at hasn't changed
       // This ensures immediate conflict detection regardless of content changes
-      if (remote.payload.activeDevices) {
-        const hasConflict = checkDeviceConflict(remote.payload.activeDevices);
+      if (remote.payload.activeDevices || remote.activeDevices) {
+        const devices = remote.activeDevices || remote.payload.activeDevices;
+        const hasConflict = checkDeviceConflict(devices);
         if (hasConflict) {
-          // Update local activeDevices even on conflict
-          activeDevices = remote.payload.activeDevices;
+          activeDevices = devices;
         }
       }
 
@@ -1838,6 +1850,7 @@
       updateUserDuoPills();
 
       // 🔒 Skip full state apply if nothing changed (no UI spam)
+      // But still process presence changes above!
       if (remote.updated_at && remote.updated_at === lastRemoteUpdatedAt) {
         if (!silent) setSyncStatus("on");
         return;
@@ -2030,14 +2043,21 @@
     // This lets other devices know immediately (not waiting for 45s timeout)
     const currentUser = loadUser();
     if (currentUser) {
+      stopPresence(); // Stop pinging immediately
       try {
-        // Clear our device from activeDevices and mark presence as old
+        // Clear our device from activeDevices
         const user = currentUser.toLowerCase();
         if (activeDevices[user]) {
           delete activeDevices[user];
         }
-        // Push the cleared activeDevices immediately
-        await pushRemoteState();
+        // ✅ Mark presence as very old (instant offline detection)
+        // Set to epoch so age calculation shows offline immediately
+        const offlinePayload = getLocalState();
+        offlinePayload.presence = offlinePayload.presence || {};
+        offlinePayload.presence[user] = "1970-01-01T00:00:00.000Z"; // Epoch = instantly offline
+        
+        // Push the offline signal immediately
+        await remoteSetState(offlinePayload);
       } catch {
         // Ignore errors on logout
       }
@@ -2050,6 +2070,57 @@
     $("closeWhoModal").classList.add("hidden");
     showToast("LOGGED OFF");
   }
+
+  // ✅ Send offline signal on tab close / navigation away
+  // Uses sendBeacon for reliability (fires even during unload)
+  function sendOfflineBeacon() {
+    const currentUser = loadUser();
+    if (!currentUser) return;
+    
+    const user = currentUser.toLowerCase();
+    
+    // Build minimal offline payload
+    const offlineData = {
+      room: ROOM_CODE,
+      payload: {
+        activeDevices: { ...activeDevices },
+        presence: { ...lastPresence, [user]: "1970-01-01T00:00:00.000Z" }
+      }
+    };
+    
+    // Remove this device from activeDevices
+    if (offlineData.payload.activeDevices[user]) {
+      delete offlineData.payload.activeDevices[user];
+    }
+    
+    // sendBeacon is more reliable than fetch during unload
+    if (navigator.sendBeacon) {
+      navigator.sendBeacon(
+        `/.netlify/functions/room`,
+        JSON.stringify(offlineData)
+      );
+    }
+  }
+
+  // ✅ Try to send offline on page unload
+  window.addEventListener("beforeunload", sendOfflineBeacon);
+  window.addEventListener("pagehide", sendOfflineBeacon);
+
+  // ✅ Browser online/offline detection for local UI feedback
+  window.addEventListener("offline", () => {
+    setSyncStatus("error");
+    showToast("You are offline");
+  });
+
+  window.addEventListener("online", () => {
+    setSyncStatus("on");
+    showToast("Back online");
+    // Immediately sync when back online
+    if (hasUser()) {
+      presencePing();
+      pullRemoteState({ silent: false });
+    }
+  });
 
   // ✅ [FEATURE B] Upload file to Supabase Storage
   async function uploadToSupabase(file) {

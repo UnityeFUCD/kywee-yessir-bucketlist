@@ -58,11 +58,14 @@ exports.handler = async (event) => {
       const payload = first?.payload || {};
       const presence = payload?.presence || {};
       const activeDevices = payload?.activeDevices || {};
+      // ✅ Return presenceVersion so clients can detect presence-only changes
+      const presenceVersion = payload?.presenceVersion || 0;
 
       return json(200, {
         payload,
         presence,
         activeDevices,
+        presenceVersion,
         updated_at: first?.updated_at || null,
       });
     }
@@ -99,10 +102,15 @@ exports.handler = async (event) => {
       let merged = { ...(existingPayload || {}) };
 
       const isPayloadWrite = !!(payloadIn && typeof payloadIn === "object");
+      let presenceChanged = false;
 
       // Merge main payload if provided
       if (isPayloadWrite) {
         merged = { ...merged, ...payloadIn };
+        // ✅ Check if activeDevices changed (for presenceVersion bump)
+        if (payloadIn.activeDevices !== undefined) {
+          presenceChanged = true;
+        }
       }
 
       // Presence patch (stores last seen for yasir/kylee)
@@ -112,7 +120,14 @@ exports.handler = async (event) => {
           const pres = { ...(merged.presence || {}) };
           pres[key] = new Date().toISOString();
           merged.presence = pres;
+          presenceChanged = true;
         }
+      }
+
+      // ✅ Increment presenceVersion when presence or activeDevices changes
+      // This lets clients detect changes even when updated_at doesn't bump
+      if (presenceChanged) {
+        merged.presenceVersion = (merged.presenceVersion || 0) + 1;
       }
 
       // ✅ IMPORTANT:
@@ -138,13 +153,13 @@ exports.handler = async (event) => {
 
       if (!r.ok) return json(500, { error: "supabase write failed" });
 
-      // ✅ Always return activeDevices so clients can check for conflicts
-      // This enables instant conflict detection even during presence-only pings
+      // ✅ Always return presenceVersion so clients can track presence changes
       return json(200, {
         ok: true,
         payload: merged,
         presence: merged.presence || {},
         activeDevices: merged.activeDevices || {},
+        presenceVersion: merged.presenceVersion || 0,
         updated_at: nextUpdatedAt,
       });
     }
