@@ -253,12 +253,13 @@
             <div class="photo-upload-row">
               <input type="file" id="photoInput" accept="image/*,video/*" multiple hidden>
               <button class="btn" id="photoSelectBtn"><i class="fa-solid fa-upload"></i> Select Photos</button>
+              <span class="photo-count-hint" id="photoCountHint"></span>
             </div>
             
             <!-- Staging area for photos before submit -->
             <div id="photoStagingArea" class="photo-staging hidden">
               <div class="staging-header">
-                <span>Photos to upload:</span>
+                <span>Photos to upload: <span id="stagedCount">0</span></span>
                 <button class="btn btn-small" id="clearStagingBtn">Clear All</button>
               </div>
               <div id="stagingPreview" class="staging-preview"></div>
@@ -273,6 +274,7 @@
                   <select id="photoMission">
                     <option value="">No mission linked</option>
                   </select>
+                  <span class="mission-capacity" id="missionCapacity"></span>
                 </div>
               </div>
               
@@ -283,10 +285,14 @@
           <div id="photoGallery" class="photo-gallery">
             <!-- Example bundled photos -->
             <div class="gallery-mission-bundle example-bundle">
-              <div class="bundle-header" onclick="toggleBundle(this)">
-                <span class="bundle-mission"><i class="fa-solid fa-link"></i> Example Date Night</span>
-                <span class="bundle-count">3 photos</span>
-                <span class="bundle-expand"><i class="fas fa-chevron-down"></i></span>
+              <div class="bundle-header">
+                <div class="bundle-header-left" onclick="toggleBundle(this.parentElement)">
+                  <span class="bundle-mission"><i class="fa-solid fa-link"></i> Example Date Night</span>
+                  <span class="bundle-count">3 photos</span>
+                </div>
+                <div class="bundle-actions">
+                  <span class="bundle-expand" onclick="toggleBundle(this.closest('.bundle-header'))"><i class="fas fa-chevron-down"></i></span>
+                </div>
               </div>
               <div class="bundle-photos collapsed">
                 <div class="gallery-grid">

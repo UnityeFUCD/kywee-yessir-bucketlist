@@ -958,11 +958,26 @@
       transform: scaleY(0);
       opacity: 0;
       transition: transform 0.5s ease, opacity 0.5s ease;
+      /* Scrollable for long letters */
+      max-height: 60vh;
+      overflow-y: auto;
     }
 
     .letter-paper.open {
       transform: scaleY(1);
       opacity: 1;
+    }
+
+    /* Custom scrollbar for letter paper */
+    .letter-paper::-webkit-scrollbar {
+      width: 6px;
+    }
+    .letter-paper::-webkit-scrollbar-track {
+      background: #e0d5b8;
+    }
+    .letter-paper::-webkit-scrollbar-thumb {
+      background: #8b7355;
+      border-radius: 3px;
     }
 
     @keyframes letterUnfold {
@@ -1775,10 +1790,212 @@ input[type="date"]::-webkit-calendar-picker-indicator {
   transition: all 0.15s ease;
 }
 
-.bundle-delete-btn:hover {
-  border-color: #ff3366;
+.mission-capacity {
+  display: block;
+  font-size: 10px;
+  color: var(--muted);
+  margin-top: 4px;
+}
+
+.mission-capacity.full {
   color: #ff3366;
-  background: rgba(255,51,102,0.1);
+}
+
+/* ============================================
+   LINK MISSION MODAL
+   ============================================ */
+
+.link-mission-modal {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0,0,0,0.8);
+  z-index: 5000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 20px;
+}
+
+.link-mission-content {
+  background: var(--bg-card);
+  border: 2px solid var(--accent);
+  padding: 24px;
+  max-width: 400px;
+  width: 100%;
+}
+
+.link-mission-content h4 {
+  margin: 0 0 12px 0;
+  font-size: 14px;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.link-mission-content h4 i {
+  color: var(--accent);
+}
+
+.link-mission-content p {
+  margin-bottom: 16px;
+  font-size: 13px;
+  color: var(--muted);
+}
+
+.link-mission-select {
+  width: 100%;
+  padding: 12px;
+  background: var(--bg);
+  border: 2px solid var(--border);
+  color: var(--text);
+  font-size: 14px;
+  margin-bottom: 16px;
+}
+
+.link-mission-actions {
+  display: flex;
+  gap: 12px;
+  justify-content: flex-end;
+}
+
+/* ============================================
+   DEVICE CONFLICT OVERLAY
+   ============================================ */
+
+.device-conflict-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0,0,0,0.95);
+  z-index: 9999;
+  display: none;
+  align-items: center;
+  justify-content: center;
+  padding: 20px;
+}
+
+.device-conflict-overlay.active {
+  display: flex;
+}
+
+.device-conflict-content {
+  background: var(--bg-card);
+  border: 2px solid var(--accent);
+  padding: 40px;
+  max-width: 400px;
+  text-align: center;
+}
+
+.device-conflict-content i {
+  font-size: 48px;
+  color: var(--accent);
+  margin-bottom: 20px;
+}
+
+.device-conflict-content h3 {
+  margin: 0 0 12px 0;
+  font-size: 18px;
+  text-transform: uppercase;
+  letter-spacing: 2px;
+}
+
+.device-conflict-content p {
+  margin-bottom: 24px;
+  color: var(--muted);
+  font-size: 13px;
+  line-height: 1.6;
+}
+
+/* ============================================
+   CUSTOM SCROLLBAR (prettier)
+   ============================================ */
+
+/* Webkit (Chrome, Safari, Edge) */
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+::-webkit-scrollbar-track {
+  background: var(--bg);
+  border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb {
+  background: var(--border);
+  border-radius: 4px;
+  transition: background 0.2s ease;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: var(--accent);
+}
+
+/* Message log specific scrollbar */
+.msg-list::-webkit-scrollbar {
+  width: 6px;
+}
+
+.msg-list::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.msg-list::-webkit-scrollbar-thumb {
+  background: rgba(255,107,157,0.3);
+  border-radius: 3px;
+}
+
+.msg-list::-webkit-scrollbar-thumb:hover {
+  background: var(--accent);
+}
+
+/* Firefox */
+* {
+  scrollbar-width: thin;
+  scrollbar-color: var(--border) var(--bg);
+}
+
+.msg-list {
+  scrollbar-width: thin;
+  scrollbar-color: rgba(255,107,157,0.3) transparent;
+}
+
+/* ============================================
+   BUNDLE ADD/LINK BUTTONS
+   ============================================ */
+
+.bundle-add-btn,
+.bundle-link-btn {
+  width: 28px;
+  height: 28px;
+  border: 1px solid var(--border);
+  background: transparent;
+  color: var(--muted);
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 11px;
+  transition: all 0.15s ease;
+}
+
+.bundle-add-btn:hover {
+  border-color: var(--accent);
+  color: var(--accent);
+  background: rgba(255,107,157,0.1);
+}
+
+.bundle-link-btn:hover {
+  border-color: #00d4ff;
+  color: #00d4ff;
+  background: rgba(0,212,255,0.1);
 }
 
 .photo-gallery {

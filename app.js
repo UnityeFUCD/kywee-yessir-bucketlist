@@ -379,6 +379,8 @@
       const missionPhotos = grouped[missionKey];
       const isUnlinked = missionKey === "_unlinked_";
       const displayName = isUnlinked ? "Unlinked Photos" : missionKey;
+      const photoCount = missionPhotos.length;
+      const canAddMore = !isUnlinked && photoCount < 5;
       
       const bundle = document.createElement("div");
       bundle.className = "gallery-mission-bundle";
@@ -387,10 +389,12 @@
         <div class="bundle-header">
           <div class="bundle-header-left" onclick="toggleBundle(this.parentElement)">
             <span class="bundle-mission"><i class="fa-solid fa-${isUnlinked ? 'images' : 'link'}"></i> ${escapeHtml(displayName)}</span>
-            <span class="bundle-count">${missionPhotos.length} photo${missionPhotos.length !== 1 ? 's' : ''}</span>
+            <span class="bundle-count">${photoCount}/5 photos</span>
           </div>
           <div class="bundle-actions">
-            <button class="bundle-delete-btn" title="Delete all photos in this bundle"><i class="fas fa-trash"></i></button>
+            ${canAddMore ? `<button class="bundle-add-btn" title="Add more photos to this mission"><i class="fas fa-plus"></i></button>` : ''}
+            ${isUnlinked ? `<button class="bundle-link-btn" title="Link these to a mission"><i class="fas fa-link"></i></button>` : ''}
+            <button class="bundle-delete-btn" title="Delete all photos"><i class="fas fa-trash"></i></button>
             <span class="bundle-expand" onclick="toggleBundle(this.closest('.bundle-header'))"><i class="fas fa-chevron-down"></i></span>
           </div>
         </div>
@@ -399,11 +403,39 @@
         </div>
       `;
       
+      // Add more photos to this mission
+      const addBtn = bundle.querySelector(".bundle-add-btn");
+      if (addBtn) {
+        addBtn.addEventListener("click", (e) => {
+          e.stopPropagation();
+          // Set the mission in the form and scroll to upload
+          const select = $("photoMission");
+          if (select) {
+            select.value = missionKey;
+            updateMissionCapacity();
+          }
+          document.querySelector('.photo-upload-section')?.scrollIntoView({ behavior: 'smooth' });
+          showToast(`Select photos to add to "${displayName}"`);
+        });
+      }
+      
+      // Link unlinked photos to a mission
+      const linkBtn = bundle.querySelector(".bundle-link-btn");
+      if (linkBtn) {
+        linkBtn.addEventListener("click", (e) => {
+          e.stopPropagation();
+          showLinkMissionModal(missionPhotos);
+        });
+      }
+      
       // Delete bundle handler
-      bundle.querySelector(".bundle-delete-btn").addEventListener("click", (e) => {
-        e.stopPropagation();
-        showDeleteConfirm(missionKey, displayName);
-      });
+      const deleteBtn = bundle.querySelector(".bundle-delete-btn");
+      if (deleteBtn) {
+        deleteBtn.addEventListener("click", (e) => {
+          e.stopPropagation();
+          showDeleteConfirm(missionKey, displayName);
+        });
+      }
       
       const grid = bundle.querySelector(".gallery-grid");
       missionPhotos.forEach((photo, idx) => {
@@ -430,6 +462,77 @@
       });
       
       container.appendChild(bundle);
+    });
+  }
+
+  // ✅ Link unlinked photos to a mission
+  function showLinkMissionModal(photosToLink) {
+    const existing = document.querySelector(".link-mission-modal");
+    if (existing) existing.remove();
+    
+    const completed = loadCompleted().filter(c => !c.isExample);
+    
+    const modal = document.createElement("div");
+    modal.className = "link-mission-modal";
+    
+    let optionsHtml = '<option value="">Select a mission...</option>';
+    completed.forEach(m => {
+      const existingCount = loadPhotos().filter(p => p.mission === m.title).length;
+      const remaining = 5 - existingCount;
+      if (remaining > 0) {
+        optionsHtml += `<option value="${escapeHtml(m.title)}">${escapeHtml(m.title)} (${existingCount}/5)</option>`;
+      }
+    });
+    
+    modal.innerHTML = `
+      <div class="link-mission-content">
+        <h4><i class="fas fa-link"></i> Link Photos to Mission</h4>
+        <p>Link ${photosToLink.length} photo(s) to a completed mission:</p>
+        <select id="linkMissionSelect" class="link-mission-select">
+          ${optionsHtml}
+        </select>
+        <div class="link-mission-actions">
+          <button class="btn" id="cancelLinkBtn">Cancel</button>
+          <button class="btn primary" id="confirmLinkBtn"><i class="fas fa-check"></i> Link</button>
+        </div>
+      </div>
+    `;
+    
+    document.body.appendChild(modal);
+    
+    modal.querySelector("#cancelLinkBtn").addEventListener("click", () => modal.remove());
+    modal.querySelector("#confirmLinkBtn").addEventListener("click", () => {
+      const selectedMission = modal.querySelector("#linkMissionSelect").value;
+      if (!selectedMission) {
+        showToast("Please select a mission");
+        return;
+      }
+      
+      // Check capacity
+      const existingCount = loadPhotos().filter(p => p.mission === selectedMission).length;
+      const remaining = 5 - existingCount;
+      if (photosToLink.length > remaining) {
+        showToast(`Only ${remaining} slots available. Delete some photos first.`);
+        return;
+      }
+      
+      // Update photos
+      let photos = loadPhotos();
+      photosToLink.forEach(photoToLink => {
+        const idx = photos.findIndex(p => p.url === photoToLink.url);
+        if (idx >= 0) {
+          photos[idx].mission = selectedMission;
+        }
+      });
+      
+      savePhotos(photos);
+      renderPhotoGallery();
+      showToast(`Linked ${photosToLink.length} photo(s) to "${selectedMission}"`);
+      modal.remove();
+    });
+    
+    modal.addEventListener("click", (e) => {
+      if (e.target === modal) modal.remove();
     });
   }
 
@@ -469,10 +572,12 @@
       if (type === "_single_" && photoObj) {
         // Delete single photo by URL
         photos = photos.filter(p => p.url !== identifier);
+      } else if (type === "_unlinked_") {
+        // Delete all unlinked photos
+        photos = photos.filter(p => p.mission && p.mission !== "");
       } else {
-        // Delete all photos in this mission/unlinked group
-        const missionKey = type === "_unlinked_" ? "" : type;
-        photos = photos.filter(p => (p.mission || "") !== (missionKey === "_unlinked_" ? "" : missionKey));
+        // Delete all photos in this mission
+        photos = photos.filter(p => p.mission !== type);
       }
       
       savePhotos(photos);
@@ -577,7 +682,7 @@
     if (!container) return;
     
     if (medalClips.length === 0) {
-      container.innerHTML = '<div class="medal-empty">No clips found. Check your Medal API settings!</div>';
+      container.innerHTML = '<div class="medal-empty">No clips found. Record some gameplay!</div>';
       return;
     }
     
@@ -590,11 +695,13 @@
       const thumbnail = clip.thumbnail || clip.contentThumbnail || "";
       const title = clip.contentTitle || "Untitled Clip";
       const game = clip.categoryName || clip.gameName || "";
-      const url = clip.directClipUrl || clip.contentUrl || `https://medal.tv/clips/${clip.contentId}`;
+      const clipId = clip.contentId;
+      const clipUrl = `https://medal.tv/games/${clip.categoryName?.toLowerCase().replace(/\s+/g, '-') || 'clip'}/clips/${clipId}`;
+      const videoUrl = clip.rawFileUrl || clip.contentUrl || "";
       
       item.innerHTML = `
         <div class="medal-thumbnail" style="background-image: url('${escapeHtml(thumbnail)}')">
-          <div class="medal-play">▶</div>
+          <div class="medal-play"><i class="fas fa-play"></i></div>
         </div>
         <div class="medal-info">
           <div class="medal-title">${escapeHtml(title)}</div>
@@ -602,8 +709,9 @@
         </div>
       `;
       
+      // Click to open in new tab (iframe blocked by Medal)
       item.addEventListener("click", () => {
-        openMedalClip(clip);
+        window.open(clipUrl, '_blank');
       });
       
       container.appendChild(item);
@@ -611,36 +719,16 @@
   }
 
   function openMedalClip(clip) {
-    const modal = $("medalModal");
-    const content = $("medalModalContent");
-    if (!modal || !content) return;
-    
-    // Use embed URL if available
-    const embedUrl = clip.embedIframeUrl || `https://medal.tv/clip/${clip.contentId}/embed`;
-    
-    content.innerHTML = `
-      <iframe 
-        src="${escapeHtml(embedUrl)}" 
-        width="100%" 
-        height="400" 
-        frameborder="0" 
-        allowfullscreen
-        allow="autoplay"
-      ></iframe>
-      <div class="medal-modal-info">
-        <h4>${escapeHtml(clip.contentTitle || "Clip")}</h4>
-        <a href="https://medal.tv/clips/${clip.contentId}" target="_blank" class="btn">View on Medal</a>
-      </div>
-    `;
-    
-    modal.classList.add("active");
+    // Open directly on Medal.tv since iframe embedding is blocked
+    const clipUrl = `https://medal.tv/games/${clip.categoryName?.toLowerCase().replace(/\s+/g, '-') || 'clip'}/clips/${clip.contentId}`;
+    window.open(clipUrl, '_blank');
   }
 
   function closeMedalModal() {
     const modal = $("medalModal");
     const content = $("medalModalContent");
     if (modal) modal.classList.remove("active");
-    if (content) content.innerHTML = ""; // Stop video
+    if (content) content.innerHTML = "";
   }
 
   function loadTheme() { return localStorage.getItem(KEY_THEME) || "system"; }
@@ -1432,6 +1520,20 @@
   let suppressSync = false;
   let syncDebounce = null;
 
+  // ✅ Generate unique device ID for single-device lock
+  function getDeviceId() {
+    let id = sessionStorage.getItem('deviceId');
+    if (!id) {
+      id = 'dev_' + Date.now() + '_' + Math.random().toString(36).substr(2, 9);
+      sessionStorage.setItem('deviceId', id);
+    }
+    return id;
+  }
+
+  // Track active devices per user
+  let activeDevices = {};
+  let deviceLocked = false;
+
   function getLocalState() {
     // ✅ always sanitize before pushing (prevents blank letters from ever syncing)
     const cleanedMessages = sanitizeMessages(loadMessages());
@@ -1451,6 +1553,15 @@
     // ✅ Build photos array
     const photos = loadPhotos();
 
+    // ✅ Track active device per user
+    const user = loadUser()?.toLowerCase();
+    if (user && !deviceLocked) {
+      activeDevices[user] = {
+        deviceId: getDeviceId(),
+        lastActive: Date.now()
+      };
+    }
+
     return {
       active: loadActive(),
       saved: loadSaved(),
@@ -1460,6 +1571,7 @@
       systemMessage: loadSystemMessage(),
       readState,
       photos,
+      activeDevices,
     };
   }
 
@@ -1469,6 +1581,35 @@
     let cleaned = false;
 
     suppressSync = true;
+
+    // ✅ Check for device conflicts (single device per account)
+    if (state.activeDevices && typeof state.activeDevices === "object") {
+      const user = loadUser()?.toLowerCase();
+      const myDeviceId = getDeviceId();
+      
+      if (user && state.activeDevices[user]) {
+        const serverDevice = state.activeDevices[user];
+        if (serverDevice.deviceId && serverDevice.deviceId !== myDeviceId) {
+          // Another device is using this account
+          const timeDiff = Date.now() - (serverDevice.lastActive || 0);
+          if (timeDiff < 30000) { // Active in last 30 seconds
+            if (!deviceLocked) {
+              deviceLocked = true;
+              showDeviceConflict();
+            }
+          } else {
+            // Other device is stale, we can take over
+            deviceLocked = false;
+            hideDeviceConflict();
+          }
+        } else {
+          deviceLocked = false;
+          hideDeviceConflict();
+        }
+      }
+      // Update local copy
+      activeDevices = state.activeDevices;
+    }
 
     if (Array.isArray(state.active)) localStorage.setItem(KEY_ACTIVE, JSON.stringify(state.active));
     if (Array.isArray(state.saved)) localStorage.setItem(KEY_SAVED, JSON.stringify(state.saved));
@@ -1506,6 +1647,39 @@
 
     return { cleaned };
   }
+
+  // ✅ Device conflict UI
+  function showDeviceConflict() {
+    let overlay = $("deviceConflictOverlay");
+    if (!overlay) {
+      overlay = document.createElement("div");
+      overlay.id = "deviceConflictOverlay";
+      overlay.className = "device-conflict-overlay";
+      overlay.innerHTML = `
+        <div class="device-conflict-content">
+          <i class="fas fa-mobile-alt"></i>
+          <h3>Account Active Elsewhere</h3>
+          <p>This account is being used on another device. Only one device can be active at a time.</p>
+          <button class="btn primary" onclick="forceDeviceTakeover()">Use Here Instead</button>
+        </div>
+      `;
+      document.body.appendChild(overlay);
+    }
+    overlay.classList.add("active");
+  }
+
+  function hideDeviceConflict() {
+    const overlay = $("deviceConflictOverlay");
+    if (overlay) overlay.classList.remove("active");
+  }
+
+  window.forceDeviceTakeover = function() {
+    deviceLocked = false;
+    hideDeviceConflict();
+    // Force push our device as active
+    schedulePush();
+    showToast("You are now the active device");
+  };
 
   async function remoteGetState() {
     const res = await fetch(`/.netlify/functions/room?room=${encodeURIComponent(ROOM_CODE)}`);
@@ -1609,15 +1783,31 @@
     syncDebounce = setTimeout(pushRemoteState, 350); // faster + still stable
   }
 
-  // ✅ SMART polling loop
+  // ✅ SMART polling loop - faster for better notification sync
   function startSmartPolling() {
     if (pollTimer) return;
 
+    // Poll every 1 second for fast notification updates
     pollTimer = setInterval(() => {
       if (document.visibilityState !== "visible") return;
+      if (deviceLocked) return; // Don't poll if device is locked
       pullRemoteState({ silent: true });
-    }, 1500); // 1.5s = near-instant notifications
+    }, 1000); // 1s = instant notifications
   }
+
+  // Force refresh when tab becomes visible
+  document.addEventListener("visibilitychange", () => {
+    if (document.visibilityState === "visible" && !deviceLocked) {
+      pullRemoteState({ silent: false });
+    }
+  });
+
+  // Also refresh when window gains focus
+  window.addEventListener("focus", () => {
+    if (!deviceLocked) {
+      pullRemoteState({ silent: false });
+    }
+  });
 
   // ---------- Who modal ----------
   function openWhoModal() {
@@ -2146,9 +2336,46 @@ $("userPill").addEventListener("click", () => openWhoModal());
   const stagingPreview = $("stagingPreview");
   const clearStagingBtn = $("clearStagingBtn");
   const photoSubmitBtn = $("photoSubmitBtn");
+  const photoCountHint = $("photoCountHint");
+  const stagedCountEl = $("stagedCount");
+  const missionCapacityEl = $("missionCapacity");
   
   // Staged files waiting to be uploaded
   let stagedFiles = [];
+  
+  function updateStagedCount() {
+    if (stagedCountEl) stagedCountEl.textContent = stagedFiles.length;
+    
+    // Update button text
+    if (photoSelectBtn) {
+      if (stagedFiles.length > 0) {
+        photoSelectBtn.innerHTML = '<i class="fa-solid fa-plus"></i> Add More Photos';
+      } else {
+        photoSelectBtn.innerHTML = '<i class="fa-solid fa-upload"></i> Select Photos';
+      }
+    }
+  }
+  
+  function updateMissionCapacity() {
+    if (!missionCapacityEl || !photoMissionSelect) return;
+    
+    const mission = photoMissionSelect.value;
+    if (!mission) {
+      missionCapacityEl.textContent = "";
+      return;
+    }
+    
+    const existingCount = loadPhotos().filter(p => p.mission === mission).length;
+    const remaining = 5 - existingCount;
+    
+    if (remaining <= 0) {
+      missionCapacityEl.textContent = "⚠️ This mission is full (5/5)";
+      missionCapacityEl.className = "mission-capacity full";
+    } else {
+      missionCapacityEl.textContent = `${existingCount}/5 photos (${remaining} more allowed)`;
+      missionCapacityEl.className = "mission-capacity";
+    }
+  }
   
   function renderStagingPreview() {
     if (!stagingPreview) return;
@@ -2167,7 +2394,7 @@ $("userPill").addEventListener("click", () => openWhoModal());
           ? `<video src="${url}" class="staging-thumb"></video>`
           : `<img src="${url}" class="staging-thumb" alt="Preview">`
         }
-        <span class="staging-name">${escapeHtml(file.name.substring(0, 20))}${file.name.length > 20 ? '...' : ''}</span>
+        <span class="staging-name">${escapeHtml(file.name.substring(0, 15))}${file.name.length > 15 ? '...' : ''}</span>
         <button class="staging-remove" data-idx="${idx}" title="Remove"><i class="fas fa-times"></i></button>
       `;
       
@@ -2177,6 +2404,7 @@ $("userPill").addEventListener("click", () => openWhoModal());
         const removeIdx = parseInt(e.currentTarget.dataset.idx);
         stagedFiles.splice(removeIdx, 1);
         renderStagingPreview();
+        updateStagedCount();
         if (stagedFiles.length === 0) {
           photoStagingArea.classList.add("hidden");
         }
@@ -2184,6 +2412,8 @@ $("userPill").addEventListener("click", () => openWhoModal());
       
       stagingPreview.appendChild(item);
     });
+    
+    updateStagedCount();
   }
   
   if (photoSelectBtn && photoInput) {
@@ -2193,7 +2423,7 @@ $("userPill").addEventListener("click", () => openWhoModal());
       const files = Array.from(e.target.files || []);
       if (files.length === 0) return;
       
-      // Add to staged files
+      // Add to staged files (not replace)
       files.forEach(file => {
         if (file.type.startsWith("image/") || file.type.startsWith("video/")) {
           stagedFiles.push(file);
@@ -2215,6 +2445,11 @@ $("userPill").addEventListener("click", () => openWhoModal());
     });
   }
   
+  // Update capacity when mission changes
+  if (photoMissionSelect) {
+    photoMissionSelect.addEventListener("change", updateMissionCapacity);
+  }
+  
   // Clear all staged files
   if (clearStagingBtn) {
     clearStagingBtn.addEventListener("click", () => {
@@ -2223,6 +2458,8 @@ $("userPill").addEventListener("click", () => openWhoModal());
       photoStagingArea.classList.add("hidden");
       photoDateInput.value = "";
       photoMissionSelect.value = "";
+      updateStagedCount();
+      updateMissionCapacity();
     });
   }
   
@@ -2247,11 +2484,11 @@ $("userPill").addEventListener("click", () => openWhoModal());
         const existingPhotos = loadPhotos().filter(p => p.mission === mission);
         const remaining = 5 - existingPhotos.length;
         if (remaining <= 0) {
-          showToast(`Max 5 photos per mission! "${mission}" is full.`);
+          showToast(`This mission is full (5/5 photos)`);
           return;
         }
         if (stagedFiles.length > remaining) {
-          showToast(`Can only add ${remaining} more photo(s) to "${mission}". Remove some.`);
+          showToast(`Can only add ${remaining} more photo(s). Remove ${stagedFiles.length - remaining} from staging.`);
           return;
         }
       }
@@ -2292,6 +2529,8 @@ $("userPill").addEventListener("click", () => openWhoModal());
       photoStagingArea.classList.add("hidden");
       photoDateInput.value = "";
       photoMissionSelect.value = "";
+      updateStagedCount();
+      updateMissionCapacity();
       
       photoSubmitBtn.disabled = false;
       photoSubmitBtn.innerHTML = '<i class="fa-solid fa-check"></i> Submit Photos';
@@ -2407,16 +2646,6 @@ ${completed.map(i => `[X] ${i.title} — ${i.desc} (#${i.tag})`).join("\n")}
     if (!e.target.closest("#notificationBell") && !e.target.closest("#notificationDropdown")) {
       $("notificationDropdown").classList.remove("active");
     }
-  });
-
-  // Pull on focus (fast)
-  window.addEventListener("focus", () => {
-    pullRemoteState({ silent: false });
-  });
-
-  // when coming back visible, do a quick pull
-  document.addEventListener("visibilitychange", () => {
-    if (document.visibilityState === "visible") pullRemoteState({ silent: false });
   });
 
   // ---------- Init ----------
