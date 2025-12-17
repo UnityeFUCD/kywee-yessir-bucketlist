@@ -433,7 +433,11 @@
             }
             updateMissionCapacity();
           }
-          document.querySelector('.photo-upload-section')?.scrollIntoView({ behavior: 'smooth' });
+          
+          // ✅ Open the file picker immediately
+          const input = $("photoInput");
+          if (input) input.click();
+          
           showToast(isUnlinked ? "Select photos to add" : `Select photos to add to "${displayName}"`);
         });
       }
@@ -1873,40 +1877,48 @@
     if (indicator) indicator.classList.remove("active");
   }
 
+  // ✅ Immediate sync + conflict check on resume
+  async function onAppResume() {
+    if (deviceLocked) return;
+    
+    const timeSinceSync = Date.now() - lastSyncTime;
+    
+    // Show indicator if stale
+    if (timeSinceSync > 3000) {
+      showSyncingIndicator();
+    }
+    
+    try {
+      // First, send our presence to mark us as active
+      if (hasUser()) {
+        await presencePing();
+      }
+      
+      // Then pull state to check for conflicts
+      await pullRemoteState({ silent: false });
+      lastSyncTime = Date.now();
+    } finally {
+      hideSyncingIndicator();
+    }
+  }
+
   // ✅ Force refresh when tab becomes visible
   document.addEventListener("visibilitychange", () => {
-    if (document.visibilityState === "visible" && !deviceLocked) {
-      const timeSinceSync = Date.now() - lastSyncTime;
-      // If stale (> 5 seconds), show indicator
-      if (timeSinceSync > 5000) {
-        showSyncingIndicator();
-      }
-      pullRemoteState({ silent: false }).finally(() => {
-        hideSyncingIndicator();
-        lastSyncTime = Date.now();
-      });
+    if (document.visibilityState === "visible") {
+      onAppResume();
     }
   });
 
   // ✅ Force refresh when window gains focus
   window.addEventListener("focus", () => {
-    if (!deviceLocked) {
-      pullRemoteState({ silent: false }).finally(() => {
-        lastSyncTime = Date.now();
-      });
-    }
+    onAppResume();
   });
 
   // ✅ iOS BFCache support - pageshow fires when returning from home screen
   window.addEventListener("pageshow", (event) => {
     if (event.persisted || performance.getEntriesByType("navigation")[0]?.type === "back_forward") {
-      // Page was restored from BFCache
       console.log("Page restored from BFCache, forcing sync...");
-      showSyncingIndicator();
-      pullRemoteState({ silent: false }).finally(() => {
-        hideSyncingIndicator();
-        lastSyncTime = Date.now();
-      });
+      onAppResume();
     }
   });
 
@@ -1944,7 +1956,16 @@
     updateUserDuoPills();
 
     setSyncStatus("pulling");
+    
+    // ✅ Immediate presence/conflict check on login
+    showSyncingIndicator();
     await pullRemoteState({ silent: false });
+    hideSyncingIndicator();
+    
+    // ✅ If device conflict detected, don't proceed
+    if (deviceLocked) {
+      return; // Conflict overlay will be shown
+    }
 
     startPresence();
     showToast(`USER SET: ${String(name).toUpperCase()}`);
