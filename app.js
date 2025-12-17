@@ -1011,12 +1011,15 @@
     updateUserDuoPills();
   }
 
-  function stopLivePresence() {
+  async function stopLivePresence() {
     if (presenceChannel && sbClient) {
       try {
-        presenceChannel.untrack();
-        sbClient.removeChannel(presenceChannel);
-      } catch(e) {}
+        // Await untrack to ensure server sees us leave before removing channel
+        await presenceChannel.untrack();
+      } catch (e) {}
+      try {
+        await sbClient.removeChannel(presenceChannel);
+      } catch (e) {}
       presenceChannel = null;
     }
   }
@@ -1969,17 +1972,9 @@
   window.forceDeviceTakeover = async function() {
     deviceLocked = false;
     hideDeviceConflict();
-    // ✅ Re-track WebSocket presence to claim this device
-    if (presenceChannel && sbClient) {
-      try {
-        await presenceChannel.track({
-          deviceId: getDeviceId(),
-          onlineAt: new Date().toISOString(),
-          user: loadUser()?.toLowerCase(),
-          forcedTakeover: true
-        });
-      } catch(e) { console.log("WebSocket re-track failed:", e); }
-    }
+    // ✅ Re-track WebSocket presence to claim this device deterministically
+    try { await stopLivePresence(); } catch(e) {}
+    initLivePresence();
     // ✅ Force push our device as active IMMEDIATELY (not debounced)
     await pushRemoteState();
     showToast("You are now the active device");
@@ -2322,7 +2317,7 @@
 
   async function setUserAndStart(name) {
     // Ensure prior presence channel is cleanly removed before switching keys
-    try { stopLivePresence(); } catch {}
+    try { await stopLivePresence(); } catch {}
     saveUser(name);
 
     $("closeWhoModal").classList.remove("hidden");
@@ -2356,7 +2351,8 @@
     // This lets other devices know immediately (not waiting for 45s timeout)
     const currentUser = loadUser();
     if (currentUser) {
-      stopPresence(); // Stop pinging immediately
+      // Stop presence ASAP (await untrack to avoid ghost session)
+      await stopLivePresence();
       try {
         // Clear our device from activeDevices
         const user = currentUser.toLowerCase();
@@ -2377,6 +2373,7 @@
     }
     
     clearUser();
+    // Ensure timers are stopped too
     stopPresence();
     updateUserDuoPills();
     openWhoModal();
