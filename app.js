@@ -11,9 +11,11 @@
 
   // ✅ VERSION HISTORY for system update notifications
   const VERSION_HISTORY = [
-    { version: "1.3.0", date: "2024-12-18", note: "WebSocket presence, ghost session fix, improved sync" }
+    { version: "1.0.0", date: "2024-12-15", note: "Initial release with missions, messages, and sync" },
+    { version: "1.1.0", date: "2024-12-16", note: "Added attachments, daily emoticons, and character limits" },
+    { version: "1.2.0", date: "2024-12-17", note: "New: Mini calendar, date picker, user colors, and stacking toasts" }
   ];
-  const CURRENT_VERSION = "1.3.0";
+  const CURRENT_VERSION = "1.2.0";
 
   // ✅ UPCOMING EVENTS (add your special dates here!)
   const UPCOMING_EVENTS = [
@@ -67,7 +69,6 @@
 
   // ✅ Initialize Supabase client for Realtime Presence (WebSocket)
   const supabase = window.supabase ? window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY) : null;
-
 
   const $ = (id) => document.getElementById(id);
 
@@ -147,15 +148,15 @@
   // ✅ Prevent double-trigger of letter animation
   let letterAnimationInProgress = false;
 
-  // ✅ Example items shown in UI (not synced, just for display)
-  const exampleActive = { title: "Example Mission", desc: "This shows how missions look", tag: "example", dueDate: "2025-01-15", done: false, isExample: true };
-  const exampleCompleted = { title: "Example Completed", desc: "Completed missions appear here", tag: "example", done: true, isExample: true };
+  const exampleActive = { title: "Test Mission (Example)", desc: "This is an example card", tag: "example", dueDate: "2025-01-15", done: false, isExample: true };
+  const exampleCompleted = { title: "Test Completed (Example)", desc: "This is a completed example", tag: "example", done: true, isExample: true };
 
   let selectedSavedMissions = [];
   let currentTheme = "system";
 
   // ✅ SMART POLLING state
   let lastRemoteUpdatedAt = null;
+  let lastPresenceVersion = 0;
   let pollTimer = null;
 
   // ---------- helpers ----------
@@ -846,9 +847,8 @@
     $("syncPill").title = "Sync off";
   }
 
-  // ---------- Presence (WebSocket-based via Supabase Realtime) ----------
-  let presenceChannel = null;
-  let livePresenceState = {}; // { yasir: [{deviceId, onlineAt}], kylee: [...] }
+  // ---------- Presence (duo online) ----------
+  let presenceTimer = null;
   let lastPresence = null;
 
   function normalizePerson(name) {
@@ -858,155 +858,20 @@
     return "";
   }
 
-  /**
-   * Initialize WebSocket-based presence using Supabase Realtime
-   * This replaces the old polling-based presence system
-   */
-  function initLivePresence() {
-    if (!supabase) {
-      console.warn("Supabase client not available, falling back to polling");
-      startPollingPresence();
-      return;
-    }
+  function updateUserDuoPills() {
+    const user = loadUser().trim();
+    const duo = getDuoName(user);
 
-    const user = loadUser()?.toLowerCase();
-    if (!user) return;
+    $("userText").textContent = user ? `USER: ${user.toUpperCase()}` : "USER: --";
+    $("duoText").textContent = user ? `DUO: ${duo.toUpperCase()}` : "DUO: --";
+    $("envelopeLabel").textContent = user ? `DUO: ${duo.toUpperCase()}` : "DUO";
 
-    // Clean up existing channel if any
-    if (presenceChannel) {
-      supabase.removeChannel(presenceChannel);
-    }
-
-    // Create a presence channel for this room
-    presenceChannel = supabase.channel(`presence:${ROOM_CODE}`, {
-      config: {
-        presence: {
-          key: user // Use the username as the presence key
-        }
-      }
-    });
-
-    // Handle presence sync events
-    presenceChannel
-      .on('presence', { event: 'sync' }, () => {
-        livePresenceState = presenceChannel.presenceState();
-        handlePresenceSync(livePresenceState);
-      })
-      .on('presence', { event: 'join' }, ({ key, newPresences }) => {
-        console.log(`${key} joined:`, newPresences);
-        updatePresenceUI();
-      })
-      .on('presence', { event: 'leave' }, ({ key, leftPresences }) => {
-        console.log(`${key} left:`, leftPresences);
-        // When another session leaves, auto-hide conflict modal if it was showing
-        if (deviceLocked) {
-          setTimeout(() => handlePresenceSync(presenceChannel.presenceState()), 500);
-        }
-        updatePresenceUI();
-      })
-      .subscribe(async (status) => {
-        if (status === 'SUBSCRIBED') {
-          await presenceChannel.track({
-            deviceId: getDeviceId(),
-            onlineAt: new Date().toISOString(),
-            user: user
-          });
-          console.log("✅ Presence tracking started for:", user);
-          updatePresenceUI();
-        }
-      });
-
-    window.presenceChannel = presenceChannel;
-  }
-
-  /**
-   * Handle presence state changes and check for conflicts
-   */
-  function handlePresenceSync(state) {
-    livePresenceState = state;
-    
-    const currentUser = loadUser()?.toLowerCase();
-    const myDeviceId = getDeviceId();
-    
-    if (!currentUser) return;
-
-    // Get all presence entries for current user
-    const userPresences = state[currentUser] || [];
-    
-    // Check if another device is active for this user
-    const conflictingDevices = userPresences.filter(p => p.deviceId !== myDeviceId);
-    
-    if (conflictingDevices.length > 0) {
-      // Conflict detected - another device is active
-      if (!deviceLocked) {
-        deviceLocked = true;
-        showDeviceConflict(currentUser);
-      }
-    } else {
-      // No conflict - hide modal if showing
-      if (deviceLocked) {
-        deviceLocked = false;
-        hideDeviceConflict();
-      }
-    }
-    
-    updatePresenceUI();
-  }
-
-  /**
-   * Update the UI to show online status
-   */
-  function updatePresenceUI() {
-    const currentUser = loadUser()?.toLowerCase();
-    const duoUser = currentUser === "yasir" ? "kylee" : "yasir";
-    
-    // Update user dot (current user is always "online" if logged in)
+    // ✅ Simplified: Hide presence dots entirely (just show user/duo names)
+    // Conflict detection still works separately via checkDeviceConflict()
     const userDot = $("userDot");
-    if (userDot) {
-      userDot.style.display = currentUser ? "inline-block" : "none";
-      userDot.className = currentUser ? "dot green presence-dot" : "dot gray presence-dot";
-    }
-    
-    // Update duo dot based on their presence
     const duoDot = $("duoDot");
-    const duoPresences = livePresenceState[duoUser] || [];
-    const duoOnline = duoPresences.length > 0;
-    
-    if (duoDot) {
-      duoDot.style.display = currentUser ? "inline-block" : "none";
-      duoDot.className = duoOnline ? "dot green presence-dot" : "dot gray presence-dot";
-    }
-  }
-
-  /**
-   * Stop presence tracking (on logout)
-   */
-  function stopLivePresence() {
-    if (presenceChannel && supabase) {
-      presenceChannel.untrack();
-      supabase.removeChannel(presenceChannel);
-      presenceChannel = null;
-    }
-    livePresenceState = {};
-    updatePresenceUI();
-  }
-
-  /**
-   * Fallback polling presence (if WebSocket unavailable)
-   */
-  let presenceTimer = null;
-
-  function startPollingPresence() {
-    if (presenceTimer) return;
-    presencePing();
-    presenceTimer = setInterval(presencePing, 15000);
-  }
-
-  function stopPollingPresence() {
-    if (presenceTimer) {
-      clearInterval(presenceTimer);
-      presenceTimer = null;
-    }
+    if (userDot) userDot.style.display = "none";
+    if (duoDot) duoDot.style.display = "none";
   }
 
   async function presencePing() {
@@ -1015,35 +880,116 @@
       const res = await remotePatchPresence(loadUser().trim());
       if (res?.presence) {
         lastPresence = res.presence;
+        updateUserDuoPills();
+      }
+      // ✅ Track presenceVersion from server
+      if (res?.presenceVersion !== undefined) {
+        lastPresenceVersion = res.presenceVersion;
+      }
+      // ✅ Check for device conflicts in presence response (instant detection)
+      if (res?.activeDevices) {
+        checkDeviceConflict(res.activeDevices);
       }
     } catch {
       // ignore
     }
   }
 
-  // Legacy function names for compatibility
+  // ✅ WebSocket-based presence using Supabase Realtime (fixes ghost session bug)
+  let presenceChannel = null;
+  let livePresenceState = {};
+
+  function initLivePresence() {
+    if (!supabase) {
+      console.log("Supabase client not available, using polling only");
+      return;
+    }
+
+    const user = loadUser()?.toLowerCase();
+    if (!user) return;
+
+    // Clean up existing channel if any
+    if (presenceChannel) {
+      try { supabase.removeChannel(presenceChannel); } catch(e) {}
+    }
+
+    try {
+      presenceChannel = supabase.channel(`presence:${ROOM_CODE}`, {
+        config: { presence: { key: user } }
+      });
+
+      presenceChannel
+        .on('presence', { event: 'sync' }, () => {
+          livePresenceState = presenceChannel.presenceState();
+          handleLivePresenceSync(livePresenceState);
+        })
+        .on('presence', { event: 'leave' }, () => {
+          // When another session leaves, auto-hide conflict if showing
+          if (deviceLocked) {
+            setTimeout(() => handleLivePresenceSync(presenceChannel.presenceState()), 500);
+          }
+        })
+        .subscribe(async (status) => {
+          if (status === 'SUBSCRIBED') {
+            await presenceChannel.track({
+              deviceId: getDeviceId(),
+              onlineAt: new Date().toISOString(),
+              user: user
+            });
+            console.log("✅ WebSocket presence active for:", user);
+          }
+        });
+    } catch (err) {
+      console.error("WebSocket presence error:", err);
+    }
+  }
+
+  function handleLivePresenceSync(state) {
+    const currentUser = loadUser()?.toLowerCase();
+    const myDeviceId = getDeviceId();
+    if (!currentUser) return;
+
+    const userPresences = state[currentUser] || [];
+    const conflictingDevices = userPresences.filter(p => p.deviceId !== myDeviceId);
+
+    if (conflictingDevices.length > 0 && !deviceLocked) {
+      deviceLocked = true;
+      showDeviceConflict(currentUser);
+    } else if (conflictingDevices.length === 0 && deviceLocked) {
+      deviceLocked = false;
+      hideDeviceConflict();
+    }
+  }
+
+  function stopLivePresence() {
+    if (presenceChannel && supabase) {
+      try {
+        presenceChannel.untrack();
+        supabase.removeChannel(presenceChannel);
+      } catch(e) {}
+      presenceChannel = null;
+    }
+  }
+
   function startPresence() {
+    if (presenceTimer) return;
+    presencePing();
+    presenceTimer = setInterval(presencePing, 15000);
+    // Also start WebSocket presence
     initLivePresence();
   }
 
   function stopPresence() {
+    if (presenceTimer) {
+      clearInterval(presenceTimer);
+      presenceTimer = null;
+    }
+    // Also stop WebSocket presence
     stopLivePresence();
-    stopPollingPresence();
   }
 
-  function updateUserDuoPills() {
-    const user = loadUser().trim();
-    const duo = getDuoName(user);
-
-    $("userText").textContent = user ? `${user.toUpperCase()}` : "USER: --";
-    $("duoText").textContent = user ? `${duo.toUpperCase()}` : "DUO: --";
-    $("envelopeLabel").textContent = user ? `DUO: ${duo.toUpperCase()}` : "DUO";
-
-    // Update presence dots via WebSocket state
-    updatePresenceUI();
-  }
-
-  // ✅ WebSocket-based presence replaces the old polling system
+  // ✅ Presence is now simplified - no online/offline dots
+  // Conflict detection still works via checkDeviceConflict() in pullRemoteState/presencePing
 
   // ---------- Notifications ----------
   let prevUnreadCount = 0;
@@ -1860,7 +1806,14 @@
     // ✅ Build photos array
     const photos = loadPhotos();
 
-    // ✅ REMOVED: activeDevices tracking - now handled by WebSocket presence
+    // ✅ Track active device per user
+    const user = loadUser()?.toLowerCase();
+    if (user && !deviceLocked) {
+      activeDevices[user] = {
+        deviceId: getDeviceId(),
+        lastActive: Date.now()
+      };
+    }
 
     return {
       active: loadActive(),
@@ -1871,7 +1824,7 @@
       systemMessage: loadSystemMessage(),
       readState,
       photos,
-      // activeDevices removed - handled by WebSocket presence
+      activeDevices,
     };
   }
 
@@ -1943,7 +1896,9 @@
         <i class="fas fa-mobile-alt conflict-icon"></i>
         <h3>Account Active Elsewhere</h3>
         <p>Your "${currentUser.toUpperCase()}" session is active on another device.</p>
-        <p class="conflict-hint">Close the other tab/device, or it will auto-resolve when they disconnect.</p>
+        <p style="font-size: 12px; color: var(--muted); margin-top: 8px;">
+          <i class="fas fa-info-circle"></i> This will auto-resolve when the other session closes.
+        </p>
         <div class="device-conflict-buttons">
           <button class="btn primary" onclick="forceDeviceTakeover()">
             <i class="fas fa-sign-in-alt"></i> Use Here Instead
@@ -1965,18 +1920,18 @@
   window.forceDeviceTakeover = async function() {
     deviceLocked = false;
     hideDeviceConflict();
-    
-    // Re-track presence to claim this device via WebSocket
+    // ✅ Re-track WebSocket presence to claim this device
     if (presenceChannel && supabase) {
-      await presenceChannel.track({
-        deviceId: getDeviceId(),
-        onlineAt: new Date().toISOString(),
-        user: loadUser()?.toLowerCase(),
-        forcedTakeover: true
-      });
+      try {
+        await presenceChannel.track({
+          deviceId: getDeviceId(),
+          onlineAt: new Date().toISOString(),
+          user: loadUser()?.toLowerCase(),
+          forcedTakeover: true
+        });
+      } catch(e) { console.log("WebSocket re-track failed:", e); }
     }
-    
-    // Also push data to ensure we're the active device
+    // ✅ Force push our device as active IMMEDIATELY (not debounced)
     await pushRemoteState();
     showToast("You are now the active device");
   };
@@ -1984,17 +1939,15 @@
   window.switchToOtherUser = async function(otherUser) {
     deviceLocked = false;
     hideDeviceConflict();
-    
-    // Stop current presence tracking
+    // Stop current WebSocket presence
     stopLivePresence();
-    
     // Switch to the other user
     saveUser(otherUser);
     updateUserDuoPills();
-    
-    // Start presence for new user
+    // Start WebSocket presence for new user
     initLivePresence();
-    
+    // ✅ Push device claim for new user immediately
+    await pushRemoteState();
     await pullRemoteState({ silent: false });
     showToast(`Switched to ${otherUser}`);
   };
@@ -2138,7 +2091,7 @@
       if (document.visibilityState !== "visible") return;
       if (deviceLocked) return; // Don't poll if device is locked
       pullRemoteState({ silent: true });
-    }, 2000); // 2s polling for data sync (presence is WebSocket)
+    }, 1000); // 1s = instant notifications
   }
 
   // Track last sync time for stale detection
@@ -2162,39 +2115,48 @@
     if (indicator) indicator.classList.remove("active");
   }
 
+  // ✅ Immediate sync + conflict check on resume
+  async function onAppResume() {
+    if (deviceLocked) return;
+    
+    const timeSinceSync = Date.now() - lastSyncTime;
+    
+    // Show indicator if stale
+    if (timeSinceSync > 3000) {
+      showSyncingIndicator();
+    }
+    
+    try {
+      // First, send our presence to mark us as active
+      if (hasUser()) {
+        await presencePing();
+      }
+      
+      // Then pull state to check for conflicts
+      await pullRemoteState({ silent: false });
+      lastSyncTime = Date.now();
+    } finally {
+      hideSyncingIndicator();
+    }
+  }
+
   // ✅ Force refresh when tab becomes visible
-  document.addEventListener("visibilitychange", async () => {
+  document.addEventListener("visibilitychange", () => {
     if (document.visibilityState === "visible") {
-      if (deviceLocked) return;
-      
-      const timeSinceSync = Date.now() - lastSyncTime;
-      if (timeSinceSync > 3000) {
-        showSyncingIndicator();
-      }
-      
-      try {
-        await pullRemoteState({ silent: false });
-        lastSyncTime = Date.now();
-      } finally {
-        hideSyncingIndicator();
-      }
+      onAppResume();
     }
   });
 
-  // ✅ REMOVED: Focus listener that called onAppResume - redundant
+  // ✅ Force refresh when window gains focus
+  window.addEventListener("focus", () => {
+    onAppResume();
+  });
 
   // ✅ iOS BFCache support - pageshow fires when returning from home screen
-  window.addEventListener("pageshow", async (event) => {
+  window.addEventListener("pageshow", (event) => {
     if (event.persisted || performance.getEntriesByType("navigation")[0]?.type === "back_forward") {
       console.log("Page restored from BFCache, forcing sync...");
-      if (deviceLocked) return;
-      showSyncingIndicator();
-      try {
-        await pullRemoteState({ silent: false });
-        lastSyncTime = Date.now();
-      } finally {
-        hideSyncingIndicator();
-      }
+      onAppResume();
     }
   });
 
@@ -2253,9 +2215,6 @@
   }
 
   async function logOffUser() {
-    // ✅ Stop WebSocket presence immediately
-    stopLivePresence();
-    
     // ✅ Send explicit offline signal BEFORE clearing user
     // This lets other devices know immediately (not waiting for 45s timeout)
     const currentUser = loadUser();

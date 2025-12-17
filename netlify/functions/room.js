@@ -1,6 +1,5 @@
 // netlify/functions/room.js
 // Stores/loads the shared state in Supabase (server-side key stays secret in Netlify env)
-// ✅ UPDATED: Removed presenceVersion logic - presence now handled by Supabase Realtime WebSocket
 
 const TABLE = "bucket_rooms";
 
@@ -42,9 +41,6 @@ exports.handler = async (event) => {
   };
 
   try {
-    // ==========================================
-    // GET - Read room state
-    // ==========================================
     if (event.httpMethod === "GET") {
       const room = (event.queryStringParameters?.room || "").trim();
       if (!room) return json(400, { error: "room required" });
@@ -61,17 +57,19 @@ exports.handler = async (event) => {
 
       const payload = first?.payload || {};
       const presence = payload?.presence || {};
+      const activeDevices = payload?.activeDevices || {};
+      // ✅ Return presenceVersion so clients can detect presence-only changes
+      const presenceVersion = payload?.presenceVersion || 0;
 
       return json(200, {
         payload,
         presence,
+        activeDevices,
+        presenceVersion,
         updated_at: first?.updated_at || null,
       });
     }
 
-    // ==========================================
-    // POST - Write room state or patch presence
-    // ==========================================
     if (event.httpMethod === "POST") {
       let body = {};
       try {
@@ -86,7 +84,7 @@ exports.handler = async (event) => {
 
       if (!room) return json(400, { error: "room required" });
 
-      // Read existing row
+      // Read existing row so presence-patch doesn't overwrite data
       const getUrl =
         `${SUPABASE_URL}/rest/v1/${TABLE}` +
         `?select=payload,updated_at&room=eq.${encodeURIComponent(room)}&limit=1`;
@@ -102,27 +100,38 @@ exports.handler = async (event) => {
       }
 
       let merged = { ...(existingPayload || {}) };
+
       const isPayloadWrite = !!(payloadIn && typeof payloadIn === "object");
+      let presenceChanged = false;
 
       // Merge main payload if provided
       if (isPayloadWrite) {
         merged = { ...merged, ...payloadIn };
-        // ✅ REMOVED: No more activeDevices handling - WebSocket handles this
+        // ✅ Check if activeDevices changed (for presenceVersion bump)
+        if (payloadIn.activeDevices !== undefined) {
+          presenceChanged = true;
+        }
       }
 
-      // Presence patch (stores last seen for yasir/kylee) - kept for backwards compat
+      // Presence patch (stores last seen for yasir/kylee)
       if (presenceIn && typeof presenceIn === "object" && presenceIn.user) {
         const key = normUser(presenceIn.user);
         if (key) {
           const pres = { ...(merged.presence || {}) };
           pres[key] = new Date().toISOString();
           merged.presence = pres;
+          presenceChanged = true;
         }
       }
 
-      // ✅ REMOVED: presenceVersion logic - no longer needed with WebSocket
+      // ✅ Increment presenceVersion when presence or activeDevices changes
+      // This lets clients detect changes even when updated_at doesn't bump
+      if (presenceChanged) {
+        merged.presenceVersion = (merged.presenceVersion || 0) + 1;
+      }
 
-      // Only bump updated_at when payload changes (not presence-only pings)
+      // ✅ IMPORTANT:
+      // - Only bump updated_at when payload changes (not presence pings)
       let nextUpdatedAt = existingUpdatedAt;
       if (isPayloadWrite) nextUpdatedAt = new Date().toISOString();
       if (!nextUpdatedAt) nextUpdatedAt = new Date().toISOString(); // first create
@@ -144,17 +153,19 @@ exports.handler = async (event) => {
 
       if (!r.ok) return json(500, { error: "supabase write failed" });
 
+      // ✅ Always return presenceVersion so clients can track presence changes
       return json(200, {
         ok: true,
         payload: merged,
         presence: merged.presence || {},
+        activeDevices: merged.activeDevices || {},
+        presenceVersion: merged.presenceVersion || 0,
         updated_at: nextUpdatedAt,
       });
     }
 
     return json(405, { error: "method not allowed" });
   } catch (e) {
-    console.error("Room function error:", e);
     return json(500, { error: "server error" });
   }
 };
