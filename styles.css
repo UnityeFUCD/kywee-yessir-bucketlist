@@ -1913,6 +1913,64 @@ input[type="date"]::-webkit-calendar-picker-indicator {
   line-height: 1.6;
 }
 
+.device-conflict-buttons {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.device-conflict-buttons .btn {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+}
+
+/* ============================================
+   SYNCING INDICATOR
+   ============================================ */
+
+.syncing-indicator {
+  position: fixed;
+  top: 20px;
+  left: 50%;
+  transform: translateX(-50%);
+  background: var(--bg-card);
+  border: 2px solid var(--accent);
+  padding: 12px 24px;
+  z-index: 9998;
+  display: none;
+  align-items: center;
+  gap: 10px;
+  font-size: 12px;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  box-shadow: 0 4px 20px rgba(0,0,0,0.3);
+}
+
+.syncing-indicator.active {
+  display: flex;
+}
+
+.syncing-indicator i {
+  color: var(--accent);
+}
+
+/* ============================================
+   LETTER MODAL - SCROLL LOCK
+   ============================================ */
+
+.letter-modal {
+  overscroll-behavior: contain;
+  touch-action: none;
+}
+
+.letter-paper {
+  overscroll-behavior: contain;
+  touch-action: pan-y;
+}
+
 /* ============================================
    CUSTOM SCROLLBAR (prettier)
    ============================================ */

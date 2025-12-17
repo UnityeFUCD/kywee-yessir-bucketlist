@@ -349,6 +349,16 @@
     
     const photos = loadPhotos();
     
+    // ✅ Save expanded state before re-render
+    const expandedBundles = {};
+    container.querySelectorAll('.gallery-mission-bundle').forEach(bundle => {
+      const missionKey = bundle.dataset.mission;
+      const photosDiv = bundle.querySelector('.bundle-photos');
+      if (missionKey && photosDiv && !photosDiv.classList.contains('collapsed')) {
+        expandedBundles[missionKey] = true;
+      }
+    });
+    
     // Keep the example bundle
     const exampleBundle = container.querySelector('.example-bundle');
     const emptyNote = container.querySelector('.gallery-empty-note');
@@ -380,7 +390,11 @@
       const isUnlinked = missionKey === "_unlinked_";
       const displayName = isUnlinked ? "Unlinked Photos" : missionKey;
       const photoCount = missionPhotos.length;
-      const canAddMore = !isUnlinked && photoCount < 5;
+      // ✅ Allow adding to unlinked photos too (no limit for unlinked)
+      const canAddMore = isUnlinked || photoCount < 5;
+      
+      // ✅ Check if this bundle was expanded before re-render
+      const wasExpanded = expandedBundles[missionKey] === true;
       
       const bundle = document.createElement("div");
       bundle.className = "gallery-mission-bundle";
@@ -389,33 +403,38 @@
         <div class="bundle-header">
           <div class="bundle-header-left" onclick="toggleBundle(this.parentElement)">
             <span class="bundle-mission"><i class="fa-solid fa-${isUnlinked ? 'images' : 'link'}"></i> ${escapeHtml(displayName)}</span>
-            <span class="bundle-count">${photoCount}/5 photos</span>
+            <span class="bundle-count">${isUnlinked ? photoCount : photoCount + '/5'} photos</span>
           </div>
           <div class="bundle-actions">
-            ${canAddMore ? `<button class="bundle-add-btn" title="Add more photos to this mission"><i class="fas fa-plus"></i></button>` : ''}
+            ${canAddMore ? `<button class="bundle-add-btn" title="Add more photos${isUnlinked ? '' : ' to this mission'}"><i class="fas fa-plus"></i></button>` : ''}
             ${isUnlinked ? `<button class="bundle-link-btn" title="Link these to a mission"><i class="fas fa-link"></i></button>` : ''}
             <button class="bundle-delete-btn" title="Delete all photos"><i class="fas fa-trash"></i></button>
-            <span class="bundle-expand" onclick="toggleBundle(this.closest('.bundle-header'))"><i class="fas fa-chevron-down"></i></span>
+            <span class="bundle-expand" onclick="toggleBundle(this.closest('.bundle-header'))"><i class="fas fa-chevron-${wasExpanded ? 'up' : 'down'}"></i></span>
           </div>
         </div>
-        <div class="bundle-photos collapsed">
+        <div class="bundle-photos ${wasExpanded ? '' : 'collapsed'}">
           <div class="gallery-grid"></div>
         </div>
       `;
       
-      // Add more photos to this mission
+      // Add more photos to this mission or unlinked
       const addBtn = bundle.querySelector(".bundle-add-btn");
       if (addBtn) {
         addBtn.addEventListener("click", (e) => {
           e.stopPropagation();
-          // Set the mission in the form and scroll to upload
           const select = $("photoMission");
           if (select) {
-            select.value = missionKey;
+            if (isUnlinked) {
+              // For unlinked photos, clear the mission select
+              select.value = "";
+            } else {
+              // Set the mission in the form
+              select.value = missionKey;
+            }
             updateMissionCapacity();
           }
           document.querySelector('.photo-upload-section')?.scrollIntoView({ behavior: 'smooth' });
-          showToast(`Select photos to add to "${displayName}"`);
+          showToast(isUnlinked ? "Select photos to add" : `Select photos to add to "${displayName}"`);
         });
       }
       
@@ -695,9 +714,19 @@
       const thumbnail = clip.thumbnail || clip.contentThumbnail || "";
       const title = clip.contentTitle || "Untitled Clip";
       const game = clip.categoryName || clip.gameName || "";
-      const clipId = clip.contentId;
-      const clipUrl = `https://medal.tv/games/${clip.categoryName?.toLowerCase().replace(/\s+/g, '-') || 'clip'}/clips/${clipId}`;
-      const videoUrl = clip.rawFileUrl || clip.contentUrl || "";
+      
+      // ✅ Use the correct URL from API - contentUrl is the shareable link
+      // Fallback chain: contentUrl → directClipUrl → constructed URL
+      const clipUrl = clip.contentUrl || clip.directClipUrl || `https://medal.tv/clips/${clip.contentId}`;
+      
+      // Debug logging to console
+      console.log("Medal clip:", { 
+        title, 
+        contentUrl: clip.contentUrl, 
+        directClipUrl: clip.directClipUrl,
+        contentId: clip.contentId,
+        usingUrl: clipUrl
+      });
       
       item.innerHTML = `
         <div class="medal-thumbnail" style="background-image: url('${escapeHtml(thumbnail)}')">
@@ -709,8 +738,9 @@
         </div>
       `;
       
-      // Click to open in new tab (iframe blocked by Medal)
+      // Click to open in new tab
       item.addEventListener("click", () => {
+        console.log("Opening Medal clip:", clipUrl);
         window.open(clipUrl, '_blank');
       });
       
@@ -719,8 +749,9 @@
   }
 
   function openMedalClip(clip) {
-    // Open directly on Medal.tv since iframe embedding is blocked
-    const clipUrl = `https://medal.tv/games/${clip.categoryName?.toLowerCase().replace(/\s+/g, '-') || 'clip'}/clips/${clip.contentId}`;
+    // Use the correct URL from API
+    const clipUrl = clip.contentUrl || clip.directClipUrl || `https://medal.tv/clips/${clip.contentId}`;
+    console.log("Opening Medal clip:", clipUrl);
     window.open(clipUrl, '_blank');
   }
 
@@ -1067,6 +1098,11 @@
       if (paper) paper.classList.remove("open");
       void modal.offsetHeight;
       
+      // ✅ Lock body scroll when modal opens
+      document.body.style.overflow = 'hidden';
+      document.body.style.position = 'fixed';
+      document.body.style.width = '100%';
+      
       requestAnimationFrame(() => {
         modal.classList.add("active");
         if (env) env.classList.add("open");
@@ -1081,6 +1117,10 @@
       modal.classList.add("active");
       if (env) env.classList.add("open");
       if (paper) paper.classList.add("open");
+      // ✅ Lock body scroll
+      document.body.style.overflow = 'hidden';
+      document.body.style.position = 'fixed';
+      document.body.style.width = '100%';
     }
   }
 
@@ -1582,30 +1622,27 @@
 
     suppressSync = true;
 
-    // ✅ Check for device conflicts (single device per account)
+    // ✅ Check for device conflicts (single device per account) - IMMEDIATE, no stale check
     if (state.activeDevices && typeof state.activeDevices === "object") {
       const user = loadUser()?.toLowerCase();
       const myDeviceId = getDeviceId();
       
       if (user && state.activeDevices[user]) {
         const serverDevice = state.activeDevices[user];
+        // If device ID differs, it's a conflict - no stale timeout
         if (serverDevice.deviceId && serverDevice.deviceId !== myDeviceId) {
-          // Another device is using this account
-          const timeDiff = Date.now() - (serverDevice.lastActive || 0);
-          if (timeDiff < 30000) { // Active in last 30 seconds
-            if (!deviceLocked) {
-              deviceLocked = true;
-              showDeviceConflict();
-            }
-          } else {
-            // Other device is stale, we can take over
-            deviceLocked = false;
-            hideDeviceConflict();
+          if (!deviceLocked) {
+            deviceLocked = true;
+            showDeviceConflict(user);
           }
         } else {
+          // Same device or no conflict
           deviceLocked = false;
           hideDeviceConflict();
         }
+      } else {
+        deviceLocked = false;
+        hideDeviceConflict();
       }
       // Update local copy
       activeDevices = state.activeDevices;
@@ -1648,23 +1685,33 @@
     return { cleaned };
   }
 
-  // ✅ Device conflict UI
-  function showDeviceConflict() {
+  // ✅ Device conflict UI - with Switch User option
+  function showDeviceConflict(currentUser) {
     let overlay = $("deviceConflictOverlay");
+    const otherUser = currentUser === "yasir" ? "Kylee" : "Yasir";
+    
     if (!overlay) {
       overlay = document.createElement("div");
       overlay.id = "deviceConflictOverlay";
       overlay.className = "device-conflict-overlay";
-      overlay.innerHTML = `
-        <div class="device-conflict-content">
-          <i class="fas fa-mobile-alt"></i>
-          <h3>Account Active Elsewhere</h3>
-          <p>This account is being used on another device. Only one device can be active at a time.</p>
-          <button class="btn primary" onclick="forceDeviceTakeover()">Use Here Instead</button>
-        </div>
-      `;
       document.body.appendChild(overlay);
     }
+    
+    overlay.innerHTML = `
+      <div class="device-conflict-content">
+        <i class="fas fa-mobile-alt"></i>
+        <h3>Account Active Elsewhere</h3>
+        <p>Your "${currentUser.toUpperCase()}" session is active on another device.</p>
+        <div class="device-conflict-buttons">
+          <button class="btn primary" onclick="forceDeviceTakeover()">
+            <i class="fas fa-sign-in-alt"></i> Use Here Instead
+          </button>
+          <button class="btn" onclick="switchToOtherUser('${otherUser}')">
+            <i class="fas fa-exchange-alt"></i> Switch to ${otherUser}
+          </button>
+        </div>
+      </div>
+    `;
     overlay.classList.add("active");
   }
 
@@ -1679,6 +1726,16 @@
     // Force push our device as active
     schedulePush();
     showToast("You are now the active device");
+  };
+
+  window.switchToOtherUser = function(otherUser) {
+    deviceLocked = false;
+    hideDeviceConflict();
+    // Switch to the other user
+    saveUser(otherUser);
+    updateUserDuoPills();
+    pullRemoteState({ silent: false });
+    showToast(`Switched to ${otherUser}`);
   };
 
   async function remoteGetState() {
@@ -1795,19 +1852,76 @@
     }, 1000); // 1s = instant notifications
   }
 
-  // Force refresh when tab becomes visible
+  // Track last sync time for stale detection
+  let lastSyncTime = Date.now();
+
+  // ✅ Show syncing indicator
+  function showSyncingIndicator() {
+    let indicator = $("syncingIndicator");
+    if (!indicator) {
+      indicator = document.createElement("div");
+      indicator.id = "syncingIndicator";
+      indicator.className = "syncing-indicator";
+      indicator.innerHTML = '<i class="fas fa-sync fa-spin"></i> Syncing...';
+      document.body.appendChild(indicator);
+    }
+    indicator.classList.add("active");
+  }
+
+  function hideSyncingIndicator() {
+    const indicator = $("syncingIndicator");
+    if (indicator) indicator.classList.remove("active");
+  }
+
+  // ✅ Force refresh when tab becomes visible
   document.addEventListener("visibilitychange", () => {
     if (document.visibilityState === "visible" && !deviceLocked) {
-      pullRemoteState({ silent: false });
+      const timeSinceSync = Date.now() - lastSyncTime;
+      // If stale (> 5 seconds), show indicator
+      if (timeSinceSync > 5000) {
+        showSyncingIndicator();
+      }
+      pullRemoteState({ silent: false }).finally(() => {
+        hideSyncingIndicator();
+        lastSyncTime = Date.now();
+      });
     }
   });
 
-  // Also refresh when window gains focus
+  // ✅ Force refresh when window gains focus
   window.addEventListener("focus", () => {
     if (!deviceLocked) {
-      pullRemoteState({ silent: false });
+      pullRemoteState({ silent: false }).finally(() => {
+        lastSyncTime = Date.now();
+      });
     }
   });
+
+  // ✅ iOS BFCache support - pageshow fires when returning from home screen
+  window.addEventListener("pageshow", (event) => {
+    if (event.persisted || performance.getEntriesByType("navigation")[0]?.type === "back_forward") {
+      // Page was restored from BFCache
+      console.log("Page restored from BFCache, forcing sync...");
+      showSyncingIndicator();
+      pullRemoteState({ silent: false }).finally(() => {
+        hideSyncingIndicator();
+        lastSyncTime = Date.now();
+      });
+    }
+  });
+
+  // ✅ Also check on touchstart for iOS (backup)
+  let lastTouchSync = 0;
+  document.addEventListener("touchstart", () => {
+    const now = Date.now();
+    if (now - lastTouchSync > 10000 && now - lastSyncTime > 10000) {
+      // Haven't synced in 10 seconds, do a silent sync
+      lastTouchSync = now;
+      pullRemoteState({ silent: true }).finally(() => {
+        lastSyncTime = Date.now();
+      });
+    }
+  }, { passive: true });
 
   // ---------- Who modal ----------
   function openWhoModal() {
@@ -2277,6 +2391,11 @@ $("userPill").addEventListener("click", () => openWhoModal());
     if (env) env.classList.remove("open");
     if (paper) paper.classList.remove("open");
     
+    // ✅ Restore body scroll when modal closes
+    document.body.style.overflow = '';
+    document.body.style.position = '';
+    document.body.style.width = '';
+    
     letterAnimationInProgress = false;
   });
 
@@ -2286,20 +2405,33 @@ $("userPill").addEventListener("click", () => openWhoModal());
   if (prevBtn) prevBtn.addEventListener("click", (e) => { e.stopPropagation(); prevLetter(); });
   if (nextBtn) nextBtn.addEventListener("click", (e) => { e.stopPropagation(); nextLetter(); });
 
-  // ✅ Swipe support for letter viewer
+  // ✅ Swipe support for letter viewer with better touch handling
   let touchStartY = 0;
+  let touchStartX = 0;
   const letterModal = $("letterModal");
   if (letterModal) {
     letterModal.addEventListener("touchstart", (e) => {
       touchStartY = e.touches[0].clientY;
+      touchStartX = e.touches[0].clientX;
     }, { passive: true });
+    
+    letterModal.addEventListener("touchmove", (e) => {
+      // Prevent background scroll on letter modal
+      const paper = document.querySelector(".letter-paper");
+      if (paper && !paper.contains(e.target)) {
+        e.preventDefault();
+      }
+    }, { passive: false });
     
     letterModal.addEventListener("touchend", (e) => {
       const touchEndY = e.changedTouches[0].clientY;
-      const diff = touchStartY - touchEndY;
+      const touchEndX = e.changedTouches[0].clientX;
+      const diffY = touchStartY - touchEndY;
+      const diffX = touchStartX - touchEndX;
       
-      if (Math.abs(diff) > 50) { // minimum swipe distance
-        if (diff > 0) {
+      // Only trigger if vertical swipe is dominant
+      if (Math.abs(diffY) > 50 && Math.abs(diffY) > Math.abs(diffX)) {
+        if (diffY > 0) {
           // Swipe up = next (older) letter
           nextLetter();
         } else {
@@ -2308,6 +2440,13 @@ $("userPill").addEventListener("click", () => openWhoModal());
         }
       }
     }, { passive: true });
+    
+    // Close modal when clicking backdrop
+    letterModal.addEventListener("click", (e) => {
+      if (e.target === letterModal) {
+        $("closeLetterModal").click();
+      }
+    });
   }
 
   // ✅ [FEATURE B] Close attachment modal
