@@ -2175,9 +2175,15 @@
 
   // ---------- Who modal ----------
   function openWhoModal() {
-    $("whoModal").classList.add("active");
-    $("whoModal").setAttribute("aria-hidden", "false");
-    $("btnLogOff").classList.toggle("hidden", !hasUser());
+    const modal = $("whoModal");
+    if (modal) {
+      modal.classList.add("active");
+      modal.setAttribute("aria-hidden", "false");
+    }
+    const logoffBtn = $("btnLogOff");
+    if (logoffBtn) {
+      logoffBtn.classList.toggle("hidden", !hasUser());
+    }
   }
 
   function closeWhoModal() {
@@ -2399,12 +2405,17 @@ $("systemMessageInput").addEventListener("input", (e) => {
   }
 });
 
-$("userPill").addEventListener("click", () => openWhoModal());
+  const userPillEl = $("userPill");
+  if (userPillEl) userPillEl.addEventListener("click", openWhoModal);
 
-  $("btnWhoYasir").addEventListener("click", () => setUserAndStart("Yasir"));
-  $("btnWhoKylee").addEventListener("click", () => setUserAndStart("Kylee"));
-  $("closeWhoModal").addEventListener("click", () => closeWhoModal());
-  $("btnLogOff").addEventListener("click", () => logOffUser());
+  const whoYasirBtn = $("btnWhoYasir");
+  if (whoYasirBtn) whoYasirBtn.addEventListener("click", () => setUserAndStart("Yasir"));
+  const whoKyleeBtn = $("btnWhoKylee");
+  if (whoKyleeBtn) whoKyleeBtn.addEventListener("click", () => setUserAndStart("Kylee"));
+  const closeWhoBtn = $("closeWhoModal");
+  if (closeWhoBtn) closeWhoBtn.addEventListener("click", closeWhoModal);
+  const logoffBtn = $("btnLogOff");
+  if (logoffBtn) logoffBtn.addEventListener("click", logOffUser);
 
   $("btnAdd").addEventListener("click", () => {
     if (!hasUser()) { showToast("Pick USER first"); return; }
