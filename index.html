@@ -12,6 +12,7 @@
   <link rel="apple-touch-icon" href="/app-icon.png">
   <link rel="icon" type="image/png" href="/app-icon.png">
   <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
   <meta name="apple-mobile-web-app-title" content="Bucket List">
 
@@ -55,11 +56,13 @@
         </div>
 
         <span class="pill clickable" id="userPill" title="Click to switch user">
+          <i id="userIcon" class="fa-regular fa-user"></i>
           <span class="dot gray" id="userDot"></span>
           <span id="userText">USER: --</span>
         </span>
 
         <span class="pill clickable" id="duoPill" title="Click to view letters from duo">
+          <i id="duoIcon" class="fa-regular fa-user"></i>
           <span class="dot gray" id="duoDot"></span>
           <span id="duoText">DUO: --</span>
         </span>
@@ -176,13 +179,16 @@
         <div class="cardHeader">
           <h2>[▸] MESSAGE_LOG</h2>
           <div class="envelope-container" id="envelopeBtn" title="Open latest letter from your DUO">
-            <span aria-hidden="true">✉</span>
+            <i class="fa-solid fa-envelope" aria-hidden="true"></i>
             <span id="envelopeLabel">DUO</span>
           </div>
         </div>
 
         <div class="cardBody">
           <p class="note" id="loveNote">// SYSTEM MESSAGE: MY LOVE</p>
+
+          <!-- Big Calendar UI (desktop + mobile) -->
+          <div id="bigCalendar" class="calendar"></div>
 
           <div id="messageLog"></div>
 

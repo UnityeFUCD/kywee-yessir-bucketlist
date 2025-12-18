@@ -9,7 +9,7 @@
   const KEY_LAST_VERSION_SEEN = "bucketlist_2026_last_version";
   const KEY_PHOTOS = "bucketlist_2026_photos";
 
-  // ✅ VERSION HISTORY for system update notifications
+  // Γ£à VERSION HISTORY for system update notifications
   const VERSION_HISTORY = [
     { version: "1.0.0", date: "2024-12-15", note: "Initial release with missions, messages, and sync" },
     { version: "1.1.0", date: "2024-12-16", note: "Added attachments, daily emoticons, and character limits" },
@@ -17,22 +17,22 @@
   ];
   const CURRENT_VERSION = "1.2.0";
 
-  // ✅ UPCOMING EVENTS (add your special dates here!)
+  // Γ£à UPCOMING EVENTS (add your special dates here!)
   const UPCOMING_EVENTS = [
-    { date: "2025-01-01", title: "New Year's Day 🎉" },
-    { date: "2025-02-14", title: "Valentine's Day 💕" },
-    { date: "2025-12-25", title: "Christmas 🎄" }
+    { date: "2025-01-01", title: "New Year's Day ≡ƒÄë" },
+    { date: "2025-02-14", title: "Valentine's Day ≡ƒÆò" },
+    { date: "2025-12-25", title: "Christmas ≡ƒÄä" }
   ];
 
-  // ✅ session user (per-tab). persists on refresh, new tab asks again.
+  // Γ£à session user (per-tab). persists on refresh, new tab asks again.
   const SESSION_USER_KEY = "bucketlist_2026_session_user";
 
-  // ✅ per-user "read" tracking (local only)
+  // Γ£à per-user "read" tracking (local only)
   function keyLastRead(user) {
     return `bucketlist_2026_lastread_${String(user || "").toLowerCase()}`;
   }
 
-  // ✅ per-user dismissed notifications (local only - doesn't delete messages)
+  // Γ£à per-user dismissed notifications (local only - doesn't delete messages)
   function keyDismissed(user) {
     return `bucketlist_2026_dismissed_${String(user || "").toLowerCase()}`;
   }
@@ -58,94 +58,95 @@
     return `${msg.timestamp}_${idx}_${(msg.content || "").substring(0,20)}`;
   }
 
-  // ✅ shared room code
+  // Γ£à shared room code
   const ROOM_CODE = "yasir-kylee";
 
-  // ✅ [SUPABASE STORAGE CONFIG]
+  // Γ£à [SUPABASE STORAGE CONFIG]
   const SUPABASE_URL = "https://pkgrlhwnwqtffdmcyqbk.supabase.co";
   const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InBrZ3JsaHdud3F0ZmZkbWN5cWJrIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjU3MDU2MjMsImV4cCI6MjA4MTI4MTYyM30.aZ8E_BLQW-90-AAJeneXmKnsfZ8LmPkdQ5ERAZ9JHNE";
   const STORAGE_BUCKET = "attachments";
   const PHOTOS_BUCKET = "photos";
 
-  // ✅ Initialize Supabase client for Realtime Presence (WebSocket)
-  const supabase = window.supabase ? window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY) : null;
+  // Γ£à Initialize Supabase client for Realtime Presence (WebSocket)
+  // Avoid clashing with CDN's global `supabase` identifier
+  const sbClient = window.supabase ? window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY) : null;
 
   const $ = (id) => document.getElementById(id);
 
-  // ✅ Daily rotating ASCII art emoticons (larger braille art)
+  // Γ£à Daily rotating ASCII art emoticons (larger braille art)
   const DAILY_EMOTICONS = [
-`⠀⠀⠀⠀⠀⠀⠀⠀⣀⣀⣀⣀⣀⣀⣀⣀⠀⠀⠀⠀⠀⠀⠀
-⠀⠀⠀⠀⣠⣴⣾⣿⣿⣿⣿⣿⣿⣿⣿⣿⣷⣦⣄⠀⠀⠀⠀
-⠀⠀⣠⣾⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣷⣄⠀⠀
-⠀⣼⣿⣿⣿⣿⣿⣿⠟⠁⠀⠀⠈⠻⣿⣿⣿⣿⣿⣿⣿⣧⠀
-⢰⣿⣿⣿⣿⣿⣿⠃⠀⣠⣤⣤⣄⠀⠘⣿⣿⣿⣿⣿⣿⣿⡆
-⣿⣿⣿⣿⣿⣿⡏⠀⠀⠿⠀⠀⠿⠀⠀⢹⣿⣿⣿⣿⣿⣿⣿
-⣿⣿⣿⣿⣿⣿⣇⠀⠀⠀⠀⠀⠀⠀⠀⣸⣿⣿⣿⣿⣿⣿⣿
-⠸⣿⣿⣿⣿⣿⣿⣆⠀⠀⢀⣀⡀⠀⣰⣿⣿⣿⣿⣿⣿⣿⠇
-⠀⠻⣿⣿⣿⣿⣿⣿⣿⣶⣤⣤⣴⣾⣿⣿⣿⣿⣿⣿⣿⠟⠀
-⠀⠀⠈⠛⢿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⡿⠛⠁⠀⠀
-⠀⠀⠀⠀⠀⠀⠉⠙⠛⠿⠿⠿⠿⠛⠛⠉⠁⠀⠀⠀⠀⠀⠀
-         💕 LOVE 💕`,
-`⠀⠀⠀⠀⠀⠀⣀⣤⣴⣶⣶⣶⣦⣤⣀⠀⠀⠀⠀⠀⠀
-⠀⠀⠀⠀⣠⣾⣿⣿⣿⣿⣿⣿⣿⣿⣿⣷⣄⠀⠀⠀⠀
-⠀⠀⠀⣼⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣧⠀⠀⠀
-⠀⠀⢰⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⡆⠀⠀
-⠀⠀⣿⣿⣿⡏⠉⠀⠀⠉⠉⠉⠀⠀⠉⢹⣿⣿⣿⠀⠀
-⠀⠀⣿⣿⣿⡇⠀⣷⠀⠀⠀⠀⠀⣾⠀⢸⣿⣿⣿⠀⠀
-⠀⠀⣿⣿⣿⣇⠀⠀⠀⣀⣀⣀⠀⠀⠀⣸⣿⣿⣿⠀⠀
-⠀⠀⢿⣿⣿⣿⣆⠀⠀⠛⠛⠀⠀⠀⣰⣿⣿⣿⡿⠀⠀
-⠀⠀⠘⣿⣿⣿⣿⣷⣤⣀⣀⣀⣤⣾⣿⣿⣿⣿⠃⠀⠀
-⠀⠀⠀⠈⠻⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⠟⠁⠀⠀⠀
-⠀⠀⠀⠀⠀⠀⠉⠛⠻⠿⠿⠿⠟⠛⠉⠀⠀⠀⠀⠀⠀
-         🥰 CUTE 🥰`,
-`⠀⠀⣀⣤⣴⣶⣶⣶⣶⣶⣶⣦⣤⣀⠀⠀
-⣠⣾⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣷⣄
-⣿⣿⣿⡿⠛⠉⠉⠉⠉⠉⠉⠛⢿⣿⣿⣿
-⣿⣿⠏⠀⣠⣶⣦⠀⣠⣶⣦⠀⠀⢻⣿⣿
-⣿⣿⠀⠀⠹⣿⡿⠀⠹⣿⡿⠀⠀⠀⣿⣿
-⣿⣿⣆⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⣰⣿⣿
-⠻⣿⣿⣿⣶⣤⣤⣤⣤⣤⣤⣶⣿⣿⣿⠟
-⠀⠈⠛⠿⣿⣿⣿⣿⣿⣿⣿⣿⠿⠛⠁⠀
-         ✨ HAPPY ✨`,
-`⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿
-⣿⣿⣿⣿⠿⠛⠛⠛⠛⠛⠛⠿⣿⣿⣿⣿
-⣿⣿⠟⠁⠀⣀⣀⠀⠀⣀⣀⠀⠈⠻⣿⣿
-⣿⡏⠀⠀⠀⣿⣿⠀⠀⣿⣿⠀⠀⠀⢹⣿
-⣿⡇⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⢸⣿
-⣿⣿⡄⠀⠀⠀⢀⣀⣀⡀⠀⠀⠀⢠⣿⣿
-⣿⣿⣿⣶⣤⣤⣤⣤⣤⣤⣤⣤⣶⣿⣿⣿
-⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿
-         🌟 SMILE 🌟`,
-`⠀⠀⠀⣠⣴⣶⣶⣶⣶⣦⣄⠀⠀⠀
-⠀⢀⣾⣿⣿⣿⣿⣿⣿⣿⣿⣷⡀⠀
-⠀⣼⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣧⠀
-⢠⣿⣿⠋⠀⠀❤️⠀⠀❤️⢹⣿⡄
-⢸⣿⣿⠀⠀⠀⠀⠀⠀⠀⠀⠀⣿⡇
-⠘⣿⣿⣧⡀⠀⠀⠀⠀⠀⢀⣼⣿⠃
-⠀⠻⣿⣿⣿⣶⣤⣤⣴⣶⣿⣿⠟⠀
-⠀⠀⠈⠛⠿⣿⣿⣿⣿⠿⠛⠁⠀⠀
-       💖 KISSES 💖`,
-`⠀⠀⠀⠀⢀⣀⣀⣀⣀⣀⡀⠀⠀⠀⠀
-⠀⠀⢀⣴⣿⣿⣿⣿⣿⣿⣿⣦⡀⠀⠀
-⠀⣴⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣦⠀
-⣼⣿⣿⣿⡟⠁⠀⠀⠈⢻⣿⣿⣿⣿⣧
-⣿⣿⣿⣿⠀⠀⣶⣶⠀⠀⣿⣿⣿⣿⣿
-⣿⣿⣿⣿⣷⣄⠀⠀⣠⣾⣿⣿⣿⣿⣿
-⢻⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⡟
-⠀⠙⠿⣿⣿⣿⣿⣿⣿⣿⣿⣿⠿⠋⠀
-       💝 SWEET 💝`,
-`⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿
-⣿⣿⡿⠛⠛⠛⠛⠛⠛⠛⠛⠛⢿⣿⣿⣿
-⣿⣿⠀⠀⣴⣶⠀⠀⣴⣶⠀⠀⠀⣿⣿⣿
-⣿⣿⠀⠀⠛⠋⠀⠀⠛⠋⠀⠀⠀⣿⣿⣿
-⣿⣿⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⣿⣿⣿
-⣿⣿⣇⠀⠀⠲⠶⠶⠖⠀⠀⠀⣸⣿⣿⣿
-⣿⣿⣿⣷⣤⣀⣀⣀⣀⣤⣤⣾⣿⣿⣿⣿
-⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿
-        🎀 PRETTY 🎀`
+`ΓáÇΓáÇΓáÇΓáÇΓáÇΓáÇΓáÇΓáÇΓúÇΓúÇΓúÇΓúÇΓúÇΓúÇΓúÇΓúÇΓáÇΓáÇΓáÇΓáÇΓáÇΓáÇΓáÇ
+ΓáÇΓáÇΓáÇΓáÇΓúáΓú┤Γú╛Γú┐Γú┐Γú┐Γú┐Γú┐Γú┐Γú┐Γú┐Γú┐Γú╖ΓúªΓúäΓáÇΓáÇΓáÇΓáÇ
+ΓáÇΓáÇΓúáΓú╛Γú┐Γú┐Γú┐Γú┐Γú┐Γú┐Γú┐Γú┐Γú┐Γú┐Γú┐Γú┐Γú┐Γú┐Γú┐Γú╖ΓúäΓáÇΓáÇ
+ΓáÇΓú╝Γú┐Γú┐Γú┐Γú┐Γú┐Γú┐ΓáƒΓáüΓáÇΓáÇΓáêΓá╗Γú┐Γú┐Γú┐Γú┐Γú┐Γú┐Γú┐ΓúºΓáÇ
+Γó░Γú┐Γú┐Γú┐Γú┐Γú┐Γú┐ΓáâΓáÇΓúáΓúñΓúñΓúäΓáÇΓáÿΓú┐Γú┐Γú┐Γú┐Γú┐Γú┐Γú┐Γíå
+Γú┐Γú┐Γú┐Γú┐Γú┐Γú┐ΓíÅΓáÇΓáÇΓá┐ΓáÇΓáÇΓá┐ΓáÇΓáÇΓó╣Γú┐Γú┐Γú┐Γú┐Γú┐Γú┐Γú┐
+Γú┐Γú┐Γú┐Γú┐Γú┐Γú┐ΓúçΓáÇΓáÇΓáÇΓáÇΓáÇΓáÇΓáÇΓáÇΓú╕Γú┐Γú┐Γú┐Γú┐Γú┐Γú┐Γú┐
+Γá╕Γú┐Γú┐Γú┐Γú┐Γú┐Γú┐ΓúåΓáÇΓáÇΓóÇΓúÇΓíÇΓáÇΓú░Γú┐Γú┐Γú┐Γú┐Γú┐Γú┐Γú┐Γáç
+ΓáÇΓá╗Γú┐Γú┐Γú┐Γú┐Γú┐Γú┐Γú┐Γú╢ΓúñΓúñΓú┤Γú╛Γú┐Γú┐Γú┐Γú┐Γú┐Γú┐Γú┐ΓáƒΓáÇ
+ΓáÇΓáÇΓáêΓá¢Γó┐Γú┐Γú┐Γú┐Γú┐Γú┐Γú┐Γú┐Γú┐Γú┐Γú┐Γú┐Γú┐Γú┐Γí┐Γá¢ΓáüΓáÇΓáÇ
+ΓáÇΓáÇΓáÇΓáÇΓáÇΓáÇΓáëΓáÖΓá¢Γá┐Γá┐Γá┐Γá┐Γá¢Γá¢ΓáëΓáüΓáÇΓáÇΓáÇΓáÇΓáÇΓáÇ
+         ≡ƒÆò LOVE ≡ƒÆò`,
+`ΓáÇΓáÇΓáÇΓáÇΓáÇΓáÇΓúÇΓúñΓú┤Γú╢Γú╢Γú╢ΓúªΓúñΓúÇΓáÇΓáÇΓáÇΓáÇΓáÇΓáÇ
+ΓáÇΓáÇΓáÇΓáÇΓúáΓú╛Γú┐Γú┐Γú┐Γú┐Γú┐Γú┐Γú┐Γú┐Γú┐Γú╖ΓúäΓáÇΓáÇΓáÇΓáÇ
+ΓáÇΓáÇΓáÇΓú╝Γú┐Γú┐Γú┐Γú┐Γú┐Γú┐Γú┐Γú┐Γú┐Γú┐Γú┐Γú┐Γú┐ΓúºΓáÇΓáÇΓáÇ
+ΓáÇΓáÇΓó░Γú┐Γú┐Γú┐Γú┐Γú┐Γú┐Γú┐Γú┐Γú┐Γú┐Γú┐Γú┐Γú┐Γú┐Γú┐ΓíåΓáÇΓáÇ
+ΓáÇΓáÇΓú┐Γú┐Γú┐ΓíÅΓáëΓáÇΓáÇΓáëΓáëΓáëΓáÇΓáÇΓáëΓó╣Γú┐Γú┐Γú┐ΓáÇΓáÇ
+ΓáÇΓáÇΓú┐Γú┐Γú┐ΓíçΓáÇΓú╖ΓáÇΓáÇΓáÇΓáÇΓáÇΓú╛ΓáÇΓó╕Γú┐Γú┐Γú┐ΓáÇΓáÇ
+ΓáÇΓáÇΓú┐Γú┐Γú┐ΓúçΓáÇΓáÇΓáÇΓúÇΓúÇΓúÇΓáÇΓáÇΓáÇΓú╕Γú┐Γú┐Γú┐ΓáÇΓáÇ
+ΓáÇΓáÇΓó┐Γú┐Γú┐Γú┐ΓúåΓáÇΓáÇΓá¢Γá¢ΓáÇΓáÇΓáÇΓú░Γú┐Γú┐Γú┐Γí┐ΓáÇΓáÇ
+ΓáÇΓáÇΓáÿΓú┐Γú┐Γú┐Γú┐Γú╖ΓúñΓúÇΓúÇΓúÇΓúñΓú╛Γú┐Γú┐Γú┐Γú┐ΓáâΓáÇΓáÇ
+ΓáÇΓáÇΓáÇΓáêΓá╗Γú┐Γú┐Γú┐Γú┐Γú┐Γú┐Γú┐Γú┐Γú┐Γú┐Γú┐ΓáƒΓáüΓáÇΓáÇΓáÇ
+ΓáÇΓáÇΓáÇΓáÇΓáÇΓáÇΓáëΓá¢Γá╗Γá┐Γá┐Γá┐ΓáƒΓá¢ΓáëΓáÇΓáÇΓáÇΓáÇΓáÇΓáÇ
+         ≡ƒÑ░ CUTE ≡ƒÑ░`,
+`ΓáÇΓáÇΓúÇΓúñΓú┤Γú╢Γú╢Γú╢Γú╢Γú╢Γú╢ΓúªΓúñΓúÇΓáÇΓáÇ
+ΓúáΓú╛Γú┐Γú┐Γú┐Γú┐Γú┐Γú┐Γú┐Γú┐Γú┐Γú┐Γú┐Γú┐Γú╖Γúä
+Γú┐Γú┐Γú┐Γí┐Γá¢ΓáëΓáëΓáëΓáëΓáëΓáëΓá¢Γó┐Γú┐Γú┐Γú┐
+Γú┐Γú┐ΓáÅΓáÇΓúáΓú╢ΓúªΓáÇΓúáΓú╢ΓúªΓáÇΓáÇΓó╗Γú┐Γú┐
+Γú┐Γú┐ΓáÇΓáÇΓá╣Γú┐Γí┐ΓáÇΓá╣Γú┐Γí┐ΓáÇΓáÇΓáÇΓú┐Γú┐
+Γú┐Γú┐ΓúåΓáÇΓáÇΓáÇΓáÇΓáÇΓáÇΓáÇΓáÇΓáÇΓáÇΓú░Γú┐Γú┐
+Γá╗Γú┐Γú┐Γú┐Γú╢ΓúñΓúñΓúñΓúñΓúñΓúñΓú╢Γú┐Γú┐Γú┐Γáƒ
+ΓáÇΓáêΓá¢Γá┐Γú┐Γú┐Γú┐Γú┐Γú┐Γú┐Γú┐Γú┐Γá┐Γá¢ΓáüΓáÇ
+         Γ£¿ HAPPY Γ£¿`,
+`Γú┐Γú┐Γú┐Γú┐Γú┐Γú┐Γú┐Γú┐Γú┐Γú┐Γú┐Γú┐Γú┐Γú┐Γú┐Γú┐
+Γú┐Γú┐Γú┐Γú┐Γá┐Γá¢Γá¢Γá¢Γá¢Γá¢Γá¢Γá┐Γú┐Γú┐Γú┐Γú┐
+Γú┐Γú┐ΓáƒΓáüΓáÇΓúÇΓúÇΓáÇΓáÇΓúÇΓúÇΓáÇΓáêΓá╗Γú┐Γú┐
+Γú┐ΓíÅΓáÇΓáÇΓáÇΓú┐Γú┐ΓáÇΓáÇΓú┐Γú┐ΓáÇΓáÇΓáÇΓó╣Γú┐
+Γú┐ΓíçΓáÇΓáÇΓáÇΓáÇΓáÇΓáÇΓáÇΓáÇΓáÇΓáÇΓáÇΓáÇΓó╕Γú┐
+Γú┐Γú┐ΓíäΓáÇΓáÇΓáÇΓóÇΓúÇΓúÇΓíÇΓáÇΓáÇΓáÇΓóáΓú┐Γú┐
+Γú┐Γú┐Γú┐Γú╢ΓúñΓúñΓúñΓúñΓúñΓúñΓúñΓúñΓú╢Γú┐Γú┐Γú┐
+Γú┐Γú┐Γú┐Γú┐Γú┐Γú┐Γú┐Γú┐Γú┐Γú┐Γú┐Γú┐Γú┐Γú┐Γú┐Γú┐
+         ≡ƒîƒ SMILE ≡ƒîƒ`,
+`ΓáÇΓáÇΓáÇΓúáΓú┤Γú╢Γú╢Γú╢Γú╢ΓúªΓúäΓáÇΓáÇΓáÇ
+ΓáÇΓóÇΓú╛Γú┐Γú┐Γú┐Γú┐Γú┐Γú┐Γú┐Γú┐Γú╖ΓíÇΓáÇ
+ΓáÇΓú╝Γú┐Γú┐Γú┐Γú┐Γú┐Γú┐Γú┐Γú┐Γú┐Γú┐ΓúºΓáÇ
+ΓóáΓú┐Γú┐ΓáïΓáÇΓáÇΓ¥ñ∩╕ÅΓáÇΓáÇΓ¥ñ∩╕ÅΓó╣Γú┐Γíä
+Γó╕Γú┐Γú┐ΓáÇΓáÇΓáÇΓáÇΓáÇΓáÇΓáÇΓáÇΓáÇΓú┐Γíç
+ΓáÿΓú┐Γú┐ΓúºΓíÇΓáÇΓáÇΓáÇΓáÇΓáÇΓóÇΓú╝Γú┐Γáâ
+ΓáÇΓá╗Γú┐Γú┐Γú┐Γú╢ΓúñΓúñΓú┤Γú╢Γú┐Γú┐ΓáƒΓáÇ
+ΓáÇΓáÇΓáêΓá¢Γá┐Γú┐Γú┐Γú┐Γú┐Γá┐Γá¢ΓáüΓáÇΓáÇ
+       ≡ƒÆû KISSES ≡ƒÆû`,
+`ΓáÇΓáÇΓáÇΓáÇΓóÇΓúÇΓúÇΓúÇΓúÇΓúÇΓíÇΓáÇΓáÇΓáÇΓáÇ
+ΓáÇΓáÇΓóÇΓú┤Γú┐Γú┐Γú┐Γú┐Γú┐Γú┐Γú┐ΓúªΓíÇΓáÇΓáÇ
+ΓáÇΓú┤Γú┐Γú┐Γú┐Γú┐Γú┐Γú┐Γú┐Γú┐Γú┐Γú┐Γú┐ΓúªΓáÇ
+Γú╝Γú┐Γú┐Γú┐ΓíƒΓáüΓáÇΓáÇΓáêΓó╗Γú┐Γú┐Γú┐Γú┐Γúº
+Γú┐Γú┐Γú┐Γú┐ΓáÇΓáÇΓú╢Γú╢ΓáÇΓáÇΓú┐Γú┐Γú┐Γú┐Γú┐
+Γú┐Γú┐Γú┐Γú┐Γú╖ΓúäΓáÇΓáÇΓúáΓú╛Γú┐Γú┐Γú┐Γú┐Γú┐
+Γó╗Γú┐Γú┐Γú┐Γú┐Γú┐Γú┐Γú┐Γú┐Γú┐Γú┐Γú┐Γú┐Γú┐Γíƒ
+ΓáÇΓáÖΓá┐Γú┐Γú┐Γú┐Γú┐Γú┐Γú┐Γú┐Γú┐Γú┐Γá┐ΓáïΓáÇ
+       ≡ƒÆ¥ SWEET ≡ƒÆ¥`,
+`Γú┐Γú┐Γú┐Γú┐Γú┐Γú┐Γú┐Γú┐Γú┐Γú┐Γú┐Γú┐Γú┐Γú┐Γú┐Γú┐
+Γú┐Γú┐Γí┐Γá¢Γá¢Γá¢Γá¢Γá¢Γá¢Γá¢Γá¢Γá¢Γó┐Γú┐Γú┐Γú┐
+Γú┐Γú┐ΓáÇΓáÇΓú┤Γú╢ΓáÇΓáÇΓú┤Γú╢ΓáÇΓáÇΓáÇΓú┐Γú┐Γú┐
+Γú┐Γú┐ΓáÇΓáÇΓá¢ΓáïΓáÇΓáÇΓá¢ΓáïΓáÇΓáÇΓáÇΓú┐Γú┐Γú┐
+Γú┐Γú┐ΓáÇΓáÇΓáÇΓáÇΓáÇΓáÇΓáÇΓáÇΓáÇΓáÇΓáÇΓú┐Γú┐Γú┐
+Γú┐Γú┐ΓúçΓáÇΓáÇΓá▓Γá╢Γá╢ΓáûΓáÇΓáÇΓáÇΓú╕Γú┐Γú┐Γú┐
+Γú┐Γú┐Γú┐Γú╖ΓúñΓúÇΓúÇΓúÇΓúÇΓúñΓúñΓú╛Γú┐Γú┐Γú┐Γú┐
+Γú┐Γú┐Γú┐Γú┐Γú┐Γú┐Γú┐Γú┐Γú┐Γú┐Γú┐Γú┐Γú┐Γú┐Γú┐Γú┐
+        ≡ƒÄÇ PRETTY ≡ƒÄÇ`
   ];
 
-  // ✅ Prevent double-trigger of letter animation
+  // Γ£à Prevent double-trigger of letter animation
   let letterAnimationInProgress = false;
 
   const exampleActive = { title: "Test Mission (Example)", desc: "This is an example card", tag: "example", dueDate: "2025-01-15", done: false, isExample: true };
@@ -154,7 +155,7 @@
   let selectedSavedMissions = [];
   let currentTheme = "system";
 
-  // ✅ SMART POLLING state
+  // Γ£à SMART POLLING state
   let lastRemoteUpdatedAt = null;
   let lastPresenceVersion = 0;
   let pollTimer = null;
@@ -169,7 +170,7 @@
       .replaceAll("'", "&#039;");
   }
 
-  // ✅ Toast container for stacking notifications
+  // Γ£à Toast container for stacking notifications
   function ensureToastContainer() {
     let container = document.getElementById("toastContainer");
     if (!container) {
@@ -194,17 +195,17 @@
     }, 3000);
   }
 
-  // ✅ Check for system updates (new version)
+  // Γ£à Check for system updates (new version)
   function checkSystemUpdates() {
     const lastSeen = localStorage.getItem(KEY_LAST_VERSION_SEEN);
     if (lastSeen !== CURRENT_VERSION) {
       const latest = VERSION_HISTORY[VERSION_HISTORY.length - 1];
-      showToast(`🆕 Update v${latest.version}: ${latest.note}`, "info");
+      showToast(`≡ƒåò Update v${latest.version}: ${latest.note}`, "info");
       localStorage.setItem(KEY_LAST_VERSION_SEEN, CURRENT_VERSION);
     }
   }
 
-  // ✅ Check for upcoming events (3 days & 24 hours out)
+  // Γ£à Check for upcoming events (3 days & 24 hours out)
   function checkUpcomingEvents() {
     const now = new Date();
     const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
@@ -215,11 +216,11 @@
       const diffDays = Math.round(diffMs / (1000 * 60 * 60 * 24));
       
       if (diffDays === 3) {
-        showToast(`📅 3 days until ${event.title}!`, "event");
+        showToast(`≡ƒôà 3 days until ${event.title}!`, "event");
       } else if (diffDays === 1) {
-        showToast(`⏰ Tomorrow: ${event.title}!`, "event");
+        showToast(`ΓÅ░ Tomorrow: ${event.title}!`, "event");
       } else if (diffDays === 0) {
-        showToast(`🎉 Today is ${event.title}!`, "event");
+        showToast(`≡ƒÄë Today is ${event.title}!`, "event");
       }
     });
   }
@@ -243,7 +244,7 @@
     }
   }
 
-  // ✅ [FEATURE D] Get daily emoticon based on date
+  // Γ£à [FEATURE D] Get daily emoticon based on date
   function getDailyEmoticon() {
     const today = new Date();
     const dateKey = `${today.getFullYear()}-${String(today.getMonth()+1).padStart(2,'0')}-${String(today.getDate()).padStart(2,'0')}`;
@@ -280,7 +281,7 @@
     const u = loadUser();
     if (!u) return;
     localStorage.setItem(keyLastRead(u), String(n));
-    // ✅ Sync to server so other devices get updated read state
+    // Γ£à Sync to server so other devices get updated read state
     schedulePush();
   }
 
@@ -319,7 +320,7 @@
   function loadCustomTags() { return loadArray(KEY_CUSTOM_TAGS); }
   function saveCustomTags(tags) { saveArray(KEY_CUSTOM_TAGS, tags); }
 
-  // ✅ Photo Gallery functions
+  // Γ£à Photo Gallery functions
   function loadPhotos() { return loadArray(KEY_PHOTOS); }
   function savePhotos(photos) { saveArray(KEY_PHOTOS, photos); }
 
@@ -353,7 +354,7 @@
     
     const photos = loadPhotos();
     
-    // ✅ Save expanded state before re-render
+    // Γ£à Save expanded state before re-render
     const expandedBundles = {};
     container.querySelectorAll('.gallery-mission-bundle').forEach(bundle => {
       const missionKey = bundle.dataset.mission;
@@ -374,7 +375,7 @@
       else {
         const note = document.createElement("div");
         note.className = "gallery-empty-note";
-        note.textContent = "↑ Click to expand. Your memories will appear below.";
+        note.textContent = "Γåæ Click to expand. Your memories will appear below.";
         container.appendChild(note);
       }
       return;
@@ -394,10 +395,10 @@
       const isUnlinked = missionKey === "_unlinked_";
       const displayName = isUnlinked ? "Unlinked Photos" : missionKey;
       const photoCount = missionPhotos.length;
-      // ✅ Allow adding to unlinked photos too (no limit for unlinked)
+      // Γ£à Allow adding to unlinked photos too (no limit for unlinked)
       const canAddMore = isUnlinked || photoCount < 5;
       
-      // ✅ Check if this bundle was expanded before re-render
+      // Γ£à Check if this bundle was expanded before re-render
       const wasExpanded = expandedBundles[missionKey] === true;
       
       const bundle = document.createElement("div");
@@ -438,7 +439,7 @@
             updateMissionCapacity();
           }
           
-          // ✅ Open the file picker immediately
+          // Γ£à Open the file picker immediately
           const input = $("photoInput");
           if (input) input.click();
           
@@ -492,7 +493,7 @@
     });
   }
 
-  // ✅ Link unlinked photos to a mission
+  // Γ£à Link unlinked photos to a mission
   function showLinkMissionModal(photosToLink) {
     const existing = document.querySelector(".link-mission-modal");
     if (existing) existing.remove();
@@ -563,7 +564,7 @@
     });
   }
 
-  // ✅ Delete confirmation modal
+  // Γ£à Delete confirmation modal
   function showDeleteConfirm(type, identifier, photoObj = null) {
     const existing = document.querySelector(".delete-confirm-modal");
     if (existing) existing.remove();
@@ -619,7 +620,7 @@
     });
   }
 
-  // ✅ Toggle bundle expand/collapse
+  // Γ£à Toggle bundle expand/collapse
   window.toggleBundle = function(header) {
     const bundle = header.closest('.gallery-mission-bundle');
     const photos = bundle.querySelector('.bundle-photos');
@@ -674,7 +675,7 @@
     }
   }
 
-  // ✅ Medal API functions
+  // Γ£à Medal API functions
   let medalClips = [];
 
   async function fetchMedalClips() {
@@ -723,8 +724,8 @@
       const title = clip.contentTitle || "Untitled Clip";
       const game = clip.categoryName || clip.gameName || "";
       
-      // ✅ Use the correct URL from API - contentUrl is the shareable link
-      // Fallback chain: contentUrl → directClipUrl → constructed URL
+      // Γ£à Use the correct URL from API - contentUrl is the shareable link
+      // Fallback chain: contentUrl ΓåÆ directClipUrl ΓåÆ constructed URL
       const clipUrl = clip.contentUrl || clip.directClipUrl || `https://medal.tv/clips/${clip.contentId}`;
       
       // Debug logging to console
@@ -784,7 +785,7 @@
     $("loveNote").textContent = `// SYSTEM MESSAGE: ${v.toUpperCase()}`;
   }
 
-  // ✅ Fix blank letter permanently: sanitize messages (drop empty content / missing from)
+  // Γ£à Fix blank letter permanently: sanitize messages (drop empty content / missing from)
   function sanitizeMessages(arr) {
     if (!Array.isArray(arr)) return [];
     const cleaned = [];
@@ -793,10 +794,10 @@
       const timestamp = String(m?.timestamp || "").trim();
       const content = normalizeNewlines(m?.content ?? "").trim();
       if (!from) continue;
-      if (!content) continue; // 🔥 removes blank letters forever
+      if (!content) continue; // ≡ƒöÑ removes blank letters forever
       
       const cleanMsg = { from, timestamp, content };
-      // ✅ PRESERVE attachment fields!
+      // Γ£à PRESERVE attachment fields!
       if (m.attachment) {
         cleanMsg.attachment = m.attachment;
         cleanMsg.attachmentType = m.attachmentType || 'image';
@@ -821,13 +822,13 @@
     if (mode === "pulling") {
       setDot(dot, "yellow", true);
       if (label) label.textContent = "PULL";
-      $("syncPill").title = "Pulling updates…";
+      $("syncPill").title = "Pulling updatesΓÇª";
       return;
     }
     if (mode === "saving") {
       setDot(dot, "yellow", true);
       if (label) label.textContent = "SAVE";
-      $("syncPill").title = "Saving updates…";
+      $("syncPill").title = "Saving updatesΓÇª";
       return;
     }
     if (mode === "on") {
@@ -848,14 +849,32 @@
   }
 
   // ---------- Presence (duo online) ----------
+  const LOCK_TTL_MS = 20000; // TTL for stale device locks
   let presenceTimer = null;
   let lastPresence = null;
+  let takeoverGraceUntil = 0;
 
   function normalizePerson(name) {
     const n = String(name || "").trim().toLowerCase();
     if (n === "yasir") return "yasir";
     if (n === "kylee") return "kylee";
     return "";
+  }
+
+  function isOnlineLive(nameLower) {
+    try {
+      if (!nameLower) return false;
+      // Use live presence if available
+      if (typeof presenceChannel !== 'undefined' && presenceChannel) {
+        const st = presenceChannel.presenceState?.() || {};
+        return Array.isArray(st[nameLower]) && st[nameLower].length > 0;
+      }
+      // Fallback to lastPresence timestamp (<=45s old = online)
+      const ts = lastPresence?.[nameLower];
+      if (!ts) return false;
+      const age = Date.now() - new Date(ts).getTime();
+      return Number.isFinite(age) && age <= 45000;
+    } catch { return false; }
   }
 
   function updateUserDuoPills() {
@@ -866,12 +885,33 @@
     $("duoText").textContent = user ? `DUO: ${duo.toUpperCase()}` : "DUO: --";
     $("envelopeLabel").textContent = user ? `DUO: ${duo.toUpperCase()}` : "DUO";
 
-    // ✅ Simplified: Hide presence dots entirely (just show user/duo names)
-    // Conflict detection still works separately via checkDeviceConflict()
+    // Icon styles
+    const userIcon = $("userIcon");
+    const duoIcon = $("duoIcon");
+    const userClass = getUserColorClass(user);
+    const duoClass = getUserColorClass(duo);
+
+    if (userIcon) {
+      userIcon.classList.remove('fa-regular', 'fa-solid', 'user-yasir', 'user-kylee');
+      if (userClass) userIcon.classList.add(userClass);
+      // If logged in, show solid; otherwise outline
+      userIcon.classList.add(user ? 'fa-solid' : 'fa-regular');
+    }
+    if (duoIcon) {
+      duoIcon.classList.remove('fa-regular', 'fa-solid', 'user-yasir', 'user-kylee');
+      if (duoClass) duoIcon.classList.add(duoClass);
+      const duoOnline = isOnlineLive(duo?.toLowerCase());
+      duoIcon.classList.add(duoOnline ? 'fa-solid' : 'fa-regular');
+    }
+
+    // Dots reflect sync status if desired; keep visible but color by online
     const userDot = $("userDot");
     const duoDot = $("duoDot");
-    if (userDot) userDot.style.display = "none";
-    if (duoDot) duoDot.style.display = "none";
+    if (userDot) { userDot.className = 'dot ' + (user ? 'green' : 'gray'); }
+    if (duoDot) {
+      const duoOnline = isOnlineLive(duo?.toLowerCase());
+      duoDot.className = 'dot ' + (duoOnline ? 'green' : 'gray');
+    }
   }
 
   async function presencePing() {
@@ -882,11 +922,11 @@
         lastPresence = res.presence;
         updateUserDuoPills();
       }
-      // ✅ Track presenceVersion from server
+      // Γ£à Track presenceVersion from server
       if (res?.presenceVersion !== undefined) {
         lastPresenceVersion = res.presenceVersion;
       }
-      // ✅ Check for device conflicts in presence response (instant detection)
+      // Γ£à Check for device conflicts in presence response (instant detection)
       if (res?.activeDevices) {
         checkDeviceConflict(res.activeDevices);
       }
@@ -895,12 +935,12 @@
     }
   }
 
-  // ✅ WebSocket-based presence using Supabase Realtime (fixes ghost session bug)
+  // Γ£à WebSocket-based presence using Supabase Realtime (fixes ghost session bug)
   let presenceChannel = null;
   let livePresenceState = {};
 
   function initLivePresence() {
-    if (!supabase) {
+    if (!sbClient) {
       console.log("Supabase client not available, using polling only");
       return;
     }
@@ -910,11 +950,11 @@
 
     // Clean up existing channel if any
     if (presenceChannel) {
-      try { supabase.removeChannel(presenceChannel); } catch(e) {}
+      try { sbClient.removeChannel(presenceChannel); } catch(e) {}
     }
 
     try {
-      presenceChannel = supabase.channel(`presence:${ROOM_CODE}`, {
+      presenceChannel = sbClient.channel(`presence:${ROOM_CODE}`, {
         config: { presence: { key: user } }
       });
 
@@ -923,11 +963,17 @@
           livePresenceState = presenceChannel.presenceState();
           handleLivePresenceSync(livePresenceState);
         })
+        .on('presence', { event: 'join' }, () => {
+          livePresenceState = presenceChannel.presenceState();
+          handleLivePresenceSync(livePresenceState);
+          updateUserDuoPills();
+        })
         .on('presence', { event: 'leave' }, () => {
-          // When another session leaves, auto-hide conflict if showing
-          if (deviceLocked) {
-            setTimeout(() => handleLivePresenceSync(presenceChannel.presenceState()), 500);
-          }
+          // ✅ ALWAYS update state on leave (for auto-resolve)
+          livePresenceState = presenceChannel.presenceState();
+          console.log("[PRESENCE] Leave event - checking for auto-resolve", livePresenceState);
+          handleLivePresenceSync(livePresenceState);
+          updateUserDuoPills();
         })
         .subscribe(async (status) => {
           if (status === 'SUBSCRIBED') {
@@ -936,7 +982,7 @@
               onlineAt: new Date().toISOString(),
               user: user
             });
-            console.log("✅ WebSocket presence active for:", user);
+            console.log("Γ£à WebSocket presence active for:", user);
           }
         });
     } catch (err) {
@@ -949,24 +995,53 @@
     const myDeviceId = getDeviceId();
     if (!currentUser) return;
 
-    const userPresences = state[currentUser] || [];
-    const conflictingDevices = userPresences.filter(p => p.deviceId !== myDeviceId);
+    const now = Date.now();
+    const userPresences = (state[currentUser] || []).filter(p => {
+      const t = Date.parse(p.onlineAt || 0);
+      // Filter out stale presences (older than 30s)
+      return Number.isFinite(t) ? (now - t) <= 30000 : true;
+    });
+    const conflictingDevices = userPresences.filter(p => p.deviceId && p.deviceId !== myDeviceId);
 
+    console.log("[PRESENCE] Sync check:", {
+      user: currentUser,
+      myDevice: myDeviceId.slice(-6),
+      totalPresences: userPresences.length,
+      conflicts: conflictingDevices.length,
+      deviceLocked,
+      inGrace: Date.now() < takeoverGraceUntil
+    });
+
+    // ✅ Handle conflicts with proper grace period
     if (conflictingDevices.length > 0 && !deviceLocked) {
+      // Skip if in grace period after takeover
+      if (Date.now() < takeoverGraceUntil) {
+        console.log("[PRESENCE] In grace period, skipping conflict");
+        return;
+      }
+      console.log("[PRESENCE] CONFLICT DETECTED - showing overlay");
       deviceLocked = true;
       showDeviceConflict(currentUser);
     } else if (conflictingDevices.length === 0 && deviceLocked) {
+      // ✅ AUTO-RESOLVE: No conflicts, clear lock
+      console.log("[PRESENCE] AUTO-RESOLVED - hiding overlay");
       deviceLocked = false;
       hideDeviceConflict();
     }
+    
+    // Update pill icons/dots on every presence sync
+    updateUserDuoPills();
   }
 
-  function stopLivePresence() {
-    if (presenceChannel && supabase) {
+  async function stopLivePresence() {
+    if (presenceChannel && sbClient) {
       try {
-        presenceChannel.untrack();
-        supabase.removeChannel(presenceChannel);
-      } catch(e) {}
+        // Await untrack to ensure server sees us leave before removing channel
+        await presenceChannel.untrack();
+      } catch (e) {}
+      try {
+        await sbClient.removeChannel(presenceChannel);
+      } catch (e) {}
       presenceChannel = null;
     }
   }
@@ -988,7 +1063,7 @@
     stopLivePresence();
   }
 
-  // ✅ Presence is now simplified - no online/offline dots
+  // Γ£à Presence is now simplified - no online/offline dots
   // Conflict detection still works via checkDeviceConflict() in pullRemoteState/presencePing
 
   // ---------- Notifications ----------
@@ -1025,7 +1100,7 @@
     if (deletedIndex <= cur) saveLastRead(cur - 1);
   }
 
-  // ✅ Update DUO pill with unread count (messages)
+  // Γ£à Update DUO pill with unread count (messages)
   function updateDuoUnreadBadge() {
     const messages = loadMessages();
     const unreadIdxs = duoUnreadIndexes(messages);
@@ -1046,16 +1121,16 @@
     }
   }
 
-  // ✅ Bell notifications - system updates only (not messages)
+  // Γ£à Bell notifications - system updates only (not messages)
   function updateNotifications(opts = {}) {
     const { silent = false } = opts;
     const badge = $("notificationBadge");
     const list = $("notificationList");
 
-    // ✅ Update DUO pill for messages
+    // Γ£à Update DUO pill for messages
     updateDuoUnreadBadge();
 
-    // ✅ Bell only shows system notifications (updates, events)
+    // Γ£à Bell only shows system notifications (updates, events)
     const systemNotifs = [];
     
     // Check for upcoming events
@@ -1071,7 +1146,7 @@
           type: "event",
           title: event.title,
           subtitle: diffDays === 0 ? "Today!" : diffDays === 1 ? "Tomorrow" : `In ${diffDays} days`,
-          icon: "📅"
+          icon: "≡ƒôà"
         });
       }
     });
@@ -1102,7 +1177,7 @@
     });
   }
 
-  // ✅ Letter Viewer State (for TikTok-style swipe)
+  // Γ£à Letter Viewer State (for TikTok-style swipe)
   let letterViewerIndex = 0;
   let duoLetters = [];
 
@@ -1149,12 +1224,12 @@
         const isVideo = msg.attachmentType === 'video';
         if (isVideo) {
           attachmentContainer.innerHTML = `
-            <div class="letter-attachment-label">📎 Video Attachment</div>
+            <div class="letter-attachment-label">≡ƒôÄ Video Attachment</div>
             <video controls playsinline class="letter-attachment-media" src="${escapeHtml(msg.attachment)}"></video>
           `;
         } else {
           attachmentContainer.innerHTML = `
-            <div class="letter-attachment-label">📎 Image Attachment</div>
+            <div class="letter-attachment-label">≡ƒôÄ Image Attachment</div>
             <img class="letter-attachment-media" src="${escapeHtml(msg.attachment)}" alt="Attachment" onclick="openAttachmentModal('${escapeHtml(msg.attachment)}', 'image')">
           `;
         }
@@ -1185,7 +1260,7 @@
       if (paper) paper.classList.remove("open");
       void modal.offsetHeight;
       
-      // ✅ Lock body scroll when modal opens
+      // Γ£à Lock body scroll when modal opens
       document.body.style.overflow = 'hidden';
       document.body.style.position = 'fixed';
       document.body.style.width = '100%';
@@ -1204,7 +1279,7 @@
       modal.classList.add("active");
       if (env) env.classList.add("open");
       if (paper) paper.classList.add("open");
-      // ✅ Lock body scroll
+      // Γ£à Lock body scroll
       document.body.style.overflow = 'hidden';
       document.body.style.position = 'fixed';
       document.body.style.width = '100%';
@@ -1228,7 +1303,7 @@
   }
 
   function openMessage(index) {
-    // ✅ Guard against double-trigger
+    // Γ£à Guard against double-trigger
     if (letterAnimationInProgress) return;
 
     const messages = loadMessages();
@@ -1248,19 +1323,19 @@
     $("letterTimestamp").textContent = msg.timestamp || "";
     $("letterContent").textContent = safeContent;
 
-    // ✅ Show attachment in letter if present
+    // Γ£à Show attachment in letter if present
     const attachmentContainer = $("letterAttachment");
     if (attachmentContainer) {
       if (msg.attachment) {
         const isVideo = msg.attachmentType === 'video';
         if (isVideo) {
           attachmentContainer.innerHTML = `
-            <div class="letter-attachment-label">📎 Video Attachment</div>
+            <div class="letter-attachment-label">≡ƒôÄ Video Attachment</div>
             <video controls playsinline class="letter-attachment-media" src="${escapeHtml(msg.attachment)}"></video>
           `;
         } else {
           attachmentContainer.innerHTML = `
-            <div class="letter-attachment-label">📎 Image Attachment</div>
+            <div class="letter-attachment-label">≡ƒôÄ Image Attachment</div>
             <img class="letter-attachment-media" src="${escapeHtml(msg.attachment)}" alt="Attachment" onclick="openAttachmentModal('${escapeHtml(msg.attachment)}', 'image')">
           `;
         }
@@ -1278,7 +1353,7 @@
       updateNotifications();
     }
 
-    // ✅ CLEAN ANIMATION: Remove all classes, force reflow, then add .open
+    // Γ£à CLEAN ANIMATION: Remove all classes, force reflow, then add .open
     const modal = $("letterModal");
     const env = document.querySelector(".letter-envelope");
     const paper = document.querySelector(".letter-paper");
@@ -1305,7 +1380,7 @@
     setTimeout(() => { letterAnimationInProgress = false; }, 900);
   }
 
-  // ✅ [FEATURE B] Open attachment in fullscreen modal
+  // Γ£à [FEATURE B] Open attachment in fullscreen modal
   window.openAttachmentModal = function(url, type) {
     const modal = $("attachmentModal");
     const content = $("attachmentModalContent");
@@ -1345,7 +1420,7 @@
       const el = document.createElement("div");
       el.className = "item" + (it.isExample ? " example" : "");
       
-      // ✅ Format date and calculate urgency
+      // Γ£à Format date and calculate urgency
       let dateDisplay = '';
       let urgencyIndicator = '';
       
@@ -1359,7 +1434,7 @@
         if (urgency === "red") {
           urgencyIndicator = `<span class="urgency-badge urgency-red" title="Due today or tomorrow!">!</span>`;
         } else if (urgency === "yellow") {
-          urgencyIndicator = `<span class="urgency-badge urgency-yellow" title="Due in 2-3 days">•</span>`;
+          urgencyIndicator = `<span class="urgency-badge urgency-yellow" title="Due in 2-3 days">ΓÇó</span>`;
         }
       }
       
@@ -1408,7 +1483,7 @@
     });
   }
 
-  // ✅ Format mission date nicely
+  // Γ£à Format mission date nicely
   function formatMissionDate(dateStr) {
     if (!dateStr) return "";
     try {
@@ -1461,7 +1536,7 @@
       container.appendChild(el);
     });
     
-    // ✅ Update photo mission select when completed missions change
+    // Γ£à Update photo mission select when completed missions change
     if (typeof populatePhotoMissionSelect === 'function') {
       populatePhotoMissionSelect();
     }
@@ -1475,28 +1550,21 @@
     const container = $("messageLog");
     container.innerHTML = "";
 
-    // ✅ Mini calendar header
-    const calendarHtml = renderMiniCalendar();
-    const calendarDiv = document.createElement("div");
-    calendarDiv.className = "mini-calendar-wrapper";
-    calendarDiv.innerHTML = calendarHtml;
-    container.appendChild(calendarDiv);
-
-    // ✅ [FEATURE A] Render newest-first (reverse order)
+    // Γ£à [FEATURE A] Render newest-first (reverse order)
     const reversed = [...messages].reverse();
 
     reversed.forEach((msg) => {
       const displayName = msg.from || "Unknown";
       const hasAttachment = !!(msg.attachment);
       
-      // ✅ User-specific colors
+      // Γ£à User-specific colors
       const userClass = getUserColorClass(msg.from);
       
       const el = document.createElement("div");
       el.className = `message-log-item ${userClass}`;
       el.innerHTML = `
         <div class="message-log-header">
-          <span class="message-from-name">FROM: ${escapeHtml(displayName)} ${hasAttachment ? '<span class="attachment-badge" title="Has attachment">📎</span>' : ''}</span>
+          <span class="message-from-name">FROM: ${escapeHtml(displayName)} ${hasAttachment ? '<span class="attachment-badge" title="Has attachment">≡ƒôÄ</span>' : ''}</span>
           <span>${escapeHtml(msg.timestamp || "")}</span>
         </div>
         <div class="message-log-content">${escapeHtml(msg.content || "")}</div>
@@ -1508,14 +1576,16 @@
     if (messages.length > 3) container.classList.add("scroll");
     else container.classList.remove("scroll");
 
-    // ✅ [FEATURE A] With newest-first, scroll to TOP for latest
+    // Γ£à [FEATURE A] With newest-first, scroll to TOP for latest
     if (autoScroll || messages.length > lastMsgCount) {
       if (container.classList.contains("scroll")) container.scrollTop = 0;
     }
     lastMsgCount = messages.length;
+    // Keep big calendar in sync with new messages
+    renderBigCalendar();
   }
 
-  // ✅ Get user-specific color class
+  // Γ£à Get user-specific color class
   function getUserColorClass(userName) {
     const name = String(userName || "").trim().toLowerCase();
     if (name === "yasir") return "user-yasir";
@@ -1523,7 +1593,7 @@
     return "";
   }
 
-  // ✅ Calculate days until a date (0 = today, negative = past)
+  // Γ£à Calculate days until a date (0 = today, negative = past)
   function daysUntil(dateStr) {
     if (!dateStr) return null;
     try {
@@ -1537,7 +1607,7 @@
     }
   }
 
-  // ✅ Get urgency level based on days until due
+  // Γ£à Get urgency level based on days until due
   // Returns: "red" (0-1 days), "yellow" (2-3 days), "green" (4+ days), null (no date/past)
   function getUrgencyLevel(daysLeft) {
     if (daysLeft === null || daysLeft < 0) return null;
@@ -1546,7 +1616,7 @@
     return "green";
   }
 
-  // ✅ Get all dates with events (missions + upcoming events)
+  // Γ£à Get all dates with events (missions + upcoming events)
   function getEventDates() {
     const eventMap = {}; // { "YYYY-MM-DD": { urgency: "red"|"yellow"|"green", titles: [] } }
     
@@ -1591,7 +1661,7 @@
     return eventMap;
   }
 
-  // ✅ Mini calendar for message log (with event indicators)
+  // Γ£à Mini calendar for message log (with event indicators)
   function renderMiniCalendar() {
     const now = new Date();
     const year = now.getFullYear();
@@ -1654,6 +1724,11 @@
 
   // ---------- cover/main toggle ----------
   function openGift() {
+    if (!hasUser()) {
+      showToast("Pick USER first");
+      openWhoModal();
+      return;
+    }
     $("cover").classList.add("hidden");
     $("main").classList.remove("hidden");
     $("btnHome").classList.remove("hidden");
@@ -1677,7 +1752,7 @@
     snowTimer = setInterval(() => {
       const s = document.createElement("div");
       s.className = "snowflake";
-      s.textContent = Math.random() < 0.5 ? "❄" : "✦";
+      s.textContent = Math.random() < 0.5 ? "Γ¥ä" : "Γ£ª";
       s.style.left = Math.random() * 100 + "vw";
       s.style.animationDuration = (5 + Math.random() * 6) + "s";
       s.style.fontSize = (12 + Math.random() * 14) + "px";
@@ -1743,7 +1818,7 @@
   let suppressSync = false;
   let syncDebounce = null;
 
-  // ✅ Generate unique device ID for single-device lock
+  // Γ£à Generate unique device ID for single-device lock
   function getDeviceId() {
     let id = sessionStorage.getItem('deviceId');
     if (!id) {
@@ -1757,7 +1832,7 @@
   let activeDevices = {};
   let deviceLocked = false;
 
-  // ✅ Dedicated function to check device conflicts (can be called independently)
+  // Γ£à Dedicated function to check device conflicts (can be called independently)
   function checkDeviceConflict(serverActiveDevices) {
     if (!serverActiveDevices || typeof serverActiveDevices !== "object") {
       return false; // No conflict data
@@ -1788,14 +1863,14 @@
   }
 
   function getLocalState() {
-    // ✅ always sanitize before pushing (prevents blank letters from ever syncing)
+    // Γ£à always sanitize before pushing (prevents blank letters from ever syncing)
     const cleanedMessages = sanitizeMessages(loadMessages());
     if (cleanedMessages.length !== loadMessages().length) {
       localStorage.setItem(KEY_MESSAGES, JSON.stringify(cleanedMessages));
       clampLastReadToMessagesLen(cleanedMessages.length);
     }
 
-    // ✅ Build readState from both users' localStorage
+    // Γ£à Build readState from both users' localStorage
     const readState = {};
     ["yasir", "kylee"].forEach(u => {
       const raw = localStorage.getItem(keyLastRead(u));
@@ -1803,10 +1878,10 @@
       if (Number.isFinite(n)) readState[u] = n;
     });
 
-    // ✅ Build photos array
+    // Γ£à Build photos array
     const photos = loadPhotos();
 
-    // ✅ Track active device per user
+    // Γ£à Track active device per user
     const user = loadUser()?.toLowerCase();
     if (user && !deviceLocked) {
       activeDevices[user] = {
@@ -1835,10 +1910,9 @@
 
     suppressSync = true;
 
-    // ✅ Check for device conflicts using dedicated function
-    if (state.activeDevices && typeof state.activeDevices === "object") {
+    // Prefer realtime presence; only use payload-based conflict if no live channel
+    if (!presenceChannel && state.activeDevices && typeof state.activeDevices === "object") {
       checkDeviceConflict(state.activeDevices);
-      // Update local copy
       activeDevices = state.activeDevices;
     }
 
@@ -1848,7 +1922,7 @@
     if (Array.isArray(state.customTags)) localStorage.setItem(KEY_CUSTOM_TAGS, JSON.stringify(state.customTags));
     if (typeof state.systemMessage === "string") localStorage.setItem(KEY_SYSTEM_MESSAGE, state.systemMessage);
 
-    // ✅ Apply readState from server (syncs across devices!)
+    // Γ£à Apply readState from server (syncs across devices!)
     if (state.readState && typeof state.readState === "object") {
       const user = loadUser()?.toLowerCase();
       if (user && typeof state.readState[user] === "number") {
@@ -1861,12 +1935,12 @@
       }
     }
 
-    // ✅ Apply photos from server
+    // Γ£à Apply photos from server
     if (Array.isArray(state.photos)) {
       localStorage.setItem(KEY_PHOTOS, JSON.stringify(state.photos));
     }
 
-    // ✅ sanitize messages from remote too
+    // Γ£à sanitize messages from remote too
     if (Array.isArray(state.messages)) {
       const clean = sanitizeMessages(state.messages);
       if (clean.length !== state.messages.length) cleaned = true;
@@ -1879,7 +1953,7 @@
     return { cleaned };
   }
 
-  // ✅ Device conflict UI - with Switch User option
+  // Γ£à Device conflict UI - with Switch User option
   function showDeviceConflict(currentUser) {
     let overlay = $("deviceConflictOverlay");
     const otherUser = currentUser === "yasir" ? "Kylee" : "Yasir";
@@ -1918,37 +1992,55 @@
   }
 
   window.forceDeviceTakeover = async function() {
+    console.log("[PRESENCE] TAKEOVER - starting");
+    
+    // ✅ Set grace period FIRST to prevent immediate re-lock
+    takeoverGraceUntil = Date.now() + 5000; // 5 second grace
     deviceLocked = false;
     hideDeviceConflict();
-    // ✅ Re-track WebSocket presence to claim this device
-    if (presenceChannel && supabase) {
-      try {
-        await presenceChannel.track({
-          deviceId: getDeviceId(),
-          onlineAt: new Date().toISOString(),
-          user: loadUser()?.toLowerCase(),
-          forcedTakeover: true
-        });
-      } catch(e) { console.log("WebSocket re-track failed:", e); }
-    }
-    // ✅ Force push our device as active IMMEDIATELY (not debounced)
+    
+    // ✅ Stop old presence
+    try { await stopLivePresence(); } catch(e) {}
+    
+    // Small delay to let untrack propagate
+    await new Promise(r => setTimeout(r, 300));
+    
+    // ✅ Re-initialize presence for this device
+    initLivePresence();
+    
+    // ✅ Push to database as backup
     await pushRemoteState();
+    
+    console.log("[PRESENCE] TAKEOVER - complete");
     showToast("You are now the active device");
   };
 
   window.switchToOtherUser = async function(otherUser) {
+    console.log("[PRESENCE] SWITCH USER - to:", otherUser);
+    
+    // ✅ Set grace period
+    takeoverGraceUntil = Date.now() + 5000;
     deviceLocked = false;
     hideDeviceConflict();
+    
     // Stop current WebSocket presence
-    stopLivePresence();
+    await stopLivePresence();
+    
+    // Small delay
+    await new Promise(r => setTimeout(r, 300));
+    
     // Switch to the other user
     saveUser(otherUser);
     updateUserDuoPills();
+    
     // Start WebSocket presence for new user
     initLivePresence();
+    
     // ✅ Push device claim for new user immediately
     await pushRemoteState();
     await pullRemoteState({ silent: false });
+    
+    console.log("[PRESENCE] SWITCH USER - complete");
     showToast(`Switched to ${otherUser}`);
   };
 
@@ -1995,26 +2087,25 @@
       const remote = await remoteGetState();
       if (!remote || !remote.payload) {
         if (!silent) setSyncStatus("on");
-        // ✅ Still update presence dots (time-based decay)
+        // Γ£à Still update presence dots (time-based decay)
         updateUserDuoPills();
         return;
       }
 
-      // ✅ Update lastPresence from response (for dot calculations)
+      // Γ£à Update lastPresence from response (for dot calculations)
       if (remote.presence) {
         lastPresence = remote.presence;
       }
 
-      // ✅ Check presenceVersion - if changed, presence/activeDevices updated
+      // Γ£à Check presenceVersion - if changed, presence/activeDevices updated
       const serverPresenceVersion = remote.presenceVersion || remote.payload?.presenceVersion || 0;
       const presenceChanged = serverPresenceVersion !== lastPresenceVersion;
       if (presenceChanged) {
         lastPresenceVersion = serverPresenceVersion;
       }
 
-      // ✅ ALWAYS check for device conflicts, even if updated_at hasn't changed
-      // This ensures immediate conflict detection regardless of content changes
-      if (remote.payload.activeDevices || remote.activeDevices) {
+      // Prefer realtime presence for conflicts; only fallback to payload if no live channel
+      if (!presenceChannel && (remote.payload.activeDevices || remote.activeDevices)) {
         const devices = remote.activeDevices || remote.payload.activeDevices;
         const hasConflict = checkDeviceConflict(devices);
         if (hasConflict) {
@@ -2022,10 +2113,10 @@
         }
       }
 
-      // ✅ ALWAYS update presence dots (they're time-based, need constant refresh)
+      // Γ£à ALWAYS update presence dots (they're time-based, need constant refresh)
       updateUserDuoPills();
 
-      // 🔒 Skip full state apply if nothing changed (no UI spam)
+      // ≡ƒöÆ Skip full state apply if nothing changed (no UI spam)
       // But still process presence changes above!
       if (remote.updated_at && remote.updated_at === lastRemoteUpdatedAt) {
         if (!silent) setSyncStatus("on");
@@ -2044,14 +2135,14 @@
       renderActive();
       renderCompleted();
       renderMessages(); // do NOT autoscroll on remote updates
-      renderPhotoGallery(); // ✅ Sync photos across devices
-      // ✅ Pass silent flag to avoid sound on background pulls
+      renderPhotoGallery(); // Γ£à Sync photos across devices
+      // Γ£à Pass silent flag to avoid sound on background pulls
       updateNotifications({ silent });
       // updateUserDuoPills already called above
 
       setSyncStatus("on");
 
-      // ✅ if we cleaned blank letters, push once to make the room clean forever
+      // Γ£à if we cleaned blank letters, push once to make the room clean forever
       if (cleaned) {
         schedulePush();
       }
@@ -2066,7 +2157,7 @@
       setSyncStatus("saving");
       const data = await remoteSetState(getLocalState());
 
-      // ✅ update local poll version so we don't re-apply our own push
+      // Γ£à update local poll version so we don't re-apply our own push
       if (data?.updated_at) lastRemoteUpdatedAt = data.updated_at;
 
       setSyncStatus("on");
@@ -2082,7 +2173,7 @@
     syncDebounce = setTimeout(pushRemoteState, 350); // faster + still stable
   }
 
-  // ✅ SMART polling loop - faster for better notification sync
+  // Γ£à SMART polling loop - faster for better notification sync
   function startSmartPolling() {
     if (pollTimer) return;
 
@@ -2097,7 +2188,7 @@
   // Track last sync time for stale detection
   let lastSyncTime = Date.now();
 
-  // ✅ Show syncing indicator
+  // Γ£à Show syncing indicator
   function showSyncingIndicator() {
     let indicator = $("syncingIndicator");
     if (!indicator) {
@@ -2115,7 +2206,7 @@
     if (indicator) indicator.classList.remove("active");
   }
 
-  // ✅ Immediate sync + conflict check on resume
+  // Γ£à Immediate sync + conflict check on resume
   async function onAppResume() {
     if (deviceLocked) return;
     
@@ -2143,16 +2234,28 @@
   // ✅ Force refresh when tab becomes visible
   document.addEventListener("visibilitychange", () => {
     if (document.visibilityState === "visible") {
+      console.log("[PRESENCE] Tab visible - re-tracking");
+      // Re-track presence when tab becomes visible again
+      if (presenceChannel && hasUser()) {
+        try {
+          presenceChannel.track({
+            deviceId: getDeviceId(),
+            onlineAt: new Date().toISOString(),
+            user: loadUser()?.toLowerCase()
+          });
+        } catch(e) {}
+      }
       onAppResume();
+    } else {
+      console.log("[PRESENCE] Tab hidden - untracking");
+      try { if (presenceChannel) presenceChannel.untrack(); } catch {}
     }
   });
-
-  // ✅ Force refresh when window gains focus
   window.addEventListener("focus", () => {
     onAppResume();
   });
 
-  // ✅ iOS BFCache support - pageshow fires when returning from home screen
+  // Γ£à iOS BFCache support - pageshow fires when returning from home screen
   window.addEventListener("pageshow", (event) => {
     if (event.persisted || performance.getEntriesByType("navigation")[0]?.type === "back_forward") {
       console.log("Page restored from BFCache, forcing sync...");
@@ -2160,7 +2263,7 @@
     }
   });
 
-  // ✅ Also check on touchstart for iOS (backup)
+  // Γ£à Also check on touchstart for iOS (backup)
   let lastTouchSync = 0;
   document.addEventListener("touchstart", () => {
     const now = Date.now();
@@ -2175,17 +2278,106 @@
 
   // ---------- Who modal ----------
   function openWhoModal() {
-    $("whoModal").classList.add("active");
-    $("whoModal").setAttribute("aria-hidden", "false");
-    $("btnLogOff").classList.toggle("hidden", !hasUser());
+    const modal = $("whoModal");
+    if (modal) {
+      modal.classList.add("active");
+      modal.setAttribute("aria-hidden", "false");
+    }
+    const logoffBtn = $("btnLogOff");
+    if (logoffBtn) {
+      logoffBtn.classList.toggle("hidden", !hasUser());
+    }
+  }
+
+  // Γ£à Big calendar above message log
+  function renderBigCalendar() {
+    const cal = $("bigCalendar");
+    if (!cal) return;
+    const now = new Date();
+    const currentYear = now.getFullYear();
+    const currentMonth = now.getMonth();
+    const currentDate = now.getDate();
+
+    // Load messages to mark days with messages
+    const msgs = loadMessages();
+    const msgDates = new Set(
+      msgs.map(m => {
+        const d = new Date(m.timestamp || Date.now());
+        if (isNaN(d)) return null;
+        return `${d.getFullYear()}-${d.getMonth()}-${d.getDate()}`;
+      }).filter(Boolean)
+    );
+    const eventDates = getEventDates();
+
+    // State from selects if already rendered
+    const selMonthEl = document.getElementById('calMonthSelect');
+    const selYearEl = document.getElementById('calYearSelect');
+    let selMonth = selMonthEl ? Number(selMonthEl.value) : currentMonth;
+    let selYear = selYearEl ? Number(selYearEl.value) : currentYear;
+
+    const months = ["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"];
+    const years = [currentYear - 1, currentYear, currentYear + 1];
+    cal.innerHTML = `
+      <div class="calendar__opts">
+        <select id="calMonthSelect" name="calendar__month">
+          ${months.map((m,i)=>`<option value="${i}" ${i===selMonth?'selected':''}>${m}</option>`).join('')}
+        </select>
+        <select id="calYearSelect" name="calendar__year">
+          ${years.map(y=>`<option value="${y}" ${y===selYear?'selected':''}>${y}</option>`).join('')}
+        </select>
+      </div>
+      <div class="calendar__body">
+        <div class="calendar__days">
+          <div>Su</div><div>Mo</div><div>Tu</div><div>We</div><div>Th</div><div>Fr</div><div>Sa</div>
+        </div>
+        <div class="calendar__dates" id="calDates"></div>
+      </div>
+    `;
+
+    const firstDay = new Date(selYear, selMonth, 1);
+    const startDow = firstDay.getDay();
+    const daysInMonth = new Date(selYear, selMonth + 1, 0).getDate();
+    const prevMonthDays = new Date(selYear, selMonth, 0).getDate();
+
+    const datesEl = document.getElementById('calDates');
+    const cells = [];
+    for (let i = 0; i < startDow; i++) {
+      const d = prevMonthDays - startDow + 1 + i;
+      cells.push({ text: d, grey: true });
+    }
+    for (let d = 1; d <= daysInMonth; d++) {
+      const isToday = (selYear===currentYear && selMonth===currentMonth && d===currentDate);
+      const dateKey = `${selYear}-${String(selMonth+1).padStart(2,'0')}-${String(d).padStart(2,'0')}`;
+      const evt = eventDates[dateKey];
+      const hasEvent = !!evt;
+      cells.push({ text: d, today: isToday, hasEvent });
+    }
+    while (cells.length % 7 !== 0) cells.push({ text: '', grey: true });
+
+    datesEl.innerHTML = cells.map(c => {
+      const cls = ["calendar__date"]; if (c.grey) cls.push("calendar__date--grey"); if (c.today) cls.push("calendar__date--today");
+      const eventDot = c.hasEvent ? '<span class="cal-event-dot"></span>' : '';
+      return `<div class="${cls.join(' ')}"><span>${c.text}</span>${eventDot}</div>`;
+    }).join('');
+
+    document.getElementById('calMonthSelect').addEventListener('change', renderBigCalendar);
+    document.getElementById('calYearSelect').addEventListener('change', renderBigCalendar);
   }
 
   function closeWhoModal() {
-    $("whoModal").classList.remove("active");
-    $("whoModal").setAttribute("aria-hidden", "true");
+    const modal = $("whoModal");
+    if (!modal) return;
+    // Avoid aria-hidden focus warning
+    if (modal.contains(document.activeElement)) {
+      document.activeElement.blur();
+    }
+    modal.classList.remove("active");
+    modal.setAttribute("aria-hidden", "true");
   }
 
   async function setUserAndStart(name) {
+    // Ensure prior presence channel is cleanly removed before switching keys
+    try { await stopLivePresence(); } catch {}
     saveUser(name);
 
     $("closeWhoModal").classList.remove("hidden");
@@ -2195,17 +2387,17 @@
 
     setSyncStatus("pulling");
     
-    // ✅ Immediate presence/conflict check on login
+    // Γ£à Immediate presence/conflict check on login
     showSyncingIndicator();
     await pullRemoteState({ silent: false });
     
-    // ✅ If device conflict detected, don't proceed
+    // Γ£à If device conflict detected, don't proceed
     if (deviceLocked) {
       hideSyncingIndicator();
       return; // Conflict overlay will be shown
     }
 
-    // ✅ IMMEDIATELY claim this device as active (fixes delayed conflict detection)
+    // Γ£à IMMEDIATELY claim this device as active (fixes delayed conflict detection)
     // This ensures other devices know we're active NOW, not just when content changes
     await pushRemoteState();
     hideSyncingIndicator();
@@ -2215,18 +2407,19 @@
   }
 
   async function logOffUser() {
-    // ✅ Send explicit offline signal BEFORE clearing user
+    // Γ£à Send explicit offline signal BEFORE clearing user
     // This lets other devices know immediately (not waiting for 45s timeout)
     const currentUser = loadUser();
     if (currentUser) {
-      stopPresence(); // Stop pinging immediately
+      // Stop presence ASAP (await untrack to avoid ghost session)
+      await stopLivePresence();
       try {
         // Clear our device from activeDevices
         const user = currentUser.toLowerCase();
         if (activeDevices[user]) {
           delete activeDevices[user];
         }
-        // ✅ Mark presence as very old (instant offline detection)
+        // Γ£à Mark presence as very old (instant offline detection)
         // Set to epoch so age calculation shows offline immediately
         const offlinePayload = getLocalState();
         offlinePayload.presence = offlinePayload.presence || {};
@@ -2240,6 +2433,7 @@
     }
     
     clearUser();
+    // Ensure timers are stopped too
     stopPresence();
     updateUserDuoPills();
     openWhoModal();
@@ -2247,15 +2441,28 @@
     showToast("LOGGED OFF");
   }
 
-  // ✅ Send offline signal on tab close / navigation away
+  // Γ£à Send offline signal on tab close / navigation away
   // Uses sendBeacon for reliability (fires even during unload)
+  // ✅ Send offline signal on tab close / navigation away
+  // Uses sendBeacon for database AND untrack for WebSocket
   function sendOfflineBeacon() {
+    // ✅ CRITICAL: Untrack from WebSocket presence FIRST
+    // This is synchronous and tells other clients immediately
+    if (presenceChannel) {
+      try {
+        presenceChannel.untrack();
+        console.log("[PRESENCE] Untracked on page close");
+      } catch(e) {
+        console.log("[PRESENCE] Untrack failed:", e);
+      }
+    }
+    
     const currentUser = loadUser();
     if (!currentUser) return;
     
     const user = currentUser.toLowerCase();
     
-    // Build minimal offline payload
+    // Build minimal offline payload for database (backup)
     const offlineData = {
       room: ROOM_CODE,
       payload: {
@@ -2278,11 +2485,11 @@
     }
   }
 
-  // ✅ Try to send offline on page unload
+  // Γ£à Try to send offline on page unload
   window.addEventListener("beforeunload", sendOfflineBeacon);
   window.addEventListener("pagehide", sendOfflineBeacon);
 
-  // ✅ Browser online/offline detection for local UI feedback
+  // Γ£à Browser online/offline detection for local UI feedback
   window.addEventListener("offline", () => {
     setSyncStatus("error");
     showToast("You are offline");
@@ -2298,7 +2505,7 @@
     }
   });
 
-  // ✅ [FEATURE B] Upload file to Supabase Storage
+  // Γ£à [FEATURE B] Upload file to Supabase Storage
   async function uploadToSupabase(file) {
     const timestamp = Date.now();
     const safeName = file.name.replace(/[^a-zA-Z0-9.-]/g, '_');
@@ -2323,7 +2530,7 @@
     return `${SUPABASE_URL}/storage/v1/object/public/${STORAGE_BUCKET}/${filename}`;
   }
 
-  // ✅ Current attachment state
+  // Γ£à Current attachment state
   let pendingAttachment = null;
   let pendingAttachmentType = null;
   let isUploading = false; // Guard against sending before upload completes
@@ -2332,12 +2539,12 @@
   $("btnOpen").addEventListener("click", openGift);
   $("btnHome").addEventListener("click", goHome);
 
-  // ✅ [BUG 1 FIX] iOS Safari keyboard bug - removed setTimeout, focus must be synchronous to preserve gesture context
+  // Γ£à [BUG 1 FIX] iOS Safari keyboard bug - removed setTimeout, focus must be synchronous to preserve gesture context
 function openSystemMessageModal() {
   const modal = $("systemMessageModal");
   const input = $("systemMessageInput");
   input.value = loadSystemMessage() || "";
-  // ✅ [FEATURE E] Update character counter
+  // Γ£à [FEATURE E] Update character counter
   updateCharCounter(input.value.length);
   modal.classList.add("active");
   modal.setAttribute("aria-hidden", "false");
@@ -2345,7 +2552,7 @@ function openSystemMessageModal() {
   input.focus();
 }
 
-// ✅ [FEATURE E] Update character counter - shows "X / 30"
+// Γ£à [FEATURE E] Update character counter - shows "X / 30"
 function updateCharCounter(len) {
   const counter = $("charCounter");
   if (!counter) return;
@@ -2355,6 +2562,10 @@ function updateCharCounter(len) {
 
 function closeSystemMessageModal() {
   const modal = $("systemMessageModal");
+  if (!modal) return;
+  if (modal.contains(document.activeElement)) {
+    document.activeElement.blur();
+  }
   modal.classList.remove("active");
   modal.setAttribute("aria-hidden", "true");
 }
@@ -2389,7 +2600,7 @@ $("systemMessageInput").addEventListener("keydown", (e) => {
   }
 });
 
-// ✅ [FEATURE E] Live character counter update
+// Γ£à [FEATURE E] Live character counter update
 $("systemMessageInput").addEventListener("input", (e) => {
   const len = (e.target.value || "").length;
   updateCharCounter(len);
@@ -2399,12 +2610,17 @@ $("systemMessageInput").addEventListener("input", (e) => {
   }
 });
 
-$("userPill").addEventListener("click", () => openWhoModal());
+  const userPillEl = $("userPill");
+  if (userPillEl) userPillEl.addEventListener("click", openWhoModal);
 
-  $("btnWhoYasir").addEventListener("click", () => setUserAndStart("Yasir"));
-  $("btnWhoKylee").addEventListener("click", () => setUserAndStart("Kylee"));
-  $("closeWhoModal").addEventListener("click", () => closeWhoModal());
-  $("btnLogOff").addEventListener("click", () => logOffUser());
+  const whoYasirBtn = $("btnWhoYasir");
+  if (whoYasirBtn) whoYasirBtn.addEventListener("click", () => setUserAndStart("Yasir"));
+  const whoKyleeBtn = $("btnWhoKylee");
+  if (whoKyleeBtn) whoKyleeBtn.addEventListener("click", () => setUserAndStart("Kylee"));
+  const closeWhoBtn = $("closeWhoModal");
+  if (closeWhoBtn) closeWhoBtn.addEventListener("click", closeWhoModal);
+  const logoffBtn = $("btnLogOff");
+  if (logoffBtn) logoffBtn.addEventListener("click", logOffUser);
 
   $("btnAdd").addEventListener("click", () => {
     if (!hasUser()) { showToast("Pick USER first"); return; }
@@ -2414,9 +2630,18 @@ $("userPill").addEventListener("click", () => openWhoModal());
     const tagSelect = $("newTag");
     let tag = tagSelect.value;
     
-    // ✅ Get due date if set
+    // Γ£à Get due date if set
     const dueDateInput = $("newDueDate");
     const dueDate = dueDateInput ? dueDateInput.value : null;
+    // Past-date prompt: do not add silently
+    if (dueDate) {
+      const today = new Date(); today.setHours(0,0,0,0);
+      const d = new Date(dueDate + 'T00:00:00');
+      if (d < today) {
+        const proceed = window.confirm('That due date is in the past. Do you want to keep it anyway?');
+        if (!proceed) return; // Let user change date first
+      }
+    }
 
     if (tag === "custom") {
       tag = $("customTagInput").value.trim() || "custom";
@@ -2572,7 +2797,7 @@ $("userPill").addEventListener("click", () => openWhoModal());
     $("savedMissionsModal").classList.remove("active");
   });
 
-  // ✅ [FEATURE B] Handle attachment file selection with Supabase Storage
+  // Γ£à [FEATURE B] Handle attachment file selection with Supabase Storage
   const attachInput = $("attachmentInput");
   if (attachInput) {
     attachInput.addEventListener("change", async (e) => {
@@ -2586,7 +2811,7 @@ $("userPill").addEventListener("click", () => openWhoModal());
         return;
       }
       
-      // ✅ Only one attachment allowed - clear any existing
+      // Γ£à Only one attachment allowed - clear any existing
       if (pendingAttachment) {
         showToast("Replacing previous attachment");
       }
@@ -2609,11 +2834,11 @@ $("userPill").addEventListener("click", () => openWhoModal());
       }
       
       if (preview) {
-        preview.innerHTML = `<span>📎 Uploading ${escapeHtml(file.name)}...</span>`;
+        preview.innerHTML = `<span>≡ƒôÄ Uploading ${escapeHtml(file.name)}...</span>`;
         preview.classList.remove("hidden");
       }
       
-      // ✅ Set uploading flag
+      // Γ£à Set uploading flag
       isUploading = true;
       
       try {
@@ -2625,7 +2850,7 @@ $("userPill").addEventListener("click", () => openWhoModal());
         pendingAttachmentType = isVideo ? "video" : "image";
         
         if (preview) {
-          preview.innerHTML = `<span>📎 ${escapeHtml(file.name)}</span><button type="button" class="btn" id="clearAttachment">✕</button>`;
+          preview.innerHTML = `<span>≡ƒôÄ ${escapeHtml(file.name)}</span><button type="button" class="btn" id="clearAttachment">Γ£ò</button>`;
           $("clearAttachment").addEventListener("click", () => {
             pendingAttachment = null;
             pendingAttachmentType = null;
@@ -2650,7 +2875,7 @@ $("userPill").addEventListener("click", () => openWhoModal());
   $("btnSaveNote").addEventListener("click", () => {
     if (!hasUser()) { showToast("Pick USER first"); return; }
     
-    // ✅ Prevent sending while upload is in progress
+    // Γ£à Prevent sending while upload is in progress
     if (isUploading) {
       showToast("Wait for attachment to finish uploading...");
       return;
@@ -2668,7 +2893,7 @@ $("userPill").addEventListener("click", () => openWhoModal());
     const timestamp = formatDT(new Date());
     const messages = loadMessages();
     
-    // ✅ Capture attachment BEFORE clearing (important!)
+    // Γ£à Capture attachment BEFORE clearing (important!)
     const attachmentUrl = pendingAttachment;
     const attachmentType = pendingAttachmentType;
     
@@ -2680,13 +2905,13 @@ $("userPill").addEventListener("click", () => openWhoModal());
     }
     messages.push(newMsg);
 
-    // ✅ sanitize immediately (preserves attachment fields)
+    // Γ£à sanitize immediately (preserves attachment fields)
     const cleaned = sanitizeMessages(messages);
     localStorage.setItem(KEY_MESSAGES, JSON.stringify(cleaned));
 
     $("customNote").value = "";
     
-    // ✅ Clear attachment AFTER capturing
+    // Γ£à Clear attachment AFTER capturing
     pendingAttachment = null;
     pendingAttachmentType = null;
     const attachInputEl = $("attachmentInput");
@@ -2700,13 +2925,13 @@ $("userPill").addEventListener("click", () => openWhoModal());
     schedulePush();
   });
 
-  // ✅ Envelope button opens letter viewer
+  // Γ£à Envelope button opens letter viewer
   $("envelopeBtn").addEventListener("click", () => {
     if (!hasUser()) { showToast("Pick USER first"); return; }
     openLetterViewer();
   });
 
-  // ✅ DUO pill click opens letter viewer
+  // Γ£à DUO pill click opens letter viewer
   $("duoPill").addEventListener("click", () => {
     if (!hasUser()) { showToast("Pick USER first"); return; }
     openLetterViewer();
@@ -2730,7 +2955,7 @@ $("userPill").addEventListener("click", () => openWhoModal());
     if (env) env.classList.remove("open");
     if (paper) paper.classList.remove("open");
     
-    // ✅ Restore body scroll when modal closes
+    // Γ£à Restore body scroll when modal closes
     document.body.style.overflow = '';
     document.body.style.position = '';
     document.body.style.width = '';
@@ -2738,13 +2963,13 @@ $("userPill").addEventListener("click", () => openWhoModal());
     letterAnimationInProgress = false;
   });
 
-  // ✅ Letter navigation buttons
+  // Γ£à Letter navigation buttons
   const prevBtn = $("letterPrev");
   const nextBtn = $("letterNext");
   if (prevBtn) prevBtn.addEventListener("click", (e) => { e.stopPropagation(); prevLetter(); });
   if (nextBtn) nextBtn.addEventListener("click", (e) => { e.stopPropagation(); nextLetter(); });
 
-  // ✅ Swipe support for letter viewer with better touch handling
+  // Γ£à Swipe support for letter viewer with better touch handling
   let touchStartY = 0;
   let touchStartX = 0;
   const letterModal = $("letterModal");
@@ -2788,7 +3013,7 @@ $("userPill").addEventListener("click", () => openWhoModal());
     });
   }
 
-  // ✅ [FEATURE B] Close attachment modal
+  // Γ£à [FEATURE B] Close attachment modal
   const closeAttachmentModal = $("closeAttachmentModal");
   if (closeAttachmentModal) {
     closeAttachmentModal.addEventListener("click", () => {
@@ -2805,7 +3030,7 @@ $("userPill").addEventListener("click", () => openWhoModal());
     });
   }
 
-  // ✅ Photo Gallery handlers with staging area
+  // Γ£à Photo Gallery handlers with staging area
   const photoSelectBtn = $("photoSelectBtn");
   const photoInput = $("photoInput");
   const photoDateInput = $("photoDate");
@@ -2822,18 +3047,18 @@ $("userPill").addEventListener("click", () => openWhoModal());
   // Staged files waiting to be uploaded
   let stagedFiles = [];
   
-  // ✅ Update staging header to show capacity for selected mission
+  // Γ£à Update staging header to show capacity for selected mission
   function updateStagingCapacity() {
     if (!stagingCapacityEl || !photoMissionSelect) return;
     
     const mission = photoMissionSelect.value;
     if (!mission) {
-      stagingCapacityEl.textContent = "• Allowed: Unlimited";
+      stagingCapacityEl.textContent = "ΓÇó Allowed: Unlimited";
       stagingCapacityEl.className = "staging-capacity unlimited";
     } else {
       const existingCount = loadPhotos().filter(p => p.mission === mission).length;
       const remaining = Math.max(0, 5 - existingCount);
-      stagingCapacityEl.textContent = `• Allowed for "${mission}": ${remaining}`;
+      stagingCapacityEl.textContent = `ΓÇó Allowed for "${mission}": ${remaining}`;
       stagingCapacityEl.className = remaining <= 0 ? "staging-capacity full" : "staging-capacity";
     }
   }
@@ -2850,7 +3075,7 @@ $("userPill").addEventListener("click", () => openWhoModal());
       }
     }
     
-    // ✅ Also update staging capacity display
+    // Γ£à Also update staging capacity display
     updateStagingCapacity();
   }
   
@@ -2859,9 +3084,9 @@ $("userPill").addEventListener("click", () => openWhoModal());
     
     const mission = photoMissionSelect.value;
     
-    // ✅ Show "unlimited" for unlinked photos
+    // Γ£à Show "unlimited" for unlinked photos
     if (!mission) {
-      missionCapacityEl.textContent = "✓ Unlinked = unlimited uploads";
+      missionCapacityEl.textContent = "Γ£ô Unlinked = unlimited uploads";
       missionCapacityEl.className = "mission-capacity unlimited";
       return;
     }
@@ -2869,9 +3094,9 @@ $("userPill").addEventListener("click", () => openWhoModal());
     const existingCount = loadPhotos().filter(p => p.mission === mission).length;
     const remaining = 5 - existingCount;
     
-    // ✅ Clearer labeling: "On this mission: X/5 saved"
+    // Γ£à Clearer labeling: "On this mission: X/5 saved"
     if (remaining <= 0) {
-      missionCapacityEl.textContent = "⚠️ Mission full: 5/5 saved";
+      missionCapacityEl.textContent = "ΓÜá∩╕Å Mission full: 5/5 saved";
       missionCapacityEl.className = "mission-capacity full";
     } else {
       missionCapacityEl.textContent = `On this mission: ${existingCount}/5 saved (${remaining} slots left)`;
@@ -3058,7 +3283,7 @@ $("userPill").addEventListener("click", () => openWhoModal());
   }
   populatePhotoMissionSelect();
 
-  // ✅ Photo Lightbox handlers
+  // Γ£à Photo Lightbox handlers
   const lightboxClose = $("lightboxClose");
   const lightboxPrevBtn = $("lightboxPrev");
   const lightboxNextBtn = $("lightboxNext");
@@ -3087,7 +3312,7 @@ $("userPill").addEventListener("click", () => openWhoModal());
     }, { passive: true });
   }
 
-  // ✅ Medal Modal handlers
+  // Γ£à Medal Modal handlers
   const medalModalClose = $("medalModalClose");
   const medalModal = $("medalModal");
   
@@ -3098,7 +3323,7 @@ $("userPill").addEventListener("click", () => openWhoModal());
     });
   }
 
-  // ✅ Refresh Medal clips button
+  // Γ£à Refresh Medal clips button
   const refreshMedalBtn = $("refreshMedal");
   if (refreshMedalBtn) {
     refreshMedalBtn.addEventListener("click", () => {
@@ -3118,10 +3343,10 @@ SYSTEM MESSAGE:
 ${loadSystemMessage()}
 
 ACTIVE MISSIONS:
-${active.map(i => `[ ] ${i.title} — ${i.desc} (#${i.tag})`).join("\n")}
+${active.map(i => `[ ] ${i.title} ΓÇö ${i.desc} (#${i.tag})`).join("\n")}
 
 COMPLETED MISSIONS:
-${completed.map(i => `[X] ${i.title} — ${i.desc} (#${i.tag})`).join("\n")}
+${completed.map(i => `[X] ${i.title} ΓÇö ${i.desc} (#${i.tag})`).join("\n")}
 `;
 
     const blob = new Blob([text], { type: "text/plain" });
@@ -3162,7 +3387,7 @@ ${completed.map(i => `[X] ${i.title} — ${i.desc} (#${i.tag})`).join("\n")}
 
     renderSystemMessage(loadSystemMessage());
     
-    // ✅ Set daily emoticon
+    // Γ£à Set daily emoticon
     const emoticonEl = $("dailyEmoticon");
     if (emoticonEl) {
       emoticonEl.textContent = getDailyEmoticon();
@@ -3174,41 +3399,48 @@ ${completed.map(i => `[X] ${i.title} — ${i.desc} (#${i.tag})`).join("\n")}
     updateTracker();
     setInterval(updateTracker, 1000);
 
-    // ✅ Show sync overlay on initial load
+    // Γ£à Show sync overlay on initial load
     const overlay = document.createElement("div");
     overlay.id = "syncOverlay";
     overlay.innerHTML = `<div class="sync-overlay-content"><div class="sync-spinner"></div><div>SYNCING...</div></div>`;
     document.body.appendChild(overlay);
 
-    // pull once on load (with overlay)
-    await pullRemoteState({ silent: false });
-    
-    // ✅ Remove overlay after sync
-    overlay.remove();
+    // pull once on load (with overlay) ΓÇö always remove overlay
+    try {
+      await pullRemoteState({ silent: false });
+    } catch (e) {
+      console.warn("Initial sync failed", e);
+      setSyncStatus("error");
+    } finally {
+      overlay.remove();
+    }
 
     // start polling always (cover + main stay synced)
     startSmartPolling();
 
-    // ✅ Check for system updates and upcoming events
+    // Γ£à Check for system updates and upcoming events
     setTimeout(() => {
       checkSystemUpdates();
       checkUpcomingEvents();
     }, 1000);
 
-    // ✅ Render photo gallery
+    // Γ£à Render photo gallery
     renderPhotoGallery();
 
-    // ✅ Fetch Medal clips (if configured)
+    // Γ£à Fetch Medal clips (if configured)
     fetchMedalClips();
 
-    // ✅ IMPORTANT: remember user on refresh (no re-asking)
+    // Γ£à Render big calendar initially
+    renderBigCalendar();
+
+    // Γ£à IMPORTANT: remember user on refresh (no re-asking)
     if (!hasUser()) {
       stopPresence();
       openWhoModal();
       $("closeWhoModal").classList.add("hidden");
     } else {
       $("closeWhoModal").classList.remove("hidden");
-      // ✅ Immediately claim device on page load for existing users
+      // Γ£à Immediately claim device on page load for existing users
       await pushRemoteState();
       startPresence();
       updateUserDuoPills();

@@ -2531,3 +2531,79 @@ input[type="date"]::-webkit-calendar-picker-indicator {
     min-height: 250px;
   }
 }
+    /* Big Calendar */
+    .calendar {
+      border: 2px solid var(--border-bright);
+      background: var(--bg);
+      padding: 16px;
+      margin: 10px 0 16px;
+    }
+    .calendar__opts {
+      display: flex;
+      gap: 10px;
+      align-items: center;
+      margin-bottom: 12px;
+      flex-wrap: wrap;
+    }
+    .calendar__opts select {
+      background: var(--bg-card);
+      color: var(--text);
+      border: 1px solid var(--border);
+      padding: 6px 8px;
+      font-family: 'Roboto Mono', monospace;
+      font-size: 11px;
+      text-transform: uppercase;
+    }
+    .calendar__days, .calendar__dates {
+      display: grid;
+      grid-template-columns: repeat(7, 1fr);
+      gap: 6px;
+      align-items: center;
+    }
+    .calendar__days div {
+      font-size: 10px;
+      color: var(--muted);
+      text-align: center;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+    }
+    .calendar__date {
+      height: 40px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      border: 1px solid var(--border);
+      background: var(--bg-card);
+      font-size: 12px;
+      position: relative;
+      user-select: none;
+    }
+    .calendar__date--grey { color: var(--muted); opacity: .7; }
+    .calendar__date--today { border-color: var(--accent); box-shadow: 0 0 10px rgba(255,107,157,.25); }
+    .calendar__date--hasmsg::after {
+      content: '';
+      width: 6px; height: 6px; border-radius: 999px;
+      background: var(--accent);
+      position: absolute; bottom: 6px; right: 6px;
+    }
+    @media (max-width: 640px) {
+      .calendar__date { height: 34px; font-size: 11px; }
+    }
+
+    /* User color accents for icons */
+    .user-yasir { color: #00d4ff; }
+    .user-kylee { color: #ff9f43; }
+
+    /* Big Calendar event dot */
+    .calendar__date { position: relative; }
+    .calendar__date .cal-event-dot {
+      position: absolute;
+      bottom: 4px;
+      left: 50%;
+      transform: translateX(-50%);
+      width: 6px;
+      height: 6px;
+      border-radius: 50%;
+      background: var(--accent);
+    }
+    /* Single dot style only; no proximity colors on calendar */
