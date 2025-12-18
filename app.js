@@ -853,7 +853,7 @@
   let presenceTimer = null;
   let lastPresence = null;
   let takeoverGraceUntil = 0;
-  let loginGraceUntil = 0; // ✅ Grace period after login to let stale presence clear
+  let loginGraceUntil = 0; // ✅ Grace period after login
 
   function normalizePerson(name) {
     const n = String(name || "").trim().toLowerCase();
@@ -965,14 +965,14 @@
           handleLivePresenceSync(livePresenceState);
         })
         .on('presence', { event: 'join' }, ({ key, newPresences }) => {
-          console.log("[PRESENCE] Join event:", key, newPresences?.length);
+          console.log("[PRESENCE] 👋 Join:", key, newPresences?.length || 0);
           livePresenceState = presenceChannel.presenceState();
           handleLivePresenceSync(livePresenceState);
           updateUserDuoPills();
         })
         .on('presence', { event: 'leave' }, ({ key, leftPresences }) => {
-          // ✅ ALWAYS update state on leave (for auto-resolve)
-          console.log("[PRESENCE] Leave event:", key, leftPresences?.length);
+          // ✅ ALWAYS check for auto-resolve when someone leaves
+          console.log("[PRESENCE] 👋 Leave:", key, leftPresences?.length || 0);
           livePresenceState = presenceChannel.presenceState();
           handleLivePresenceSync(livePresenceState);
           updateUserDuoPills();
@@ -999,63 +999,67 @@
 
     const now = Date.now();
     
-    // ✅ Filter out stale presences (older than 15 seconds)
-    const userPresences = (state[currentUser] || []).filter(p => {
+    // Get all presences for current user
+    const allPresences = state[currentUser] || [];
+    
+    // Filter to only "fresh" presences (last 10 seconds)
+    const freshPresences = allPresences.filter(p => {
       const t = Date.parse(p.onlineAt || 0);
       if (!Number.isFinite(t)) return false;
-      const age = now - t;
-      // Ignore presences older than 15 seconds
-      return age <= 15000;
+      return (now - t) <= 10000; // Only last 10 seconds
     });
     
-    const conflictingDevices = userPresences.filter(p => p.deviceId && p.deviceId !== myDeviceId);
+    // Find conflicts (other devices for same user)
+    const conflictingDevices = freshPresences.filter(p => p.deviceId && p.deviceId !== myDeviceId);
 
-    console.log("[PRESENCE] Sync check:", {
+    // ✅ Calculate grace period status ONCE
+    const inLoginGrace = now < loginGraceUntil;
+    const inTakeoverGrace = now < takeoverGraceUntil;
+    const inAnyGrace = inLoginGrace || inTakeoverGrace;
+
+    console.log("[PRESENCE] Sync:", {
       user: currentUser,
       myDevice: myDeviceId.slice(-6),
-      totalPresences: (state[currentUser] || []).length,
-      freshPresences: userPresences.length,
+      allPresences: allPresences.length,
+      freshPresences: freshPresences.length,
       conflicts: conflictingDevices.length,
-      inLoginGrace: now < loginGraceUntil,
-      inTakeoverGrace: now < takeoverGraceUntil
+      deviceLocked,
+      inLoginGrace,
+      inTakeoverGrace,
+      loginGraceRemaining: inLoginGrace ? (loginGraceUntil - now) + "ms" : "none",
+      takeoverGraceRemaining: inTakeoverGrace ? (takeoverGraceUntil - now) + "ms" : "none"
     });
 
-    // ✅ Check for conflicts, respecting BOTH grace periods
-    if (conflictingDevices.length > 0 && !deviceLocked) {
-      // Skip conflict if in login grace period (just logged in, let stale presence clear)
-      if (now < loginGraceUntil) {
-        console.log("[PRESENCE] In LOGIN grace period, skipping conflict");
-        return;
+    // ✅ CONFLICT DETECTION with grace period
+    if (conflictingDevices.length > 0) {
+      if (inAnyGrace) {
+        console.log("[PRESENCE] ⏳ In grace period - ignoring conflict");
+        // Don't lock, don't show conflict
+      } else if (!deviceLocked) {
+        console.log("[PRESENCE] 🔒 CONFLICT - showing overlay");
+        deviceLocked = true;
+        showDeviceConflict(currentUser);
       }
-      // Skip conflict if in takeover grace period
-      if (now < takeoverGraceUntil) {
-        console.log("[PRESENCE] In TAKEOVER grace period, skipping conflict");
-        return;
+    } else {
+      // ✅ AUTO-RESOLVE: No conflicts
+      if (deviceLocked) {
+        console.log("[PRESENCE] ✅ AUTO-RESOLVED - no conflicts");
+        deviceLocked = false;
+        hideDeviceConflict();
       }
-      console.log("[PRESENCE] CONFLICT DETECTED - showing overlay");
-      deviceLocked = true;
-      showDeviceConflict(currentUser);
-    } else if (conflictingDevices.length === 0 && deviceLocked) {
-      // ✅ AUTO-RESOLVE: No conflicts, clear lock
-      console.log("[PRESENCE] AUTO-RESOLVED - no conflicting devices");
-      deviceLocked = false;
-      hideDeviceConflict();
     }
     
-    // Update pill icons/dots on every presence sync
     updateUserDuoPills();
   }
 
   async function stopLivePresence() {
     if (presenceChannel && sbClient) {
+      console.log("[PRESENCE] 🛑 Stopping presence...");
       try {
-        // Await untrack to ensure server sees us leave
         await presenceChannel.untrack();
-        console.log("[PRESENCE] Untracked successfully");
-        // ✅ Wait for untrack to propagate to other clients
-        await new Promise(r => setTimeout(r, 500));
+        console.log("[PRESENCE] 🛑 Untracked successfully");
       } catch (e) {
-        console.log("[PRESENCE] Untrack error:", e);
+        console.log("[PRESENCE] 🛑 Untrack error:", e);
       }
       try {
         await sbClient.removeChannel(presenceChannel);
@@ -2010,31 +2014,29 @@
   }
 
   window.forceDeviceTakeover = async function() {
-    console.log("[PRESENCE] TAKEOVER - starting");
+    console.log("[PRESENCE] 🔄 TAKEOVER starting");
     
     // ✅ Set grace period FIRST
-    takeoverGraceUntil = Date.now() + 5000;
+    takeoverGraceUntil = Date.now() + 6000;
     deviceLocked = false;
     hideDeviceConflict();
     
-    // ✅ Stop old presence and wait for it to propagate
+    // Re-track WebSocket presence
     try { await stopLivePresence(); } catch(e) {}
-    
-    // ✅ Re-initialize presence
     initLivePresence();
     
-    // ✅ Push to database
+    // Push to database
     await pushRemoteState();
     
-    console.log("[PRESENCE] TAKEOVER - complete");
+    console.log("[PRESENCE] 🔄 TAKEOVER complete");
     showToast("You are now the active device");
   };
 
   window.switchToOtherUser = async function(otherUser) {
-    console.log("[PRESENCE] SWITCH USER - to:", otherUser);
+    console.log("[PRESENCE] 🔀 SWITCH starting to:", otherUser);
     
     // ✅ Set grace period
-    loginGraceUntil = Date.now() + 5000;
+    loginGraceUntil = Date.now() + 6000;
     deviceLocked = false;
     hideDeviceConflict();
     
@@ -2048,11 +2050,11 @@
     // Start WebSocket presence for new user
     initLivePresence();
     
-    // ✅ Push device claim for new user immediately
+    // Sync state
     await pushRemoteState();
     await pullRemoteState({ silent: false });
     
-    console.log("[PRESENCE] SWITCH USER - complete");
+    console.log("[PRESENCE] 🔀 SWITCH complete to:", otherUser);
     showToast(`Switched to ${otherUser}`);
   };
 
@@ -2376,10 +2378,10 @@
   }
 
   async function setUserAndStart(name) {
-    console.log("[PRESENCE] LOGIN - starting for:", name);
+    console.log("[PRESENCE] 🔑 LOGIN starting for:", name);
     
-    // ✅ Set login grace period FIRST - gives 5 seconds for stale presence to clear
-    loginGraceUntil = Date.now() + 5000;
+    // ✅ Set login grace period FIRST (6 seconds to handle slow networks)
+    loginGraceUntil = Date.now() + 6000;
     
     // Ensure prior presence channel is cleanly removed before switching keys
     try { await stopLivePresence(); } catch {}
@@ -2392,18 +2394,16 @@
 
     setSyncStatus("pulling");
     
-    // ✅ Sync state
+    // Sync state
     showSyncingIndicator();
     await pullRemoteState({ silent: false });
-
-    // ✅ Claim this device as active
     await pushRemoteState();
     hideSyncingIndicator();
 
-    // ✅ Start presence (WebSocket will be in grace period)
+    // ✅ Start presence (grace period protects against false conflicts)
     startPresence();
     
-    console.log("[PRESENCE] LOGIN - complete for:", name);
+    console.log("[PRESENCE] 🔑 LOGIN complete for:", name);
     showToast(`USER SET: ${String(name).toUpperCase()}`);
   }
 
@@ -2442,14 +2442,17 @@
     showToast("LOGGED OFF");
   }
 
-  // ✅ Send offline signal on tab close / navigation away
-  // Uses sendBeacon for database AND untrack for WebSocket
+  // Γ£à Send offline signal on tab close / navigation away
+  // Uses sendBeacon for reliability (fires even during unload)
+  // ✅ Send offline signal on tab close/navigation
   function sendOfflineBeacon() {
-    // ✅ CRITICAL: Untrack from WebSocket presence FIRST
+    console.log("[PRESENCE] 📤 Sending offline beacon...");
+    
+    // ✅ CRITICAL: Untrack from WebSocket FIRST
     if (presenceChannel) {
       try {
         presenceChannel.untrack();
-        console.log("[PRESENCE] Untracked on page close");
+        console.log("[PRESENCE] 📤 Untracked on page close");
       } catch(e) {}
     }
     
@@ -2458,7 +2461,7 @@
     
     const user = currentUser.toLowerCase();
     
-    // Build minimal offline payload for database backup
+    // Build offline payload for database
     const offlineData = {
       room: ROOM_CODE,
       payload: {
@@ -2472,7 +2475,7 @@
       delete offlineData.payload.activeDevices[user];
     }
     
-    // sendBeacon is more reliable than fetch during unload
+    // sendBeacon is reliable during unload
     if (navigator.sendBeacon) {
       navigator.sendBeacon(
         `/.netlify/functions/room`,
