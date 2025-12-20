@@ -2733,66 +2733,88 @@ const DAILY_EMOTICONS = [
   let pendingAttachmentType = null;
   let isUploading = false; // Guard against sending before upload completes
 
-  // ---------- Wire up events ----------
-  $("btnOpen").addEventListener("click", openGift);
-  $("btnHome").addEventListener("click", goHome);
-  $("userPill").addEventListener("click", openWhoModal);
-  $("closeWhoModal").addEventListener("click", closeWhoModal);
+  // ---------- Wire up events (ALL WITH NULL CHECKS) ----------
+  const btnOpenEl = $("btnOpen");
+  const btnHomeEl = $("btnHome");
+  
+  if (btnOpenEl) btnOpenEl.addEventListener("click", openGift);
+  if (btnHomeEl) btnHomeEl.addEventListener("click", goHome);
 
-  $("btnWhoYasir").addEventListener("click", async () => {
-    await setUserAndStart("Yasir");
-  });
+  const btnWhoYasirEl = $("btnWhoYasir");
+  if (btnWhoYasirEl) {
+    btnWhoYasirEl.addEventListener("click", async () => {
+      await setUserAndStart("Yasir");
+    });
+  }
 
-  $("btnWhoKylee").addEventListener("click", async () => {
-    await setUserAndStart("Kylee");
-  });
+  const btnWhoKyleeEl = $("btnWhoKylee");
+  if (btnWhoKyleeEl) {
+    btnWhoKyleeEl.addEventListener("click", async () => {
+      await setUserAndStart("Kylee");
+    });
+  }
 
-  $("btnLogOff").addEventListener("click", async () => {
-    await logOffUser();
-  });
+  const btnLogOffEl = $("btnLogOff");
+  if (btnLogOffEl) {
+    btnLogOffEl.addEventListener("click", async () => {
+      await logOffUser();
+    });
+  }
 
-  // [OK] System message modal
-  $("btnEditSystemMessage").addEventListener("click", () => {
-    const modal = $("systemMessageModal");
-    const input = $("systemMessageInput");
-    if (input) input.value = loadSystemMessage();
-    if (modal) {
-      modal.classList.add("active");
-      modal.setAttribute("aria-hidden", "false");
-      updateCharCounter();
-    }
-  });
+  // [OK] System message modal - with null checks
+  const btnEditSysMsgEl = $("btnEditSystemMessage");
+  if (btnEditSysMsgEl) {
+    btnEditSysMsgEl.addEventListener("click", () => {
+      const modal = $("systemMessageModal");
+      const input = $("systemMessageInput");
+      if (input) input.value = loadSystemMessage();
+      if (modal) {
+        modal.classList.add("active");
+        modal.setAttribute("aria-hidden", "false");
+        updateCharCounter();
+      }
+    });
+  }
 
-  $("closeSystemMessageModal").addEventListener("click", () => {
-    const modal = $("systemMessageModal");
-    if (modal) {
-      modal.classList.remove("active");
-      modal.setAttribute("aria-hidden", "true");
-    }
-  });
+  const closeSysMsgEl = $("closeSystemMessageModal");
+  if (closeSysMsgEl) {
+    closeSysMsgEl.addEventListener("click", () => {
+      const modal = $("systemMessageModal");
+      if (modal) {
+        modal.classList.remove("active");
+        modal.setAttribute("aria-hidden", "true");
+      }
+    });
+  }
 
-  $("btnSystemMessageCancel").addEventListener("click", () => {
-    const modal = $("systemMessageModal");
-    if (modal) {
-      modal.classList.remove("active");
-      modal.setAttribute("aria-hidden", "true");
-    }
-  });
+  const btnSysMsgCancelEl = $("btnSystemMessageCancel");
+  if (btnSysMsgCancelEl) {
+    btnSysMsgCancelEl.addEventListener("click", () => {
+      const modal = $("systemMessageModal");
+      if (modal) {
+        modal.classList.remove("active");
+        modal.setAttribute("aria-hidden", "true");
+      }
+    });
+  }
 
-  $("btnSystemMessageSave").addEventListener("click", () => {
-    const input = $("systemMessageInput");
-    const value = (input?.value || "").trim();
-    if (value) {
-      saveSystemMessage(value);
-      renderSystemMessage(value);
-      showToast("System message updated!");
-    }
-    const modal = $("systemMessageModal");
-    if (modal) {
-      modal.classList.remove("active");
-      modal.setAttribute("aria-hidden", "true");
-    }
-  });
+  const btnSysMsgSaveEl = $("btnSystemMessageSave");
+  if (btnSysMsgSaveEl) {
+    btnSysMsgSaveEl.addEventListener("click", () => {
+      const input = $("systemMessageInput");
+      const value = (input?.value || "").trim();
+      if (value) {
+        saveSystemMessage(value);
+        renderSystemMessage(value);
+        showToast("System message updated!");
+      }
+      const modal = $("systemMessageModal");
+      if (modal) {
+        modal.classList.remove("active");
+        modal.setAttribute("aria-hidden", "true");
+      }
+    });
+  }
 
   // Character counter for system message
   function updateCharCounter() {
@@ -2808,66 +2830,83 @@ const DAILY_EMOTICONS = [
     sysInput.addEventListener("input", updateCharCounter);
   }
 
-  // [OK] Add mission form
-  $("btnAddMission").addEventListener("click", () => {
-    const title = $("newTitle").value.trim();
-    if (!title) return alert("Enter a title");
+  // [OK] Add mission form - with null checks (btnAdd, not btnAddMission)
+  const btnAddEl = $("btnAdd");
+  if (btnAddEl) {
+    btnAddEl.addEventListener("click", () => {
+      const titleEl = $("newTitle");
+      const descEl = $("newDesc");
+      const tagEl = $("newTag");
+      const customTagEl = $("customTagInput");
+      const customFieldEl = $("customTagField");
+      const dueDateEl = $("newDueDate");
+      
+      const title = titleEl?.value?.trim() || "";
+      if (!title) return alert("Enter a title");
 
-    let tag = $("newTag").value;
-    if (tag === "custom") {
-      tag = $("customTagInput").value.trim() || "idea";
-      const tags = loadCustomTags();
-      if (!tags.includes(tag)) {
-        tags.push(tag);
-        saveCustomTags(tags);
-        ensureCustomTagsInSelect();
+      let tag = tagEl?.value || "idea";
+      if (tag === "custom") {
+        tag = customTagEl?.value?.trim() || "idea";
+        const tags = loadCustomTags();
+        if (!tags.includes(tag)) {
+          tags.push(tag);
+          saveCustomTags(tags);
+          ensureCustomTagsInSelect();
+        }
       }
-    }
 
-    const dueDate = $("newDueDate")?.value || "";
+      const dueDate = dueDateEl?.value || "";
 
-    const active = loadActive();
-    active.push({
-      title,
-      desc: $("newDesc").value.trim(),
-      tag,
-      dueDate,
-      done: false
+      const active = loadActive();
+      active.push({
+        title,
+        desc: descEl?.value?.trim() || "",
+        tag,
+        dueDate,
+        done: false
+      });
+      saveActive(active);
+      renderActive();
+
+      if (titleEl) titleEl.value = "";
+      if (descEl) descEl.value = "";
+      if (tagEl) tagEl.value = "date";
+      if (customTagEl) customTagEl.value = "";
+      if (customFieldEl) customFieldEl.classList.add("hidden");
+      if (dueDateEl) dueDateEl.value = "";
     });
-    saveActive(active);
-    renderActive();
+  }
 
-    $("newTitle").value = "";
-    $("newDesc").value = "";
-    $("newTag").value = "date";
-    $("customTagInput").value = "";
-    $("customTagField").classList.add("hidden");
-    const dueDateInput = $("newDueDate");
-    if (dueDateInput) dueDateInput.value = "";
-  });
-
-  $("newTag").addEventListener("change", (e) => {
-    if (e.target.value === "custom") $("customTagField").classList.remove("hidden");
-    else $("customTagField").classList.add("hidden");
-  });
+  const newTagEl = $("newTag");
+  if (newTagEl) {
+    newTagEl.addEventListener("change", (e) => {
+      const customField = $("customTagField");
+      if (e.target.value === "custom" && customField) customField.classList.remove("hidden");
+      else if (customField) customField.classList.add("hidden");
+    });
+  }
 
   document.querySelectorAll(".mission-tab").forEach(tab => {
     tab.addEventListener("click", () => {
       document.querySelectorAll(".mission-tab").forEach(t => t.classList.remove("active"));
       tab.classList.add("active");
 
+      const activeTabEl = $("activeTab");
+      const completedTabEl = $("completedTab");
+      
       if (tab.dataset.tab === "active") {
-        $("activeTab").classList.remove("hidden");
-        $("completedTab").classList.add("hidden");
+        if (activeTabEl) activeTabEl.classList.remove("hidden");
+        if (completedTabEl) completedTabEl.classList.add("hidden");
       } else {
-        $("activeTab").classList.add("hidden");
-        $("completedTab").classList.remove("hidden");
+        if (activeTabEl) activeTabEl.classList.add("hidden");
+        if (completedTabEl) completedTabEl.classList.remove("hidden");
       }
     });
   });
 
-  // [FIX] Saved missions modal with DELETE functionality
-  $("btnAddSaved").addEventListener("click", () => {
+  // [FIX] Saved missions modal with DELETE functionality - with null check
+  const btnAddSavedEl = $("btnAddSaved");
+  if (btnAddSavedEl) btnAddSavedEl.addEventListener("click", () => {
     const saved = loadSaved();
     const container = $("savedMissionsList");
     container.innerHTML = "";
@@ -2942,29 +2981,38 @@ const DAILY_EMOTICONS = [
       });
     }
 
-    $("savedMissionsModal").classList.add("active");
+    const savedModalEl = $("savedMissionsModal");
+    if (savedModalEl) savedModalEl.classList.add("active");
   });
 
-  $("btnAddSelectedMissions").addEventListener("click", () => {
-    if (selectedSavedMissions.length === 0) return alert("Please select at least one mission");
+  const btnAddSelectedEl = $("btnAddSelectedMissions");
+  if (btnAddSelectedEl) {
+    btnAddSelectedEl.addEventListener("click", () => {
+      if (selectedSavedMissions.length === 0) return alert("Please select at least one mission");
 
-    const saved = loadSaved();
-    const active = loadActive();
+      const saved = loadSaved();
+      const active = loadActive();
 
-    selectedSavedMissions.forEach(idx => {
-      const mission = saved[idx];
-      active.push({ ...mission, done: false });
+      selectedSavedMissions.forEach(idx => {
+        const mission = saved[idx];
+        active.push({ ...mission, done: false });
+      });
+
+      saveActive(active);
+      renderActive();
+      const savedModalEl2 = $("savedMissionsModal");
+      if (savedModalEl2) savedModalEl2.classList.remove("active");
+      selectedSavedMissions = [];
     });
+  }
 
-    saveActive(active);
-    renderActive();
-    $("savedMissionsModal").classList.remove("active");
-    selectedSavedMissions = [];
-  });
-
-  $("closeSavedModal").addEventListener("click", () => {
-    $("savedMissionsModal").classList.remove("active");
-  });
+  const closeSavedModalEl = $("closeSavedModal");
+  if (closeSavedModalEl) {
+    closeSavedModalEl.addEventListener("click", () => {
+      const savedModalEl3 = $("savedMissionsModal");
+      if (savedModalEl3) savedModalEl3.classList.remove("active");
+    });
+  }
 
   // [OK] [FEATURE B] Handle attachment file selection with Supabase Storage
   const attachInput = $("attachmentInput");
@@ -3020,12 +3068,15 @@ const DAILY_EMOTICONS = [
         
         if (preview) {
           preview.innerHTML = `<span>📎 ${escapeHtml(file.name)}</span><button type="button" class="btn" id="clearAttachment">✖</button>`;
-          $("clearAttachment").addEventListener("click", () => {
-            pendingAttachment = null;
-            pendingAttachmentType = null;
-            attachInput.value = "";
-            preview.classList.add("hidden");
-          });
+          const clearAttachEl = $("clearAttachment");
+          if (clearAttachEl) {
+            clearAttachEl.addEventListener("click", () => {
+              pendingAttachment = null;
+              pendingAttachmentType = null;
+              attachInput.value = "";
+              preview.classList.add("hidden");
+            });
+          }
         }
         showToast("Attachment ready!");
       } catch (err) {
@@ -3041,105 +3092,123 @@ const DAILY_EMOTICONS = [
     });
   }
 
-  $("btnSaveNote").addEventListener("click", () => {
-    if (!hasUser()) { showToast("Pick USER first"); return; }
-    
-    // [OK] Prevent sending while upload is in progress
-    if (isUploading) {
-      showToast("Wait for attachment to finish uploading...");
-      return;
-    }
+  const btnSaveNoteEl = $("btnSaveNote");
+  if (btnSaveNoteEl) {
+    btnSaveNoteEl.addEventListener("click", () => {
+      if (!hasUser()) { showToast("Pick USER first"); return; }
+      
+      // [OK] Prevent sending while upload is in progress
+      if (isUploading) {
+        showToast("Wait for attachment to finish uploading...");
+        return;
+      }
 
-    const content = normalizeNewlines($("customNote").value).trim();
-    if (!content) {
-      showToast("Can't send a blank letter");
-      return;
-    }
+      const customNoteEl = $("customNote");
+      const content = normalizeNewlines(customNoteEl?.value || "").trim();
+      if (!content) {
+        showToast("Can't send a blank letter");
+        return;
+      }
 
-    const from = loadUser().trim();
-    if (!from) { showToast("Pick USER first"); return; }
+      const from = loadUser().trim();
+      if (!from) { showToast("Pick USER first"); return; }
 
-    const timestamp = formatDT(new Date());
-    const messages = loadMessages();
-    
-    // [OK] Capture attachment BEFORE clearing (important!)
-    const attachmentUrl = pendingAttachment;
-    const attachmentType = pendingAttachmentType;
-    
-    const newMsg = { from, timestamp, content };
-    if (attachmentUrl) {
-      newMsg.attachment = attachmentUrl;
-      newMsg.attachmentType = attachmentType;
-      console.log("Sending message with attachment:", attachmentUrl);
-    }
-    messages.push(newMsg);
+      const timestamp = formatDT(new Date());
+      const messages = loadMessages();
+      
+      // [OK] Capture attachment BEFORE clearing (important!)
+      const attachmentUrl = pendingAttachment;
+      const attachmentType = pendingAttachmentType;
+      
+      const newMsg = { from, timestamp, content };
+      if (attachmentUrl) {
+        newMsg.attachment = attachmentUrl;
+        newMsg.attachmentType = attachmentType;
+        console.log("Sending message with attachment:", attachmentUrl);
+      }
+      messages.push(newMsg);
 
-    // [OK] sanitize immediately (preserves attachment fields)
-    const cleaned = sanitizeMessages(messages);
-    localStorage.setItem(KEY_MESSAGES, JSON.stringify(cleaned));
+      // [OK] sanitize immediately (preserves attachment fields)
+      const cleaned = sanitizeMessages(messages);
+      localStorage.setItem(KEY_MESSAGES, JSON.stringify(cleaned));
 
-    $("customNote").value = "";
-    
-    // [OK] Clear attachment AFTER capturing
-    pendingAttachment = null;
-    pendingAttachmentType = null;
-    const attachInputEl = $("attachmentInput");
-    if (attachInputEl) attachInputEl.value = "";
-    const preview = $("attachmentPreview");
-    if (preview) preview.classList.add("hidden");
-    
-    renderMessages({ autoScroll: true });
-    updateNotifications();
-    showToast("Letter sent" + (attachmentUrl ? " with attachment" : ""));
-    schedulePush();
-  });
+      if (customNoteEl) customNoteEl.value = "";
+      
+      // [OK] Clear attachment AFTER capturing
+      pendingAttachment = null;
+      pendingAttachmentType = null;
+      const attachInputEl = $("attachmentInput");
+      if (attachInputEl) attachInputEl.value = "";
+      const preview = $("attachmentPreview");
+      if (preview) preview.classList.add("hidden");
+      
+      renderMessages({ autoScroll: true });
+      updateNotifications();
+      showToast("Letter sent" + (attachmentUrl ? " with attachment" : ""));
+      schedulePush();
+    });
+  }
 
-  // [OK] Envelope button opens letter viewer
-  $("envelopeBtn").addEventListener("click", () => {
-    if (!hasUser()) { showToast("Pick USER first"); return; }
-    openLetterViewer();
-  });
+  // [OK] Envelope button opens letter viewer - with null check
+  const envelopeBtnEl = $("envelopeBtn");
+  if (envelopeBtnEl) {
+    envelopeBtnEl.addEventListener("click", () => {
+      if (!hasUser()) { showToast("Pick USER first"); return; }
+      openLetterViewer();
+    });
+  }
 
-  // [OK] DUO pill click opens letter viewer
-  $("duoPill").addEventListener("click", () => {
-    if (!hasUser()) { showToast("Pick USER first"); return; }
-    openLetterViewer();
-  });
+  // [OK] DUO pill click opens letter viewer - with null check
+  const duoPillEl = $("duoPill");
+  if (duoPillEl) {
+    duoPillEl.addEventListener("click", () => {
+      if (!hasUser()) { showToast("Pick USER first"); return; }
+      openLetterViewer();
+    });
+  }
 
-  $("notificationBell").addEventListener("click", () => {
-    const dropdown = $("notificationDropdown");
-    const isOpening = !dropdown.classList.contains("active");
-    dropdown.classList.toggle("active");
-    
-    // [FIX] Mark notifications as read when opening dropdown
-    if (isOpening) {
-      setTimeout(() => {
-        updateNotifications({ markAsRead: true });
-      }, 500); // Short delay so user sees the unread state briefly
-    }
-  });
+  const notifBellEl = $("notificationBell");
+  if (notifBellEl) {
+    notifBellEl.addEventListener("click", () => {
+      const dropdown = $("notificationDropdown");
+      if (!dropdown) return;
+      const isOpening = !dropdown.classList.contains("active");
+      dropdown.classList.toggle("active");
+      
+      // [FIX] Mark notifications as read when opening dropdown
+      if (isOpening) {
+        setTimeout(() => {
+          updateNotifications({ markAsRead: true });
+        }, 500);
+      }
+    });
+  }
 
-  $("btnNotifClearAll").addEventListener("click", (e) => {
+  const btnNotifClearEl = $("btnNotifClearAll");
+  if (btnNotifClearEl) btnNotifClearEl.addEventListener("click", (e) => {
     e.stopPropagation();
     clearAllNotifications();
   });
 
-  $("closeLetterModal").addEventListener("click", () => {
-    const modal = $("letterModal");
-    const env = document.querySelector(".letter-envelope");
-    const paper = document.querySelector(".letter-paper");
-    
-    modal.classList.remove("active");
-    if (env) env.classList.remove("open");
-    if (paper) paper.classList.remove("open");
-    
-    // [OK] Restore body scroll when modal closes
-    document.body.style.overflow = '';
-    document.body.style.position = '';
-    document.body.style.width = '';
-    
-    letterAnimationInProgress = false;
-  });
+  const closeLetterModalEl = $("closeLetterModal");
+  if (closeLetterModalEl) {
+    closeLetterModalEl.addEventListener("click", () => {
+      const modal = $("letterModal");
+      const env = document.querySelector(".letter-envelope");
+      const paper = document.querySelector(".letter-paper");
+      
+      if (modal) modal.classList.remove("active");
+      if (env) env.classList.remove("open");
+      if (paper) paper.classList.remove("open");
+      
+      // [OK] Restore body scroll when modal closes
+      document.body.style.overflow = '';
+      document.body.style.position = '';
+      document.body.style.width = '';
+      
+      letterAnimationInProgress = false;
+    });
+  }
 
   // [OK] Letter navigation buttons
   const prevBtn = $("letterPrev");
@@ -3169,13 +3238,16 @@ const DAILY_EMOTICONS = [
     }, { passive: true });
   }
 
-  // [OK] Close attachment modal
-  $("closeAttachmentModal").addEventListener("click", () => {
-    const modal = $("attachmentModal");
-    const content = $("attachmentModalContent");
-    if (modal) modal.classList.remove("active");
-    if (content) content.innerHTML = "";
-  });
+  // [OK] Close attachment modal - with null check
+  const closeAttachModalEl = $("closeAttachmentModal");
+  if (closeAttachModalEl) {
+    closeAttachModalEl.addEventListener("click", () => {
+      const modal = $("attachmentModal");
+      const content = $("attachmentModalContent");
+      if (modal) modal.classList.remove("active");
+      if (content) content.innerHTML = "";
+    });
+  }
 
   // [OK] Photo upload handling
   const photoInput = $("photoInput");
@@ -3421,11 +3493,13 @@ const DAILY_EMOTICONS = [
     });
   }
 
-  $("btnDownloadText").addEventListener("click", () => {
-    const active = loadActive();
-    const completed = loadCompleted().filter(c => !c.isExample);
+  const btnDownloadEl = $("btnDownloadText");
+  if (btnDownloadEl) {
+    btnDownloadEl.addEventListener("click", () => {
+      const active = loadActive();
+      const completed = loadCompleted().filter(c => !c.isExample);
 
-    const text = `kywee + yessir bucket list - 2026
+      const text = `kywee + yessir bucket list - 2026
 ====================
 
 SYSTEM MESSAGE:
@@ -3438,32 +3512,40 @@ COMPLETED MISSIONS:
 ${completed.map(i => `[X] ${i.title}  ${i.desc} (#${i.tag})`).join("\n")}
 `;
 
-    const blob = new Blob([text], { type: "text/plain" });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement("a");
-    a.href = url;
-    a.download = "kywee-yessir-bucket-list-2026.txt";
-    a.click();
-    URL.revokeObjectURL(url);
-  });
+      const blob = new Blob([text], { type: "text/plain" });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = "kywee-yessir-bucket-list-2026.txt";
+      a.click();
+      URL.revokeObjectURL(url);
+    });
+  }
 
-  $("themeBtn").addEventListener("click", () => {
-    $("themeDropdown").classList.toggle("active");
-  });
+  const themeBtnEl = $("themeBtn");
+  if (themeBtnEl) {
+    themeBtnEl.addEventListener("click", () => {
+      const dropdown = $("themeDropdown");
+      if (dropdown) dropdown.classList.toggle("active");
+    });
+  }
 
   document.querySelectorAll(".theme-option").forEach(option => {
     option.addEventListener("click", () => {
       const theme = option.dataset.theme;
       saveTheme(theme);
       applyTheme(theme);
-      $("themeDropdown").classList.remove("active");
+      const dropdown = $("themeDropdown");
+      if (dropdown) dropdown.classList.remove("active");
     });
   });
 
   document.addEventListener("click", (e) => {
-    if (!e.target.closest(".theme-switcher")) $("themeDropdown").classList.remove("active");
-    if (!e.target.closest("#notificationBell") && !e.target.closest("#notificationDropdown")) {
-      $("notificationDropdown").classList.remove("active");
+    const themeDropdown = $("themeDropdown");
+    const notifDropdown = $("notificationDropdown");
+    if (!e.target.closest(".theme-switcher") && themeDropdown) themeDropdown.classList.remove("active");
+    if (!e.target.closest("#notificationBell") && !e.target.closest("#notificationDropdown") && notifDropdown) {
+      notifDropdown.classList.remove("active");
     }
   });
 
