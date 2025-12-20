@@ -3021,3 +3021,138 @@ input[type="date"]::-webkit-calendar-picker-indicator {
 #messageLog::-webkit-scrollbar-thumb:hover {
   background: var(--accent-dim);
 }
+
+/* ===== USER ACTIVE BADGE (v1.4.2) ===== */
+.user-active-elsewhere {
+  opacity: 0.5;
+  cursor: not-allowed !important;
+  position: relative;
+}
+
+.user-active-elsewhere:hover {
+  transform: none !important;
+}
+
+.active-badge {
+  position: absolute;
+  top: -8px;
+  right: -8px;
+  background: #ff3b3b;
+  color: white;
+  font-size: 9px;
+  padding: 2px 6px;
+  border-radius: 8px;
+  font-weight: bold;
+}
+
+/* ===== CLIP SOURCE TAGS (v1.4.2) ===== */
+.clip-source-tag {
+  position: absolute;
+  top: 5px;
+  left: 5px;
+  font-size: 9px;
+  padding: 2px 6px;
+  border-radius: 4px;
+  font-weight: bold;
+  text-transform: uppercase;
+}
+
+.medal-tag {
+  background: #ff6b00;
+  color: white;
+}
+
+.upload-tag {
+  background: var(--accent);
+  color: white;
+}
+
+/* ===== CLIP PREVIEW POPUP (v1.4.2) ===== */
+.clip-preview-popup {
+  position: fixed;
+  z-index: 99999;
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 8px;
+  box-shadow: 0 10px 40px rgba(0,0,0,0.5);
+  pointer-events: none;
+}
+
+.clip-preview-popup video {
+  display: block;
+  border-radius: 8px;
+}
+
+.clip-preview-title {
+  margin-top: 8px;
+  font-size: 11px;
+  color: var(--text);
+  text-align: center;
+  max-width: 280px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* ===== CALENDAR POLISH (v1.4.2) ===== */
+.calendar__header {
+  padding: 12px 15px;
+  margin-bottom: 10px;
+}
+
+.calendar__selectors {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  justify-content: center;
+}
+
+.calendar__select {
+  background: var(--bg);
+  border: 1px solid var(--border);
+  color: var(--text);
+  padding: 8px 12px;
+  border-radius: 8px;
+  font-family: 'Roboto Mono', monospace;
+  font-size: 13px;
+  cursor: pointer;
+  min-width: 80px;
+}
+
+.calendar__select:focus {
+  outline: none;
+  border-color: var(--accent);
+  box-shadow: 0 0 0 2px rgba(255,107,157,0.2);
+}
+
+.calendar__nav {
+  padding: 10px 14px;
+}
+
+.calendar__body {
+  padding: 0 15px 15px;
+}
+
+.calendar__days {
+  margin-bottom: 8px;
+}
+
+.calendar__days > div {
+  font-size: 11px;
+  padding: 8px 0;
+}
+
+.calendar__dates {
+  gap: 4px;
+}
+
+.calendar__date {
+  padding: 10px 8px;
+  min-height: 42px;
+  font-size: 13px;
+}
+
+.calendar__date--today {
+  font-weight: bold;
+}

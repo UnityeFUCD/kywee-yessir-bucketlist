@@ -16,9 +16,10 @@
     { version: "1.2.0", date: "2024-12-17", note: "New: Mini calendar, date picker, user colors, and stacking toasts" },
     { version: "1.3.0", date: "2024-12-19", note: "Fixed: Instant device conflict detection (~3s auto-resolve)" },
     { version: "1.4.0", date: "2024-12-20", note: "New: Confetti on completion, delete saved missions" },
-    { version: "1.4.1", date: "2024-12-20", note: "Fixed: User switching, undo confirmations, calendar dropdowns, game clips upload" }
+    { version: "1.4.1", date: "2024-12-20", note: "Fixed: User switching, undo confirmations, calendar dropdowns, game clips upload" },
+    { version: "1.4.2", date: "2024-12-20", note: "Fixed: Gallery dropdowns, preventive login, global notifications, clip hover preview" }
   ];
-  const CURRENT_VERSION = "1.4.1";
+  const CURRENT_VERSION = "1.4.2";
 
   // [OK] UPCOMING EVENTS with type for distinct styling
   const UPCOMING_EVENTS = [
@@ -77,10 +78,12 @@
     if (!u) return [];
     try { return JSON.parse(localStorage.getItem(`${KEY_READ_SYSTEM_NOTIFS}_${u.toLowerCase()}`)) || []; } catch { return []; }
   }
-  function saveReadSystemNotifs(arr) {
+  function saveReadSystemNotifs(arr, skipSync = false) {
     const u = loadUser();
     if (!u) return;
     localStorage.setItem(`${KEY_READ_SYSTEM_NOTIFS}_${u.toLowerCase()}`, JSON.stringify(arr));
+    // [FIX] Sync notification read state globally
+    if (!skipSync) schedulePush();
   }
   function markSystemNotifRead(notifId) {
     const read = loadReadSystemNotifs();
@@ -539,7 +542,7 @@ const DAILY_EMOTICONS = [
       bundle.dataset.mission = missionKey;
       bundle.innerHTML = `
         <div class="bundle-header">
-          <div class="bundle-header-left" onclick="toggleBundle(this.parentElement)">
+          <div class="bundle-header-left">
             <span class="bundle-mission"><i class="fa-solid fa-${isUnlinked ? 'images' : 'link'}"></i> ${escapeHtml(displayName)}</span>
             <span class="bundle-count">${isUnlinked ? photoCount : photoCount + '/5'} photos</span>
           </div>
@@ -547,13 +550,33 @@ const DAILY_EMOTICONS = [
             ${canAddMore ? `<button class="bundle-add-btn" title="Add more photos${isUnlinked ? '' : ' to this mission'}"><i class="fas fa-plus"></i></button>` : ''}
             ${isUnlinked ? `<button class="bundle-link-btn" title="Link these to a mission"><i class="fas fa-link"></i></button>` : ''}
             <button class="bundle-delete-btn" title="Delete all photos"><i class="fas fa-trash"></i></button>
-            <span class="bundle-expand" onclick="toggleBundle(this.closest('.bundle-header'))"><i class="fas fa-chevron-${wasExpanded ? 'up' : 'down'}"></i></span>
+            <span class="bundle-expand"><i class="fas fa-chevron-${wasExpanded ? 'up' : 'down'}"></i></span>
           </div>
         </div>
         <div class="bundle-photos ${wasExpanded ? '' : 'collapsed'}">
           <div class="gallery-grid"></div>
         </div>
       `;
+      
+      // [FIX] Use event listener for bundle toggle instead of inline onclick
+      const headerLeft = bundle.querySelector(".bundle-header-left");
+      const expandBtn = bundle.querySelector(".bundle-expand");
+      
+      if (headerLeft) {
+        headerLeft.style.cursor = "pointer";
+        headerLeft.addEventListener("click", (e) => {
+          e.stopPropagation();
+          toggleBundle(bundle);
+        });
+      }
+      
+      if (expandBtn) {
+        expandBtn.style.cursor = "pointer";
+        expandBtn.addEventListener("click", (e) => {
+          e.stopPropagation();
+          toggleBundle(bundle);
+        });
+      }
       
       // Add more photos to this mission or unlinked
       const addBtn = bundle.querySelector(".bundle-add-btn");
@@ -738,11 +761,21 @@ const DAILY_EMOTICONS = [
     });
   }
 
-  // [OK] Toggle bundle expand/collapse
-  window.toggleBundle = function(headerOrBundleEl) {
+  // [OK] Toggle bundle expand/collapse - FIXED event handling
+  window.toggleBundle = function(headerOrBundleEl, e) {
+    // Prevent event bubbling issues
+    if (e) {
+      e.stopPropagation();
+      e.preventDefault();
+    }
+    
     const bundle = headerOrBundleEl.closest('.gallery-mission-bundle') || headerOrBundleEl;
+    if (!bundle) return;
+    
     const photosDiv = bundle.querySelector('.bundle-photos');
     const icon = bundle.querySelector('.bundle-expand i');
+    
+    if (!photosDiv) return;
     
     if (photosDiv.classList.contains('collapsed')) {
       photosDiv.classList.remove('collapsed');
@@ -824,7 +857,8 @@ const DAILY_EMOTICONS = [
     $("lightboxCounter").textContent = `${lightboxCurrentIndex + 1} / ${photos.length}`;
   }
 
-  // [FIX] Game Clips (renamed from Medal Clips) - now supports user uploads
+  // [FIX] Game Clips - supports both Medal API clips and user uploads
+  // Revert to hover preview + click opens new tab for Medal clips
   const KEY_GAME_CLIPS = "bucketlist_2026_game_clips";
   
   function loadGameClips() {
@@ -838,51 +872,162 @@ const DAILY_EMOTICONS = [
     schedulePush();
   }
   
-  function renderGameClips() {
-    const container = $("medalClips"); // Keep same container ID for compatibility
+  // [FIX] Fetch Medal clips from API (reverted behavior)
+  async function fetchMedalClips() {
+    try {
+      const res = await fetch("/.netlify/functions/medal?limit=12");
+      if (!res.ok) throw new Error("Failed to fetch");
+      const data = await res.json();
+      return data.contentObjects || [];
+    } catch (err) {
+      console.log("Medal API unavailable:", err.message);
+      return [];
+    }
+  }
+  
+  async function renderGameClips() {
+    const container = $("medalClips");
     if (!container) return;
     
-    const clips = loadGameClips();
+    container.innerHTML = '<div class="medal-empty">Loading clips...</div>';
     
-    if (clips.length === 0) {
+    // Load both Medal clips and user uploads
+    const [medalClips, userClips] = await Promise.all([
+      fetchMedalClips(),
+      Promise.resolve(loadGameClips())
+    ]);
+    
+    const allClips = [];
+    
+    // Add Medal clips with source tag
+    medalClips.forEach(clip => {
+      allClips.push({
+        ...clip,
+        source: 'medal',
+        title: clip.contentTitle || 'Medal Clip',
+        thumbnail: clip.thumbnail,
+        url: clip.contentUrl || clip.rawFileUrl
+      });
+    });
+    
+    // Add user uploads with source tag
+    userClips.forEach((clip, idx) => {
+      allClips.push({
+        ...clip,
+        source: 'upload',
+        title: clip.title || 'Uploaded Clip',
+        uploadIdx: idx
+      });
+    });
+    
+    if (allClips.length === 0) {
       container.innerHTML = '<div class="medal-empty">No clips yet. Upload your first game clip!</div>';
       return;
     }
     
     container.innerHTML = "";
-    clips.forEach((clip, idx) => {
+    
+    allClips.forEach((clip, idx) => {
       const card = document.createElement("div");
       card.className = "medal-card";
+      const isMedal = clip.source === 'medal';
+      const isUpload = clip.source === 'upload';
       
-      // Generate thumbnail from video or use placeholder
+      // Thumbnail: use Medal thumbnail or gradient for uploads
+      const thumbStyle = clip.thumbnail 
+        ? `background-image: url('${escapeHtml(clip.thumbnail)}')`
+        : `background: linear-gradient(45deg, var(--accent), var(--accent-secondary))`;
+      
       card.innerHTML = `
-        <div class="medal-thumb" style="background: linear-gradient(45deg, var(--accent), var(--accent-secondary));">
+        <div class="medal-thumb" style="${thumbStyle}">
           <div class="medal-play"><i class="fas fa-play"></i></div>
+          <span class="clip-source-tag ${isMedal ? 'medal-tag' : 'upload-tag'}">${isMedal ? 'Medal' : 'Uploaded'}</span>
         </div>
         <div class="medal-info">
-          <div class="medal-title">${escapeHtml(clip.title || 'Untitled Clip')}</div>
-          <div class="medal-game">${escapeHtml(clip.date || '')}</div>
+          <div class="medal-title">${escapeHtml(clip.title)}</div>
+          <div class="medal-game">${escapeHtml(clip.categoryName || clip.date || '')}</div>
         </div>
-        <button class="medal-delete" data-idx="${idx}" title="Delete clip"><i class="fas fa-times"></i></button>
+        ${isUpload ? `<button class="medal-delete" data-idx="${clip.uploadIdx}" title="Delete clip"><i class="fas fa-times"></i></button>` : ''}
       `;
       
-      card.querySelector(".medal-thumb").addEventListener("click", () => {
-        openGameClipModal(clip);
+      // [FIX] Hover preview popup
+      const thumb = card.querySelector(".medal-thumb");
+      let hoverTimeout;
+      let previewEl = null;
+      
+      thumb.addEventListener("mouseenter", (e) => {
+        hoverTimeout = setTimeout(() => {
+          if (clip.url) {
+            showClipPreview(clip, e.clientX, e.clientY);
+          }
+        }, 300);
       });
       
-      card.querySelector(".medal-delete").addEventListener("click", (e) => {
-        e.stopPropagation();
-        showConfirmModal("Delete this game clip?", () => {
-          const clipsNow = loadGameClips();
-          clipsNow.splice(idx, 1);
-          saveGameClips(clipsNow);
-          renderGameClips();
-          showToast("Clip deleted");
-        });
+      thumb.addEventListener("mouseleave", () => {
+        clearTimeout(hoverTimeout);
+        hideClipPreview();
       });
+      
+      // [FIX] Click opens new tab for Medal, modal for uploads
+      thumb.addEventListener("click", () => {
+        hideClipPreview();
+        if (isMedal && clip.url) {
+          // Medal clips open in new tab
+          window.open(clip.url, '_blank');
+        } else if (isUpload && clip.url) {
+          // User uploads open in modal
+          openGameClipModal(clip);
+        }
+      });
+      
+      // Delete button for uploads only
+      if (isUpload) {
+        const deleteBtn = card.querySelector(".medal-delete");
+        if (deleteBtn) {
+          deleteBtn.addEventListener("click", (e) => {
+            e.stopPropagation();
+            showConfirmModal("Delete this game clip?", () => {
+              const clipsNow = loadGameClips();
+              clipsNow.splice(clip.uploadIdx, 1);
+              saveGameClips(clipsNow);
+              renderGameClips();
+              showToast("Clip deleted");
+            });
+          });
+        }
+      }
       
       container.appendChild(card);
     });
+  }
+  
+  // [FIX] Hover preview popup for clips
+  let clipPreviewEl = null;
+  
+  function showClipPreview(clip, x, y) {
+    hideClipPreview();
+    
+    clipPreviewEl = document.createElement("div");
+    clipPreviewEl.className = "clip-preview-popup";
+    clipPreviewEl.innerHTML = `
+      <video autoplay muted loop playsinline style="width: 280px; max-height: 160px; border-radius: 8px;">
+        <source src="${escapeHtml(clip.url)}" type="video/mp4">
+      </video>
+      <div class="clip-preview-title">${escapeHtml(clip.title)}</div>
+    `;
+    
+    // Position near cursor
+    clipPreviewEl.style.left = Math.min(x + 10, window.innerWidth - 300) + 'px';
+    clipPreviewEl.style.top = Math.min(y + 10, window.innerHeight - 200) + 'px';
+    
+    document.body.appendChild(clipPreviewEl);
+  }
+  
+  function hideClipPreview() {
+    if (clipPreviewEl) {
+      clipPreviewEl.remove();
+      clipPreviewEl = null;
+    }
   }
   
   function openGameClipModal(clip) {
@@ -915,6 +1060,7 @@ const DAILY_EMOTICONS = [
     if (content) {
       content.innerHTML = ""; // Stop video
     }
+    hideClipPreview();
   }
   
   // Game clip upload handler
@@ -1192,6 +1338,8 @@ const DAILY_EMOTICONS = [
       }
     }
     
+    // [FIX] Always update who modal buttons when presence changes
+    updateWhoModalButtons();
     updateUserDuoPills();
   }
 
@@ -1571,6 +1719,80 @@ const DAILY_EMOTICONS = [
     if (!modal) return;
     modal.classList.add("active");
     modal.setAttribute("aria-hidden", "false");
+    
+    // [FIX] Check which users are active and update button states
+    updateWhoModalButtons();
+  }
+  
+  // [FIX] Check which users are currently active on other devices
+  function getActiveUsersFromPresence() {
+    const activeUsers = new Set();
+    const myDeviceId = getDeviceId();
+    
+    // Check live presence state
+    if (livePresenceState && typeof livePresenceState === 'object') {
+      for (const [key, presences] of Object.entries(livePresenceState)) {
+        for (const p of presences) {
+          // Only count users on OTHER devices as "active"
+          if (p.user && p.deviceId && p.deviceId !== myDeviceId) {
+            activeUsers.add(p.user.toLowerCase());
+          }
+        }
+      }
+    }
+    
+    return activeUsers;
+  }
+  
+  // [FIX] Update who modal buttons based on active users
+  function updateWhoModalButtons() {
+    const activeUsers = getActiveUsersFromPresence();
+    const currentUser = loadUser()?.toLowerCase();
+    
+    const btnYasir = $("btnWhoYasir");
+    const btnKylee = $("btnWhoKylee");
+    
+    // Reset both buttons first
+    [btnYasir, btnKylee].forEach(btn => {
+      if (btn) {
+        btn.disabled = false;
+        btn.classList.remove("user-active-elsewhere");
+        btn.title = "";
+      }
+    });
+    
+    // Check if Yasir is active elsewhere
+    if (btnYasir && activeUsers.has("yasir") && currentUser !== "yasir") {
+      btnYasir.disabled = true;
+      btnYasir.classList.add("user-active-elsewhere");
+      btnYasir.title = "Yasir is active on another device";
+    }
+    
+    // Check if Kylee is active elsewhere
+    if (btnKylee && activeUsers.has("kylee") && currentUser !== "kylee") {
+      btnKylee.disabled = true;
+      btnKylee.classList.add("user-active-elsewhere");
+      btnKylee.title = "Kylee is active on another device";
+    }
+    
+    // Add active indicators
+    if (btnYasir && activeUsers.has("yasir") && currentUser !== "yasir") {
+      if (!btnYasir.querySelector(".active-badge")) {
+        btnYasir.innerHTML = btnYasir.innerHTML + '<span class="active-badge">ACTIVE</span>';
+      }
+    } else if (btnYasir) {
+      const badge = btnYasir.querySelector(".active-badge");
+      if (badge) badge.remove();
+    }
+    
+    if (btnKylee && activeUsers.has("kylee") && currentUser !== "kylee") {
+      if (!btnKylee.querySelector(".active-badge")) {
+        btnKylee.innerHTML = btnKylee.innerHTML + '<span class="active-badge">ACTIVE</span>';
+      }
+    } else if (btnKylee) {
+      const badge = btnKylee.querySelector(".active-badge");
+      if (badge) badge.remove();
+    }
   }
 
   // [OK] Date utilities for mission urgency
@@ -2007,6 +2229,16 @@ const DAILY_EMOTICONS = [
     
     // [FIX] Build game clips array
     const gameClips = loadGameClips();
+    
+    // [FIX] Build read system notifications per user (for global sync)
+    const readSystemNotifs = {};
+    ["yasir", "kylee"].forEach(u => {
+      const key = `${KEY_READ_SYSTEM_NOTIFS}_${u}`;
+      try { 
+        const data = JSON.parse(localStorage.getItem(key)) || [];
+        if (data.length > 0) readSystemNotifs[u] = data;
+      } catch {}
+    });
 
     // [OK] Track active device per user
     const user = loadUser()?.toLowerCase();
@@ -2025,6 +2257,7 @@ const DAILY_EMOTICONS = [
       customTags: loadCustomTags(),
       systemMessage: loadSystemMessage(),
       readState,
+      readSystemNotifs,
       photos,
       gameClips,
       activeDevices,
@@ -2071,6 +2304,20 @@ const DAILY_EMOTICONS = [
     // [FIX] Apply game clips from server
     if (Array.isArray(state.gameClips)) {
       localStorage.setItem(KEY_GAME_CLIPS, JSON.stringify(state.gameClips));
+    }
+    
+    // [FIX] Apply read system notifications from server (global sync)
+    if (state.readSystemNotifs && typeof state.readSystemNotifs === "object") {
+      const currentUser = loadUser()?.toLowerCase();
+      if (currentUser && Array.isArray(state.readSystemNotifs[currentUser])) {
+        const serverRead = state.readSystemNotifs[currentUser];
+        const localRead = loadReadSystemNotifs();
+        // Merge: keep all unique IDs from both server and local
+        const merged = [...new Set([...localRead, ...serverRead])];
+        if (merged.length > localRead.length) {
+          saveReadSystemNotifs(merged, true); // skipSync to avoid loop
+        }
+      }
     }
 
     // [OK] sanitize messages from remote too
@@ -2697,6 +2944,15 @@ const DAILY_EMOTICONS = [
     // Prevent spam clicking
     if (loginInProgress) {
       console.log("[DEVICE] Login already in progress");
+      return;
+    }
+    
+    // [FIX] Check if user is already active on another device BEFORE logging in
+    const activeUsers = getActiveUsersFromPresence();
+    const nameLower = name.toLowerCase();
+    if (activeUsers.has(nameLower)) {
+      showToast(`${name} is already active on another device`);
+      console.log("[DEVICE] Login blocked - user active elsewhere:", name);
       return;
     }
     
