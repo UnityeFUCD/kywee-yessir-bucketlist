@@ -8,7 +8,6 @@
   const KEY_SYSTEM_MESSAGE = "bucketlist_2026_system_message";
   const KEY_LAST_VERSION_SEEN = "bucketlist_2026_last_version";
   const KEY_PHOTOS = "bucketlist_2026_photos";
-  const KEY_READ_SYSTEM_NOTIFS = "bucketlist_2026_read_system_notifs"; // [FIX] Track read system notifications
 
   // [OK] VERSION HISTORY for system update notifications
   const VERSION_HISTORY = [
@@ -19,16 +18,17 @@
   ];
   const CURRENT_VERSION = "1.3.0";
 
-  // [OK] UPCOMING EVENTS (add your special dates here!)
-  // type: "holiday" for special holidays (distinct styling), "event" for other events
+  // [OK] UPCOMING EVENTS with type for distinct styling
   const UPCOMING_EVENTS = [
     { date: "2025-01-01", title: "New Year's Day", type: "holiday", icon: "🎆" },
     { date: "2025-02-14", title: "Valentine's Day", type: "holiday", icon: "💕" },
     { date: "2025-12-25", title: "Christmas", type: "holiday", icon: "🎄" }
   ];
 
-  // [FIX] Device-based user (like YouTube) - persists across all tabs on same device
+  // [FIX] Device-based user storage (like YouTube - persists across tabs on same device)
   const KEY_CURRENT_USER = "bucketlist_2026_current_user";
+  const KEY_DEVICE_ID = "bucketlist_2026_device_id";
+  const KEY_READ_SYSTEM_NOTIFS = "bucketlist_2026_read_system_notifs";
 
   // [OK] per-user "read" tracking (local only)
   function keyLastRead(user) {
@@ -63,7 +63,6 @@
 
   // [FIX] System notification read tracking (for bell badge)
   function getSystemNotifId(notif) {
-    // Stable ID for system notifications (date-based for events)
     return `${notif.type}_${notif.title}_${notif.date || ''}`;
   }
   function loadReadSystemNotifs() {
@@ -95,6 +94,16 @@
     saveReadSystemNotifs(read);
   }
 
+  // [FIX] Device ID - persistent per device (localStorage)
+  function getDeviceId() {
+    let id = localStorage.getItem(KEY_DEVICE_ID);
+    if (!id) {
+      id = 'dev_' + Date.now() + '_' + Math.random().toString(36).substring(2, 9);
+      localStorage.setItem(KEY_DEVICE_ID, id);
+    }
+    return id;
+  }
+
   // [OK] shared room code
   const ROOM_CODE = "yasir-kylee";
 
@@ -112,75 +121,75 @@
 
   // [OK] Daily rotating ASCII art emoticons (larger braille art)
 const DAILY_EMOTICONS = [
-`⠀⠀⠀⠀⠀⠀⠀⠀⣀⣀⣀⣀⣀⣀⣀⣀⠀⠀⠀⠀⠀⠀⠀
-⠀⠀⠀⠀⣠⣴⣾⣿⣿⣿⣿⣿⣿⣿⣿⣿⣷⣦⣄⠀⠀⠀⠀
-⠀⠀⣠⣾⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣷⣄⠀⠀
-⠀⣼⣿⣿⣿⣿⣿⣿⠟⠁⠀⠀⠈⠻⣿⣿⣿⣿⣿⣿⣿⣧⠀
-⢰⣿⣿⣿⣿⣿⣿⠃⠀⣠⣤⣤⣄⠀⠘⣿⣿⣿⣿⣿⣿⣿⡆
-⣿⣿⣿⣿⣿⣿⡏⠀⠀⠿⠀⠀⠿⠀⠀⢹⣿⣿⣿⣿⣿⣿⣿
-⣿⣿⣿⣿⣿⣿⣇⠀⠀⠀⠀⠀⠀⠀⠀⣸⣿⣿⣿⣿⣿⣿⣿
-⠸⣿⣿⣿⣿⣿⣿⣆⠀⠀⢀⣀⡀⠀⣰⣿⣿⣿⣿⣿⣿⣿⠇
-⠀⠻⣿⣿⣿⣿⣿⣿⣿⣶⣤⣤⣴⣾⣿⣿⣿⣿⣿⣿⣿⠟⠀
-⠀⠀⠈⠛⢿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⡿⠛⠁⠀⠀
-⠀⠀⠀⠀⠀⠀⠉⠙⠛⠿⠿⠿⠿⠛⠛⠉⠁⠀⠀⠀⠀⠀⠀
-         💕 LOVE 💕`,
-`⠀⠀⠀⠀⠀⠀⣀⣤⣴⣶⣶⣶⣦⣤⣀⠀⠀⠀⠀⠀⠀
-⠀⠀⠀⠀⣠⣾⣿⣿⣿⣿⣿⣿⣿⣿⣿⣷⣄⠀⠀⠀⠀
-⠀⠀⠀⣼⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣧⠀⠀⠀
-⠀⠀⢰⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⡆⠀⠀
-⠀⠀⣿⣿⣿⡏⠉⠀⠀⠉⠉⠉⠀⠀⠉⢹⣿⣿⣿⠀⠀
-⠀⠀⣿⣿⣿⡇⠀⣷⠀⠀⠀⠀⠀⣾⠀⢸⣿⣿⣿⠀⠀
-⠀⠀⣿⣿⣿⣇⠀⠀⠀⣀⣀⣀⠀⠀⠀⣸⣿⣿⣿⠀⠀
-⠀⠀⢿⣿⣿⣿⣆⠀⠀⠛⠛⠀⠀⠀⣰⣿⣿⣿⡿⠀⠀
-⠀⠀⠘⣿⣿⣿⣿⣷⣤⣀⣀⣀⣤⣾⣿⣿⣿⣿⠃⠀⠀
-⠀⠀⠀⠈⠻⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⠟⠁⠀⠀⠀
-⠀⠀⠀⠀⠀⠀⠉⠛⠻⠿⠿⠿⠟⠛⠉⠀⠀⠀⠀⠀⠀
-         🥰 CUTE 🥰`,
-`⠀⠀⣀⣤⣴⣶⣶⣶⣶⣶⣶⣦⣤⣀⠀⠀
-⣠⣾⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣷⣄
-⣿⣿⣿⡿⠛⠉⠉⠉⠉⠉⠉⠛⢿⣿⣿⣿
-⣿⣿⠏⠀⣠⣶⣦⠀⣠⣶⣦⠀⠀⢻⣿⣿
-⣿⣿⠀⠀⠹⣿⡿⠀⠹⣿⡿⠀⠀⠀⣿⣿
-⣿⣿⣆⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⣰⣿⣿
-⠻⣿⣿⣿⣶⣤⣤⣤⣤⣤⣤⣶⣿⣿⣿⠟
-⠀⠈⠛⠿⣿⣿⣿⣿⣿⣿⣿⣿⠿⠛⠁⠀
-         ✨ HAPPY ✨`,
-`⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿
-⣿⣿⣿⣿⠿⠛⠛⠛⠛⠛⠛⠿⣿⣿⣿⣿
-⣿⣿⠟⠁⠀⣀⣀⠀⠀⣀⣀⠀⠈⠻⣿⣿
-⣿⡏⠀⠀⠀⣿⣿⠀⠀⣿⣿⠀⠀⠀⢹⣿
-⣿⡇⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⢸⣿
-⣿⣿⡄⠀⠀⠀⢀⣀⣀⡀⠀⠀⠀⢠⣿⣿
-⣿⣿⣿⣶⣤⣤⣤⣤⣤⣤⣤⣤⣶⣿⣿⣿
-⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿
-         🌟 SMILE 🌟`,
-`⠀⠀⠀⣠⣴⣶⣶⣶⣶⣦⣄⠀⠀⠀
-⠀⢀⣾⣿⣿⣿⣿⣿⣿⣿⣿⣷⡀⠀
-⠀⣼⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣧⠀
-⢠⣿⣿⠋⠀⠀❤️⠀⠀❤️⢹⣿⡄
-⢸⣿⣿⠀⠀⠀⠀⠀⠀⠀⠀⠀⣿⡇
-⠘⣿⣿⣧⡀⠀⠀⠀⠀⠀⢀⣼⣿⠃
-⠀⠻⣿⣿⣿⣶⣤⣤⣴⣶⣿⣿⠟⠀
-⠀⠀⠈⠛⠿⣿⣿⣿⣿⠿⠛⠁⠀⠀
-       💖 KISSES 💖`,
-`⠀⠀⠀⠀⢀⣀⣀⣀⣀⣀⡀⠀⠀⠀⠀
-⠀⠀⢀⣴⣿⣿⣿⣿⣿⣿⣿⣦⡀⠀⠀
-⠀⣴⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣦⠀
-⣼⣿⣿⣿⡟⠁⠀⠀⠈⢻⣿⣿⣿⣿⣧
-⣿⣿⣿⣿⠀⠀⣶⣶⠀⠀⣿⣿⣿⣿⣿
-⣿⣿⣿⣿⣷⣄⠀⠀⣠⣾⣿⣿⣿⣿⣿
-⢻⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⡟
-⠀⠙⠿⣿⣿⣿⣿⣿⣿⣿⣿⣿⠿⠋⠀
-       💝 SWEET 💝`,
-`⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿
-⣿⣿⡿⠛⠛⠛⠛⠛⠛⠛⠛⠛⢿⣿⣿⣿
-⣿⣿⠀⠀⣴⣶⠀⠀⣴⣶⠀⠀⠀⣿⣿⣿
-⣿⣿⠀⠀⠛⠋⠀⠀⠛⠋⠀⠀⠀⣿⣿⣿
-⣿⣿⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⣿⣿⣿
-⣿⣿⣇⠀⠀⠲⠶⠶⠖⠀⠀⠀⣸⣿⣿⣿
-⣿⣿⣿⣷⣤⣀⣀⣀⣀⣤⣤⣾⣿⣿⣿⣿
-⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿
-        🎀 PRETTY 🎀`
+`
+
+
+
+
+
+
+
+
+
+
+          LOVE `,
+`
+
+
+
+
+
+
+
+
+
+
+          CUTE `,
+`
+
+
+
+
+
+
+
+          HAPPY `,
+`
+
+
+
+
+
+
+
+          SMILE `,
+`
+
+
+
+
+
+
+
+        KISSES `,
+`
+
+
+
+
+
+
+
+        SWEET `,
+`
+
+
+
+
+
+
+
+         PRETTY `
 ];
 
   // [OK] Prevent double-trigger of letter animation
@@ -237,7 +246,7 @@ const DAILY_EMOTICONS = [
     const lastSeen = localStorage.getItem(KEY_LAST_VERSION_SEEN);
     if (lastSeen !== CURRENT_VERSION) {
       const latest = VERSION_HISTORY[VERSION_HISTORY.length - 1];
-      showToast(`[!] Update v${latest.version}: ${latest.note}`, "info");
+      showToast(` Update v${latest.version}: ${latest.note}`, "info");
       localStorage.setItem(KEY_LAST_VERSION_SEEN, CURRENT_VERSION);
     }
   }
@@ -253,9 +262,9 @@ const DAILY_EMOTICONS = [
       const diffDays = Math.round(diffMs / (1000 * 60 * 60 * 24));
       
       if (diffDays === 3) {
-        showToast(`[CAL] 3 days until ${event.title}!`, "event");
+        showToast(` 3 days until ${event.title}!`, "event");
       } else if (diffDays === 1) {
-        showToast(`[!] Tomorrow: ${event.title}!`, "event");
+        showToast(` Tomorrow: ${event.title}!`, "event");
       } else if (diffDays === 0) {
         showToast(` Today is ${event.title}!`, "event");
       }
@@ -294,7 +303,7 @@ const DAILY_EMOTICONS = [
   }
 
   // ---------- user (SESSION) ----------
-  // [FIX] User login persists across all tabs (like YouTube)
+  // [FIX] User storage - localStorage for device-wide persistence (like YouTube)
   function loadUser() { return localStorage.getItem(KEY_CURRENT_USER) || ""; }
   function hasUser() { return !!loadUser().trim(); }
   function saveUser(name) { localStorage.setItem(KEY_CURRENT_USER, name); }
@@ -413,7 +422,7 @@ const DAILY_EMOTICONS = [
       else {
         const note = document.createElement("div");
         note.className = "gallery-empty-note";
-        note.textContent = "-> Click to expand. Your memories will appear below.";
+        note.textContent = " Click to expand. Your memories will appear below.";
         container.appendChild(note);
       }
       return;
@@ -763,7 +772,7 @@ const DAILY_EMOTICONS = [
       const game = clip.categoryName || clip.gameName || "";
       
       // [OK] Use the correct URL from API - contentUrl is the shareable link
-      // Fallback chain: contentUrl -> directClipUrl -> constructed URL
+      // Fallback chain: contentUrl  directClipUrl  constructed URL
       const clipUrl = clip.contentUrl || clip.directClipUrl || `https://medal.tv/clips/${clip.contentId}`;
       
       // Debug logging to console
@@ -860,13 +869,13 @@ const DAILY_EMOTICONS = [
     if (mode === "pulling") {
       setDot(dot, "yellow", true);
       if (label) label.textContent = "PULL";
-      $("syncPill").title = "Pulling updates...";
+      $("syncPill").title = "Pulling updates";
       return;
     }
     if (mode === "saving") {
       setDot(dot, "yellow", true);
       if (label) label.textContent = "SAVE";
-      $("syncPill").title = "Saving updates...";
+      $("syncPill").title = "Saving updates";
       return;
     }
     if (mode === "on") {
@@ -886,14 +895,21 @@ const DAILY_EMOTICONS = [
     $("syncPill").title = "Sync off";
   }
 
-  // ---------- Presence (duo online) ----------
-  const LOCK_TTL_MS = 3000; // [OK] REDUCED from 20000 for faster auto-resolve
+  // ============================================
+  // [FIX] NEW DEVICE CONFLICT SYSTEM - DATABASE ONLY
+  // No WebSocket reliance - works on iOS Safari
+  // ============================================
+  
+  const DEVICE_ACTIVE_TIMEOUT = 5000; // 5 seconds - if no heartbeat, considered offline
+  const HEARTBEAT_INTERVAL = 2000;    // Send heartbeat every 2 seconds
+  
   let presenceTimer = null;
   let lastPresence = null;
-  let takeoverGraceUntil = 0;
-  let loginGraceUntil = 0; // [OK] Grace period after login
-  let loginInProgress = false; // [FIX] Prevent spam clicking login
-  let takeoverInProgress = false; // [FIX] Prevent spam clicking takeover
+  let heartbeatTimer = null;
+  let kickCheckTimer = null;
+  let deviceLocked = false;
+  let loginInProgress = false;
+  let takeoverInProgress = false;
 
   function normalizePerson(name) {
     const n = String(name || "").trim().toLowerCase();
@@ -905,27 +921,16 @@ const DAILY_EMOTICONS = [
   function isOnlineLive(nameLower) {
     try {
       if (!nameLower) return false;
-      
-      // [FIX] Presence is keyed by username now, so check directly
+      // Use live presence if available
       if (typeof presenceChannel !== 'undefined' && presenceChannel) {
         const st = presenceChannel.presenceState?.() || {};
-        // Check if user has any presence entries
-        const userPresences = st[nameLower] || [];
-        if (userPresences.length > 0) {
-          // Check if any presence is recent (within 60 seconds)
-          const now = Date.now();
-          for (const p of userPresences) {
-            const age = p.onlineAt ? (now - Date.parse(p.onlineAt)) : 0;
-            if (age < 60000) return true;
-          }
-        }
+        return Array.isArray(st[nameLower]) && st[nameLower].length > 0;
       }
-      
-      // Fallback to lastPresence timestamp (<=60s old = online)
+      // Fallback to lastPresence timestamp (<=45s old = online)
       const ts = lastPresence?.[nameLower];
       if (!ts) return false;
       const age = Date.now() - new Date(ts).getTime();
-      return Number.isFinite(age) && age <= 60000;
+      return Number.isFinite(age) && age <= 45000;
     } catch { return false; }
   }
 
@@ -1006,10 +1011,10 @@ const DAILY_EMOTICONS = [
     }
 
     try {
-      // [FIX] Key presence by USERNAME so all devices can see who's online
-      // DeviceId is stored IN the payload to detect conflicts
+      //  FIX: Use deviceId as presence key (unique per device!)
+      const myDeviceId = getDeviceId();
       presenceChannel = sbClient.channel(`presence:${ROOM_CODE}`, {
-        config: { presence: { key: user } }  // Key by username, NOT deviceId!
+        config: { presence: { key: myDeviceId } }
       });
 
       presenceChannel
@@ -1018,14 +1023,14 @@ const DAILY_EMOTICONS = [
           handleLivePresenceSync(livePresenceState);
         })
         .on('presence', { event: 'join' }, ({ key, newPresences }) => {
-          console.log("[PRESENCE] [JOIN-LEAVE] Join:", key, newPresences?.length || 0);
+          console.log("[PRESENCE]  Join:", key, newPresences?.length || 0);
           livePresenceState = presenceChannel.presenceState();
           handleLivePresenceSync(livePresenceState);
           updateUserDuoPills();
         })
         .on('presence', { event: 'leave' }, ({ key, leftPresences }) => {
-          // [OK] ALWAYS check for auto-resolve when someone leaves
-          console.log("[PRESENCE] [JOIN-LEAVE] Leave:", key, leftPresences?.length || 0);
+          //  ALWAYS check for auto-resolve when someone leaves
+          console.log("[PRESENCE]  Leave:", key, leftPresences?.length || 0);
           livePresenceState = presenceChannel.presenceState();
           handleLivePresenceSync(livePresenceState);
           updateUserDuoPills();
@@ -1037,7 +1042,7 @@ const DAILY_EMOTICONS = [
               onlineAt: new Date().toISOString(),
               user: user
             });
-            console.log("[PRESENCE] WebSocket active for:", user);
+            console.log("[OK] WebSocket presence active for:", user);
           }
         });
     } catch (err) {
@@ -1052,26 +1057,19 @@ const DAILY_EMOTICONS = [
 
     const now = Date.now();
     
-    // [FIX] Now that presence is keyed by USERNAME, get our user's presences directly
-    const userPresences = state[currentUser] || [];
-    
-    // Find conflicting devices (same user, different device)
+    //  FIX: Find ALL presences for our user across ALL keys (no time filtering!)
     let conflictingDevices = [];
-    let myOnlineAt = now; // Default to now if not found
     
-    for (const p of userPresences) {
-      if (p.deviceId === myDeviceId) {
-        myOnlineAt = p.onlineAt ? Date.parse(p.onlineAt) : now;
-      } else if (p.deviceId) {
-        // Different device, same user
-        const age = p.onlineAt ? (now - Date.parse(p.onlineAt)) : 0;
-        if (age < 60000) { // Only count recent presences
-          conflictingDevices.push({ ...p, parsedOnlineAt: p.onlineAt ? Date.parse(p.onlineAt) : 0 });
+    for (const [key, presences] of Object.entries(state)) {
+      for (const p of presences) {
+        // Same user, different device = CONFLICT
+        if (p.user === currentUser && p.deviceId && p.deviceId !== myDeviceId) {
+          conflictingDevices.push({ key, ...p });
         }
       }
     }
 
-    // [OK] Calculate grace period status ONCE
+    //  Calculate grace period status ONCE
     const inLoginGrace = now < loginGraceUntil;
     const inTakeoverGrace = now < takeoverGraceUntil;
     const inAnyGrace = inLoginGrace || inTakeoverGrace;
@@ -1079,32 +1077,30 @@ const DAILY_EMOTICONS = [
     console.log("[PRESENCE] Sync:", {
       user: currentUser,
       myDevice: myDeviceId.slice(-6),
+      allPresences: allPresences.length,
+      freshPresences: freshPresences.length,
       conflicts: conflictingDevices.length,
       deviceLocked,
-      inGrace: inAnyGrace
+      inLoginGrace,
+      inTakeoverGrace,
+      loginGraceRemaining: inLoginGrace ? (loginGraceUntil - now) + "ms" : "none",
+      takeoverGraceRemaining: inTakeoverGrace ? (takeoverGraceUntil - now) + "ms" : "none"
     });
 
-    // [FIX] CONFLICT DETECTION - only show on NEWER device (not the first one)
+    //  CONFLICT DETECTION with grace period
     if (conflictingDevices.length > 0) {
-      // Find the oldest conflicting device
-      const oldestConflictTime = Math.min(...conflictingDevices.map(c => c.parsedOnlineAt || 0));
-      const weAreNewer = myOnlineAt > oldestConflictTime;
-      
       if (inAnyGrace) {
-        console.log("[PRESENCE] In grace period - ignoring conflict");
-      } else if (weAreNewer && !deviceLocked) {
-        // WE logged in AFTER someone else - show conflict to US
-        console.log("[PRESENCE] CONFLICT - we are newer device, showing overlay");
+        console.log("[PRESENCE]  In grace period - ignoring conflict");
+        // Don't lock, don't show conflict
+      } else if (!deviceLocked) {
+        console.log("[PRESENCE]  CONFLICT - showing overlay");
         deviceLocked = true;
         showDeviceConflict(currentUser);
-      } else if (!weAreNewer) {
-        // We were first - the other device should see the conflict, not us
-        console.log("[PRESENCE] Other device joined after us - they should see conflict");
       }
     } else {
-      // No conflicts - auto-resolve
+      //  AUTO-RESOLVE: No conflicts
       if (deviceLocked) {
-        console.log("[PRESENCE] AUTO-RESOLVED - no conflicts");
+        console.log("[PRESENCE]  AUTO-RESOLVED - no conflicts");
         deviceLocked = false;
         hideDeviceConflict();
       }
@@ -1115,12 +1111,12 @@ const DAILY_EMOTICONS = [
 
   async function stopLivePresence() {
     if (presenceChannel && sbClient) {
-      console.log("[PRESENCE] [STOP] Stopping presence...");
+      console.log("[PRESENCE]  Stopping presence...");
       try {
         await presenceChannel.untrack();
-        console.log("[PRESENCE] [STOP] Untracked successfully");
+        console.log("[PRESENCE]  Untracked successfully");
       } catch (e) {
-        console.log("[PRESENCE] [STOP] Untrack error:", e);
+        console.log("[PRESENCE]  Untrack error:", e);
       }
       try {
         await sbClient.removeChannel(presenceChannel);
@@ -1132,7 +1128,7 @@ const DAILY_EMOTICONS = [
   function startPresence() {
     if (presenceTimer) return;
     presencePing();
-    presenceTimer = setInterval(presencePing, 2000); // [OK] FASTER: 2s instead of 15s
+    presenceTimer = setInterval(presencePing, 2000); //  FASTER: 2s instead of 15s
     // Also start WebSocket presence
     initLivePresence();
   }
@@ -1204,16 +1200,16 @@ const DAILY_EMOTICONS = [
     }
   }
 
-  // [FIX] Bell notifications - system updates only with READ tracking
+  // [FIX] Bell notifications with READ tracking
   function updateNotifications(opts = {}) {
     const { silent = false, markAsRead = false } = opts;
     const badge = $("notificationBadge");
     const list = $("notificationList");
 
-    // [OK] Update DUO pill for messages
+    // Update DUO pill for messages
     updateDuoUnreadBadge();
 
-    // [OK] Bell only shows system notifications (updates, events)
+    // Bell only shows system notifications (updates, events)
     const systemNotifs = [];
     
     // Check for upcoming events
@@ -1224,7 +1220,7 @@ const DAILY_EMOTICONS = [
       const diffMs = eventDate - today;
       const diffDays = Math.round(diffMs / (1000 * 60 * 60 * 24));
       
-      if (diffDays >= 0 && diffDays <= 14) { // Show 2 weeks out for holidays
+      if (diffDays >= 0 && diffDays <= 14) { // Show 2 weeks out
         const notifId = getSystemNotifId({ type: 'event', title: event.title, date: event.date });
         const isRead = isSystemNotifRead(notifId);
         systemNotifs.push({
@@ -1233,7 +1229,7 @@ const DAILY_EMOTICONS = [
           title: event.title,
           date: event.date,
           subtitle: diffDays === 0 ? "TODAY!" : diffDays === 1 ? "Tomorrow!" : `In ${diffDays} days`,
-          icon: event.icon || "📅",
+          icon: event.icon || "",
           id: notifId,
           isRead: isRead
         });
@@ -1256,7 +1252,7 @@ const DAILY_EMOTICONS = [
       return;
     }
 
-    // [FIX] If markAsRead, mark all as read now
+    // If markAsRead, mark all as read now
     if (markAsRead) {
       markAllSystemNotifsRead(systemNotifs);
     }
@@ -1267,7 +1263,6 @@ const DAILY_EMOTICONS = [
       const isNewYear = notif.title.toLowerCase().includes('new year');
       const isValentine = notif.title.toLowerCase().includes('valentine');
       
-      // [FIX] Better notification card styling for holidays
       let extraClass = notif.isRead ? '' : ' unread';
       if (isChristmas) extraClass += ' holiday-christmas';
       else if (isNewYear) extraClass += ' holiday-newyear';
@@ -1277,7 +1272,7 @@ const DAILY_EMOTICONS = [
       item.className = `notification-item system-notif${extraClass}`;
       item.dataset.notifId = notif.id;
       
-      // [FIX] Prettier holiday notification cards
+      // Prettier holiday notification cards
       if (notif.eventType === 'holiday') {
         const dateFormatted = new Date(notif.date + "T00:00:00").toLocaleDateString('en-US', { 
           weekday: 'short', month: 'short', day: 'numeric' 
@@ -1357,12 +1352,12 @@ const DAILY_EMOTICONS = [
         const isVideo = msg.attachmentType === 'video';
         if (isVideo) {
           attachmentContainer.innerHTML = `
-            <div class="letter-attachment-label">[ATTACH] Video Attachment</div>
+            <div class="letter-attachment-label"> Video Attachment</div>
             <video controls playsinline class="letter-attachment-media" src="${escapeHtml(msg.attachment)}"></video>
           `;
         } else {
           attachmentContainer.innerHTML = `
-            <div class="letter-attachment-label">[ATTACH] Image Attachment</div>
+            <div class="letter-attachment-label"> Image Attachment</div>
             <img class="letter-attachment-media" src="${escapeHtml(msg.attachment)}" alt="Attachment" onclick="openAttachmentModal('${escapeHtml(msg.attachment)}', 'image')">
           `;
         }
@@ -1463,12 +1458,12 @@ const DAILY_EMOTICONS = [
         const isVideo = msg.attachmentType === 'video';
         if (isVideo) {
           attachmentContainer.innerHTML = `
-            <div class="letter-attachment-label">[ATTACH] Video Attachment</div>
+            <div class="letter-attachment-label"> Video Attachment</div>
             <video controls playsinline class="letter-attachment-media" src="${escapeHtml(msg.attachment)}"></video>
           `;
         } else {
           attachmentContainer.innerHTML = `
-            <div class="letter-attachment-label">[ATTACH] Image Attachment</div>
+            <div class="letter-attachment-label"> Image Attachment</div>
             <img class="letter-attachment-media" src="${escapeHtml(msg.attachment)}" alt="Attachment" onclick="openAttachmentModal('${escapeHtml(msg.attachment)}', 'image')">
           `;
         }
@@ -1567,7 +1562,7 @@ const DAILY_EMOTICONS = [
         if (urgency === "red") {
           urgencyIndicator = `<span class="urgency-badge urgency-red" title="Due today or tomorrow!">!</span>`;
         } else if (urgency === "yellow") {
-          urgencyIndicator = `<span class="urgency-badge urgency-yellow" title="Due in 2-3 days">*</span>`;
+          urgencyIndicator = `<span class="urgency-badge urgency-yellow" title="Due in 2-3 days"></span>`;
         }
       }
       
@@ -1697,7 +1692,7 @@ const DAILY_EMOTICONS = [
       el.className = `message-log-item ${userClass}`;
       el.innerHTML = `
         <div class="message-log-header">
-          <span class="message-from-name">FROM: ${escapeHtml(displayName)} ${hasAttachment ? '<span class="attachment-badge" title="Has attachment">[ATTACH]</span>' : ''}</span>
+          <span class="message-from-name">FROM: ${escapeHtml(displayName)} ${hasAttachment ? '<span class="attachment-badge" title="Has attachment"></span>' : ''}</span>
           <span>${escapeHtml(msg.timestamp || "")}</span>
         </div>
         <div class="message-log-content">${escapeHtml(msg.content || "")}</div>
@@ -1749,11 +1744,11 @@ const DAILY_EMOTICONS = [
     return "green";
   }
 
-  // [FIX] Get all dates with events (missions + upcoming events) - NOW distinguishes holidays
+  // [OK] Get all dates with events (missions + upcoming events)
   function getEventDates() {
-    const eventMap = {}; // { "YYYY-MM-DD": { urgency, titles[], isHoliday, icon } }
+    const eventMap = {}; // { "YYYY-MM-DD": { urgency: "red"|"yellow"|"green", titles: [] } }
     
-    // Add mission due dates (NOT holidays)
+    // Add mission due dates
     const missions = loadActive();
     missions.forEach(m => {
       if (m.dueDate) {
@@ -1761,14 +1756,12 @@ const DAILY_EMOTICONS = [
         const urgency = getUrgencyLevel(days);
         if (urgency) {
           if (!eventMap[m.dueDate]) {
-            eventMap[m.dueDate] = { urgency, titles: [], isHoliday: false, icon: null };
+            eventMap[m.dueDate] = { urgency, titles: [] };
           } else {
-            // Take the most urgent level (only for missions)
-            if (!eventMap[m.dueDate].isHoliday) {
-              const levels = ["red", "yellow", "green"];
-              if (levels.indexOf(urgency) < levels.indexOf(eventMap[m.dueDate].urgency)) {
-                eventMap[m.dueDate].urgency = urgency;
-              }
+            // Take the most urgent level
+            const levels = ["red", "yellow", "green"];
+            if (levels.indexOf(urgency) < levels.indexOf(eventMap[m.dueDate].urgency)) {
+              eventMap[m.dueDate].urgency = urgency;
             }
           }
           eventMap[m.dueDate].titles.push(m.title);
@@ -1776,23 +1769,18 @@ const DAILY_EMOTICONS = [
       }
     });
     
-    // [FIX] Add upcoming events with HOLIDAY distinction
+    // Add upcoming events
     UPCOMING_EVENTS.forEach(event => {
       const days = daysUntil(event.date);
-      if (days !== null && days >= 0) {
-        const isHoliday = event.type === 'holiday';
+      const urgency = getUrgencyLevel(days);
+      if (urgency) {
         if (!eventMap[event.date]) {
-          eventMap[event.date] = { 
-            urgency: isHoliday ? 'holiday' : getUrgencyLevel(days), 
-            titles: [], 
-            isHoliday: isHoliday,
-            icon: event.icon || null
-          };
-        } else if (isHoliday) {
-          // Holiday takes priority for styling
-          eventMap[event.date].isHoliday = true;
-          eventMap[event.date].urgency = 'holiday';
-          eventMap[event.date].icon = event.icon || eventMap[event.date].icon;
+          eventMap[event.date] = { urgency, titles: [] };
+        } else {
+          const levels = ["red", "yellow", "green"];
+          if (levels.indexOf(urgency) < levels.indexOf(eventMap[event.date].urgency)) {
+            eventMap[event.date].urgency = urgency;
+          }
         }
         eventMap[event.date].titles.push(event.title);
       }
@@ -1801,7 +1789,7 @@ const DAILY_EMOTICONS = [
     return eventMap;
   }
 
-  // [FIX] Mini calendar for message log - now with holiday styling
+  // [OK] Mini calendar for message log (with event indicators)
   function renderMiniCalendar() {
     const now = new Date();
     const year = now.getFullYear();
@@ -1836,29 +1824,11 @@ const DAILY_EMOTICONS = [
       
       let classes = "mini-cal-day";
       if (isToday) classes += " today";
-      if (event) {
-        classes += ` has-event`;
-        // [FIX] Holidays get special class, missions get urgency class
-        if (event.isHoliday) {
-          classes += ` event-holiday`;
-        } else {
-          classes += ` event-${event.urgency}`;
-        }
-      }
+      if (event) classes += ` has-event event-${event.urgency}`;
       
       const tooltip = event ? `title="${event.titles.join(', ')}"` : '';
       
-      // [FIX] Holidays show their icon, missions show dot
-      let eventIndicator = '';
-      if (event) {
-        if (event.isHoliday && event.icon) {
-          eventIndicator = `<span class="cal-holiday-icon">${event.icon}</span>`;
-        } else {
-          eventIndicator = '<span class="cal-event-dot"></span>';
-        }
-      }
-      
-      html += `<span class="${classes}" ${tooltip}>${d}${eventIndicator}</span>`;
+      html += `<span class="${classes}" ${tooltip}>${d}${event ? '<span class="cal-event-dot"></span>' : ''}</span>`;
     }
     
     html += `</div></div>`;
@@ -1910,7 +1880,7 @@ const DAILY_EMOTICONS = [
     snowTimer = setInterval(() => {
       const s = document.createElement("div");
       s.className = "snowflake";
-      s.textContent = Math.random() < 0.5 ? "*" : "+";
+      s.textContent = "*";
       s.style.left = Math.random() * 100 + "vw";
       s.style.animationDuration = (5 + Math.random() * 6) + "s";
       s.style.fontSize = (12 + Math.random() * 14) + "px";
@@ -1928,56 +1898,19 @@ const DAILY_EMOTICONS = [
     document.querySelectorAll(".snowflake").forEach(s => s.remove());
   }
 
-  // [FIX] Deluxe Christmas theme with Three.js visualization
-  function createDeluxeChristmasContainer() {
-    let container = $("deluxeChristmasContainer");
-    if (!container) {
-      container = document.createElement("div");
-      container.id = "deluxeChristmasContainer";
-      document.body.insertBefore(container, document.body.firstChild);
-    }
-    return container;
-  }
+  // [FIX] Deluxe Christmas Theme - Three.js with auto-play Jingle Bell Swing
+  let deluxeContainer = null;
 
-  function startDeluxeChristmas() {
-    const container = createDeluxeChristmasContainer();
-    // Create an iframe with the Three.js visualizer
-    container.innerHTML = `
-      <iframe src="data:text/html;charset=utf-8,${encodeURIComponent(getDeluxeChristmasHTML())}" 
-              frameborder="0" 
-              allow="autoplay"
-              style="width:100%;height:100%;pointer-events:auto;">
-      </iframe>
-    `;
-    document.body.classList.add("theme-deluxe");
-  }
-
-  function stopDeluxeChristmas() {
-    const container = $("deluxeChristmasContainer");
-    if (container) container.innerHTML = "";
-    document.body.classList.remove("theme-deluxe");
-  }
-
-  function getDeluxeChristmasHTML() {
+  function createDeluxeChristmasHTML() {
     return `<!DOCTYPE html>
 <html><head>
 <style>
 *{box-sizing:border-box}
-body{margin:0;height:100vh;overflow:hidden;display:flex;align-items:center;justify-content:center;background:#161616;color:#c5a880;font-family:sans-serif}
-#overlay{position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);z-index:100;text-align:center}
-.btn{background:#161616;border-radius:10px;color:#c5a880;border:1px solid #c5a880;padding:12px 20px;margin:8px;cursor:pointer;font-size:12px}
-.btn:hover{background:#222;border-color:#fff}
-.title{color:#a07676;font-weight:bold;font-size:14px;margin-bottom:16px}
-.text-loading{font-size:16px}
+body{margin:0;height:100vh;overflow:hidden;background:#161616;font-family:sans-serif}
+#loadingText{position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);color:#c5a880;font-size:14px;text-align:center}
 </style>
 </head><body>
-<div id="overlay">
-  <div class="title">Deluxe Christmas Mode</div>
-  <button class="btn" onclick="loadAudio(0)">Snowflakes Falling Down</button>
-  <button class="btn" onclick="loadAudio(1)">This Christmas</button>
-  <button class="btn" onclick="loadAudio(2)">No Room at the Inn</button>
-  <button class="btn" onclick="loadAudio(3)">Jingle Bell Swing</button>
-</div>
+<div id="loadingText">Loading Christmas Experience...</div>
 <script src="https://cdn.jsdelivr.net/npm/three@0.115.0/build/three.min.js"><\/script>
 <script src="https://cdn.jsdelivr.net/npm/three@0.115.0/examples/js/postprocessing/EffectComposer.js"><\/script>
 <script src="https://cdn.jsdelivr.net/npm/three@0.115.0/examples/js/postprocessing/RenderPass.js"><\/script>
@@ -1999,8 +1932,19 @@ const params={exposure:1,bloomStrength:0.9,bloomThreshold:0,bloomRadius:0.5};
 const fftSize=2048,totalPoints=4000;
 const listener=new THREE.AudioListener();
 const audio=new THREE.Audio(listener);
+
+// Auto-load Jingle Bell Swing
+setTimeout(()=>{
+  new THREE.AudioLoader().load(
+    "https://files.freemusicarchive.org/storage-freemusicarchive-org/music/ccCommunity/Mark_Smeby/En_attendant_Nol/Mark_Smeby_-_07_-_Jingle_Bell_Swing.mp3",
+    buffer=>{audio.setBuffer(buffer);audio.play();analyser=new THREE.AudioAnalyser(audio,fftSize);init();},
+    undefined,
+    err=>{document.getElementById("loadingText").textContent="Audio failed to load";}
+  );
+},100);
+
 function init(){
-  document.getElementById("overlay").remove();
+  document.getElementById("loadingText")?.remove();
   scene=new THREE.Scene();
   renderer=new THREE.WebGLRenderer({antialias:true});
   renderer.setPixelRatio(window.devicePixelRatio);
@@ -2022,11 +1966,6 @@ function init(){
   animate();
 }
 function animate(time){analyser.getFrequencyData();uniforms.tAudioData.value.needsUpdate=true;step=(step+1)%1000;uniforms.time.value=time;uniforms.step.value=step;composer.render();requestAnimationFrame(animate);}
-function loadAudio(i){
-  document.getElementById("overlay").innerHTML='<div class="text-loading">Loading...</div>';
-  const files=["https://files.freemusicarchive.org/storage-freemusicarchive-org/music/no_curator/Simon_Panrucker/Happy_Christmas_You_Guys/Simon_Panrucker_-_01_-_Snowflakes_Falling_Down.mp3","https://files.freemusicarchive.org/storage-freemusicarchive-org/music/no_curator/Dott/This_Christmas/Dott_-_01_-_This_Christmas.mp3","https://files.freemusicarchive.org/storage-freemusicarchive-org/music/ccCommunity/TRG_Banks/TRG_Banks_Christmas_Album/TRG_Banks_-_12_-_No_room_at_the_inn.mp3","https://files.freemusicarchive.org/storage-freemusicarchive-org/music/ccCommunity/Mark_Smeby/En_attendant_Nol/Mark_Smeby_-_07_-_Jingle_Bell_Swing.mp3"];
-  new THREE.AudioLoader().load(files[i],buffer=>{audio.setBuffer(buffer);audio.play();analyser=new THREE.AudioAnalyser(audio,fftSize);init();});
-}
 function addTree(scene,uniforms,totalPoints,treePosition){
   const vertexShader=\`attribute float mIndex;varying vec3 vColor;varying float opacity;uniform sampler2D tAudioData;float norm(float v,float min,float max){return(v-min)/(max-min);}float lerp(float n,float min,float max){return(max-min)*n+min;}float map(float v,float sMin,float sMax,float dMin,float dMax){return lerp(norm(v,sMin,sMax),dMin,dMax);}void main(){vColor=color;vec3 p=position;vec4 mvPosition=modelViewMatrix*vec4(p,1.0);float amplitude=texture2D(tAudioData,vec2(mIndex,0.1)).r;float amplitudeClamped=clamp(amplitude-0.4,0.0,0.6);float sizeMapped=map(amplitudeClamped,0.0,0.6,1.0,20.0);opacity=map(mvPosition.z,-200.0,15.0,0.0,1.0);gl_PointSize=sizeMapped*(100.0/-mvPosition.z);gl_Position=projectionMatrix*mvPosition;}\`;
   const fragmentShader=\`varying vec3 vColor;varying float opacity;uniform sampler2D pointTexture;void main(){gl_FragColor=vec4(vColor,opacity);gl_FragColor=gl_FragColor*texture2D(pointTexture,gl_PointCoord);}\`;
@@ -2060,10 +1999,26 @@ function addPlane(scene,uniforms,totalPoints){
 <\/script></body></html>`;
   }
 
+  function startDeluxeChristmas() {
+    if (deluxeContainer) return;
+    deluxeContainer = document.createElement("div");
+    deluxeContainer.id = "deluxeChristmasContainer";
+    deluxeContainer.style.cssText = "position:fixed;top:0;left:0;width:100%;height:100%;z-index:-1;pointer-events:none;";
+    deluxeContainer.innerHTML = `<iframe src="data:text/html;charset=utf-8,${encodeURIComponent(createDeluxeChristmasHTML())}" frameborder="0" allow="autoplay" style="width:100%;height:100%;pointer-events:auto;"></iframe>`;
+    document.body.insertBefore(deluxeContainer, document.body.firstChild);
+  }
+
+  function stopDeluxeChristmas() {
+    if (deluxeContainer) {
+      deluxeContainer.remove();
+      deluxeContainer = null;
+    }
+  }
+
   function applyTheme(theme) {
     currentTheme = theme;
 
-    // [FIX] Stop deluxe mode when switching away
+    // Stop deluxe if switching away
     if (theme !== "deluxe") {
       stopDeluxeChristmas();
     }
@@ -2071,7 +2026,7 @@ function addPlane(scene,uniforms,totalPoints){
     if (theme === "dark") document.documentElement.setAttribute("data-theme", "dark");
     else if (theme === "light") document.documentElement.setAttribute("data-theme", "light");
     else if (theme === "christmas") document.documentElement.setAttribute("data-theme", "christmas");
-    else if (theme === "deluxe") document.documentElement.setAttribute("data-theme", "christmas"); // Use christmas colors
+    else if (theme === "deluxe") document.documentElement.setAttribute("data-theme", "christmas");
     else document.documentElement.removeAttribute("data-theme");
 
     document.querySelectorAll(".theme-option").forEach(opt => {
@@ -2120,74 +2075,147 @@ function addPlane(scene,uniforms,totalPoints){
   let suppressSync = false;
   let syncDebounce = null;
 
-  // [FIX] Device ID persists across all tabs (same device = same ID)
-  const KEY_DEVICE_ID = "bucketlist_2026_device_id";
-  function getDeviceId() {
-    let id = localStorage.getItem(KEY_DEVICE_ID);
-    if (!id) {
-      id = 'dev_' + Date.now() + '_' + Math.random().toString(36).substr(2, 9);
-      localStorage.setItem(KEY_DEVICE_ID, id);
+  // [FIX] Device ID is now defined earlier using localStorage
+  // Track active devices per user (from server)
+  let activeDevices = {};
+
+  // ============================================
+  // [FIX] NEW: Check for active session BEFORE login (database-only)
+  // ============================================
+  async function checkForActiveSession(userName) {
+    const user = userName.toLowerCase();
+    const myDeviceId = getDeviceId();
+    try {
+      const resp = await fetch(`/.netlify/functions/room?room=${ROOM_CODE}`);
+      if (!resp.ok) return false;
+      
+      const data = await resp.json();
+      const activeDevice = data.activeDevices?.[user];
+      
+      if (!activeDevice) return false; // No one active
+      if (activeDevice.deviceId === myDeviceId) return false; // It's us
+      
+      // Check if still active (within 5 seconds)
+      const serverTime = data.serverTime || Date.now();
+      const age = serverTime - (activeDevice.lastActive || 0);
+      if (age < DEVICE_ACTIVE_TIMEOUT) {
+        console.log("[DEVICE] Conflict detected - another device active for", user, "age:", age + "ms");
+        return true; // Someone else is active!
+      }
+      
+      return false; // Session expired
+    } catch (e) {
+      console.error("[DEVICE] Check failed:", e);
+      return false; // Fail open
     }
-    return id;
   }
 
-  // Track active devices per user
-  let activeDevices = {};
-  let deviceLocked = false;
+  // [FIX] Check if we've been kicked (database-only) - called during polling
+  async function checkIfKicked() {
+    const user = loadUser()?.toLowerCase();
+    if (!user || deviceLocked) return false;
+    
+    try {
+      const resp = await fetch(`/.netlify/functions/room?room=${ROOM_CODE}`);
+      if (!resp.ok) return false;
+      
+      const data = await resp.json();
+      const activeDevice = data.activeDevices?.[user];
+      
+      if (activeDevice && activeDevice.deviceId && activeDevice.deviceId !== getDeviceId()) {
+        // Another device has taken over!
+        console.log("[DEVICE] KICKED - another device took over");
+        handleKicked();
+        return true;
+      }
+    } catch (e) {
+      // Ignore errors
+    }
+    return false;
+  }
 
-  // [OK] Dedicated function to check device conflicts (can be called independently)
-  // [OK] Check BOTH WebSocket AND database for conflicts
-  function checkDeviceConflict(serverActiveDevices) {
-    if (!serverActiveDevices || typeof serverActiveDevices !== "object") {
+  // [FIX] Handle being kicked
+  function handleKicked() {
+    console.log("[DEVICE] Showing login screen after kick");
+    stopDeviceMonitoring();
+    clearUser();
+    stopPresence();
+    deviceLocked = false;
+    openWhoModal();
+    $("closeWhoModal").classList.add("hidden");
+    showToast("Session taken over by another device");
+  }
+
+  // [FIX] Claim device for user (during login or takeover)
+  async function claimDevice(userName) {
+    const user = userName.toLowerCase();
+    const deviceId = getDeviceId();
+    
+    try {
+      const resp = await fetch(`/.netlify/functions/room?room=${ROOM_CODE}`);
+      const data = await resp.json();
+      
+      const payload = data.payload || {};
+      payload.activeDevices = payload.activeDevices || {};
+      payload.activeDevices[user] = {
+        deviceId: deviceId,
+        lastActive: Date.now()
+      };
+      
+      await fetch(`/.netlify/functions/room`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ room: ROOM_CODE, payload })
+      });
+      
+      console.log("[DEVICE] Claimed device for", user);
+      return true;
+    } catch (e) {
+      console.error("[DEVICE] Claim failed:", e);
       return false;
     }
+  }
+
+  // [FIX] Start heartbeat and kick monitoring
+  function startDeviceMonitoring() {
+    stopDeviceMonitoring(); // Clear any existing
     
+    // Regular kick check (every 2 seconds)
+    kickCheckTimer = setInterval(checkIfKicked, 2000);
+    console.log("[DEVICE] Monitoring started");
+  }
+
+  // [FIX] Stop monitoring
+  function stopDeviceMonitoring() {
+    if (kickCheckTimer) {
+      clearInterval(kickCheckTimer);
+      kickCheckTimer = null;
+    }
+  }
+
+  // [FIX] Release device on logout
+  async function releaseDevice() {
     const user = loadUser()?.toLowerCase();
-    const myDeviceId = getDeviceId();
-    const now = Date.now();
+    if (!user) return;
     
-    const inAnyGrace = now < loginGraceUntil || now < takeoverGraceUntil;
-    
-    if (!user) return false;
-    
-    // [OK] Check WebSocket presence FIRST (instant)
-    let hasWebSocketConflict = false;
-    if (livePresenceState && Object.keys(livePresenceState).length > 0) {
-      for (const [key, presences] of Object.entries(livePresenceState)) {
-        for (const p of presences) {
-          if (p.user === user && p.deviceId && p.deviceId !== myDeviceId) {
-            hasWebSocketConflict = true;
-            break;
-          }
-        }
-        if (hasWebSocketConflict) break;
-      }
+    try {
+      await fetch(`/.netlify/functions/room`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ 
+          room: ROOM_CODE, 
+          removeDevice: { user, deviceId: getDeviceId() }
+        })
+      });
+      console.log("[DEVICE] Released device");
+    } catch (e) {
+      // Ignore
     }
-    
-    // [OK] Check database as backup
-    let hasDatabaseConflict = false;
-    if (serverActiveDevices[user]) {
-      const serverDevice = serverActiveDevices[user];
-      if (serverDevice.deviceId && serverDevice.deviceId !== myDeviceId) {
-        hasDatabaseConflict = true;
-      }
-    }
-    
-    const hasConflict = hasWebSocketConflict || hasDatabaseConflict;
-    
-    if (hasConflict && !inAnyGrace) {
-      if (!deviceLocked) {
-        deviceLocked = true;
-        showDeviceConflict(user);
-      }
-      return true;
-    } else if (!hasConflict) {
-      if (deviceLocked) {
-        deviceLocked = false;
-        hideDeviceConflict();
-      }
-    }
-    
+  }
+
+  // OLD checkDeviceConflict kept for backward compat with applyStateToLocal
+  function checkDeviceConflict(serverActiveDevices) {
+    // This is now a no-op - conflict detection happens in checkForActiveSession
     return false;
   }
 
@@ -2320,7 +2348,7 @@ function addPlane(scene,uniforms,totalPoints){
     if (overlay) overlay.classList.remove("active");
   }
 
-  // [OK] NEW: Explicit device removal for clean handoff
+  //  NEW: Explicit device removal for clean handoff
   async function removeMyDevice() {
     const user = loadUser()?.toLowerCase();
     const deviceId = getDeviceId();
@@ -2337,89 +2365,85 @@ await fetch("/.netlify/functions/room", {
           removeDevice: { user, deviceId }
         })
       });
-      console.log("[PRESENCE] 🗑️ Removed device from server");
+      console.log("[PRESENCE]  Removed device from server");
     } catch (e) {
       console.error("[PRESENCE] Failed to remove device:", e);
     }
   }
 
+  // [FIX] Force takeover - claim device and kick other
   window.forceDeviceTakeover = async function() {
-    // [FIX] Prevent spam clicking
     if (takeoverInProgress) {
-      console.log("[PRESENCE] Takeover already in progress, ignoring");
+      console.log("[DEVICE] Takeover already in progress");
       return;
     }
-    
     takeoverInProgress = true;
-    console.log("[PRESENCE] TAKEOVER starting");
+    console.log("[DEVICE] TAKEOVER starting");
     
     try {
-      // [OK] Set grace period FIRST
-      takeoverGraceUntil = Date.now() + 6000;
+      const user = loadUser();
+      if (!user) {
+        takeoverInProgress = false;
+        return;
+      }
+      
+      // Claim device (this kicks the other device on their next poll)
+      await claimDevice(user);
+      
+      // Hide conflict overlay
       deviceLocked = false;
       hideDeviceConflict();
       
-      // Re-track WebSocket presence with fresh timestamp
-      try { await stopLivePresence(); } catch(e) {}
-      initLivePresence();
-      
-      // Push to database - this updates our timestamp to be newest
-      await pushRemoteState();
-      
-      // [FIX] Complete the login flow since we were blocked before
+      // Complete login flow
       $("closeWhoModal").classList.remove("hidden");
       closeWhoModal();
       updateUserDuoPills();
       
-      // Sync state to get latest data
+      // Sync and start monitoring
       await pullRemoteState({ silent: false });
+      startDeviceMonitoring();
+      startPresence();
       
-      console.log("[PRESENCE] TAKEOVER complete");
+      console.log("[DEVICE] TAKEOVER complete");
       showToast("You are now the active device");
     } finally {
       takeoverInProgress = false;
     }
   };
 
+  // [FIX] Switch to other user
   window.switchToOtherUser = async function(otherUser) {
-    console.log("[PRESENCE] SWITCH starting to:", otherUser);
+    console.log("[DEVICE] SWITCH starting to:", otherUser);
     
-    // [OK] Set grace period
-    loginGraceUntil = Date.now() + 5000;
+    // Stop current monitoring
+    stopDeviceMonitoring();
+    stopPresence();
+    
+    // Release current device
+    await releaseDevice();
+    
+    // Hide conflict
     deviceLocked = false;
     hideDeviceConflict();
-    
-    // [OK] PROPERLY stop current presence and WAIT
-    try {
-      if (presenceChannel) {
-        await presenceChannel.untrack();
-        await new Promise(r => setTimeout(r, 150)); // Wait for leave event
-        await sbClient.removeChannel(presenceChannel);
-        presenceChannel = null;
-      }
-    } catch (e) {}
-    
-    // [OK] Remove old device from server
-    await removeMyDevice();
     
     // Switch to the other user
     saveUser(otherUser);
     
-    // [FIX] Complete the login flow
+    // Claim new user
+    await claimDevice(otherUser);
+    
+    // Complete login flow
     $("closeWhoModal").classList.remove("hidden");
     closeWhoModal();
     updateUserDuoPills();
     
-    // Start WebSocket presence for new user
-    initLivePresence();
-    
-    // Sync state
-    await pushRemoteState();
+    // Start monitoring and sync
+    startDeviceMonitoring();
+    startPresence();
     await pullRemoteState({ silent: false });
     
-    console.log("[PRESENCE] SWITCH complete to:", otherUser);
+    console.log("[DEVICE] SWITCH complete to:", otherUser);
     showToast(`Switched to ${otherUser}`);
-
   };
 
   async function remoteGetState() {
@@ -2741,130 +2765,84 @@ await fetch("/.netlify/functions/room", {
     modal.setAttribute("aria-hidden", "true");
   }
 
-  // [FIX] Check for existing sessions BEFORE allowing login
-  async function checkForExistingSession(name) {
-    const nameLower = name.toLowerCase();
-    try {
-      // Check WebSocket presence first (fastest)
-      if (presenceChannel) {
-        const state = presenceChannel.presenceState?.() || {};
-        const userPresences = state[nameLower] || [];
-        const myDeviceId = getDeviceId();
-        const now = Date.now();
-        
-        for (const p of userPresences) {
-          if (p.deviceId !== myDeviceId) {
-            const age = p.onlineAt ? (now - Date.parse(p.onlineAt)) : 0;
-            if (age < 60000) {
-              return true; // Active session on another device
-            }
-          }
-        }
-      }
-      
-      // Also check database (backup)
-      const resp = await fetch(`/.netlify/functions/room?room=${ROOM_CODE}`);
-      if (resp.ok) {
-        const data = await resp.json();
-        if (data.presence?.[nameLower]) {
-          const ts = Date.parse(data.presence[nameLower]);
-          if (Date.now() - ts < 30000) { // Within 30 seconds
-            const serverDeviceId = data.devices?.[nameLower];
-            if (serverDeviceId && serverDeviceId !== getDeviceId()) {
-              return true;
-            }
-          }
-        }
-      }
-    } catch (e) {
-      console.log("[PRESENCE] Pre-check error (continuing):", e);
-    }
-    return false;
-  }
-
+  // [FIX] NEW: Login with conflict check BEFORE proceeding
   async function setUserAndStart(name) {
-    // [FIX] Prevent spam clicking
+    // Prevent spam clicking
     if (loginInProgress) {
-      console.log("[PRESENCE] Login already in progress, ignoring");
+      console.log("[DEVICE] Login already in progress");
       return;
     }
     
     loginInProgress = true;
-    console.log("[PRESENCE] [KEY] LOGIN starting for:", name);
+    console.log("[DEVICE] LOGIN starting for:", name);
     
     try {
-      // [FIX] Check for existing session BEFORE proceeding
-      const hasExistingSession = await checkForExistingSession(name);
-      if (hasExistingSession) {
-        console.log("[PRESENCE] Existing session detected - showing conflict");
-        // Don't proceed with login - show conflict immediately
-        saveUser(name); // Temporarily save so conflict UI can work
-        loginGraceUntil = 0; // No grace - we KNOW there's a conflict
+      // Step 1: Check for existing session BEFORE proceeding
+      const hasConflict = await checkForActiveSession(name);
+      
+      if (hasConflict) {
+        // Show conflict - DO NOT proceed with login
+        console.log("[DEVICE] Conflict detected - showing overlay");
+        saveUser(name); // Save temporarily for conflict UI
         deviceLocked = true;
         showDeviceConflict(name);
         loginInProgress = false;
-        return; // DO NOT proceed with login
+        return; // STOP HERE - do not proceed
       }
       
-      // [OK] Set login grace period (6 seconds to handle slow networks)
-      loginGraceUntil = Date.now() + 6000;
-      
-      // Ensure prior presence channel is cleanly removed before switching keys
-      try { await stopLivePresence(); } catch {}
+      // Step 2: Claim device
+      await claimDevice(name);
       saveUser(name);
-
+      
+      // Step 3: Proceed with normal login
       $("closeWhoModal").classList.remove("hidden");
       closeWhoModal();
-
       updateUserDuoPills();
-
-      setSyncStatus("pulling");
       
-      // Sync state
+      // Step 4: Sync state
+      setSyncStatus("pulling");
       showSyncingIndicator();
       await pullRemoteState({ silent: false });
       await pushRemoteState();
       hideSyncingIndicator();
-
-      // [OK] Start presence (grace period protects against false conflicts)
+      
+      // Step 5: Start monitoring (kick detection) and presence (online indicator)
+      startDeviceMonitoring();
       startPresence();
       
-      console.log("[PRESENCE] [KEY] LOGIN complete for:", name);
+      console.log("[DEVICE] LOGIN complete for:", name);
       showToast(`USER SET: ${String(name).toUpperCase()}`);
+      
     } finally {
       loginInProgress = false;
     }
   }
 
+  // [FIX] NEW: Logout with proper cleanup
   async function logOffUser() {
-    // [OK] Send explicit offline signal BEFORE clearing user
-    // This lets other devices know immediately (not waiting for 45s timeout)
+    console.log("[DEVICE] LOGOUT starting");
+    
+    // Stop monitoring first
+    stopDeviceMonitoring();
+    stopPresence();
+    
+    // Release device from server
+    await releaseDevice();
+    
+    // Also try to send offline signal for presence dots
     const currentUser = loadUser();
     if (currentUser) {
-      // Stop presence ASAP (await untrack to avoid ghost session)
-      await stopLivePresence();
       try {
-        // Clear our device from activeDevices
-        const user = currentUser.toLowerCase();
-        if (activeDevices[user]) {
-          delete activeDevices[user];
-        }
-        // [OK] Mark presence as very old (instant offline detection)
-        // Set to epoch so age calculation shows offline immediately
         const offlinePayload = getLocalState();
         offlinePayload.presence = offlinePayload.presence || {};
-        offlinePayload.presence[user] = "1970-01-01T00:00:00.000Z"; // Epoch = instantly offline
-        
-        // Push the offline signal immediately
+        offlinePayload.presence[currentUser.toLowerCase()] = "1970-01-01T00:00:00.000Z";
         await remoteSetState(offlinePayload);
       } catch {
-        // Ignore errors on logout
+        // Ignore
       }
     }
     
     clearUser();
-    // Ensure timers are stopped too
-    stopPresence();
     updateUserDuoPills();
     openWhoModal();
     $("closeWhoModal").classList.add("hidden");
@@ -2873,15 +2851,15 @@ await fetch("/.netlify/functions/room", {
 
   // [OK] Send offline signal on tab close / navigation away
   // Uses sendBeacon for reliability (fires even during unload)
-  // [OK] Send offline signal on tab close/navigation
+  //  Send offline signal on tab close/navigation
   function sendOfflineBeacon() {
-    console.log("[PRESENCE] [SEND] Sending offline beacon...");
+    console.log("[PRESENCE]  Sending offline beacon...");
     
-    // [OK] CRITICAL: Untrack from WebSocket FIRST
+    //  CRITICAL: Untrack from WebSocket FIRST
     if (presenceChannel) {
       try {
         presenceChannel.untrack();
-        console.log("[PRESENCE] [SEND] Untracked on page close");
+        console.log("[PRESENCE]  Untracked on page close");
       } catch(e) {}
     }
     
@@ -3262,7 +3240,7 @@ $("systemMessageInput").addEventListener("input", (e) => {
       }
       
       if (preview) {
-        preview.innerHTML = `<span>[ATTACH] Uploading ${escapeHtml(file.name)}...</span>`;
+        preview.innerHTML = `<span> Uploading ${escapeHtml(file.name)}...</span>`;
         preview.classList.remove("hidden");
       }
       
@@ -3278,7 +3256,7 @@ $("systemMessageInput").addEventListener("input", (e) => {
         pendingAttachmentType = isVideo ? "video" : "image";
         
         if (preview) {
-          preview.innerHTML = `<span>[ATTACH] ${escapeHtml(file.name)}</span><button type="button" class="btn" id="clearAttachment">X</button>`;
+          preview.innerHTML = `<span> ${escapeHtml(file.name)}</span><button type="button" class="btn" id="clearAttachment"></button>`;
           $("clearAttachment").addEventListener("click", () => {
             pendingAttachment = null;
             pendingAttachmentType = null;
@@ -3490,12 +3468,12 @@ $("systemMessageInput").addEventListener("input", (e) => {
     
     const mission = photoMissionSelect.value;
     if (!mission) {
-      stagingCapacityEl.textContent = "* Allowed: Unlimited";
+      stagingCapacityEl.textContent = " Allowed: Unlimited";
       stagingCapacityEl.className = "staging-capacity unlimited";
     } else {
       const existingCount = loadPhotos().filter(p => p.mission === mission).length;
       const remaining = Math.max(0, 5 - existingCount);
-      stagingCapacityEl.textContent = `* Allowed for "${mission}": ${remaining}`;
+      stagingCapacityEl.textContent = ` Allowed for "${mission}": ${remaining}`;
       stagingCapacityEl.className = remaining <= 0 ? "staging-capacity full" : "staging-capacity";
     }
   }
@@ -3533,7 +3511,7 @@ $("systemMessageInput").addEventListener("input", (e) => {
     
     // [OK] Clearer labeling: "On this mission: X/5 saved"
     if (remaining <= 0) {
-      missionCapacityEl.textContent = "[!] Mission full: 5/5 saved";
+      missionCapacityEl.textContent = " Mission full: 5/5 saved";
       missionCapacityEl.className = "mission-capacity full";
     } else {
       missionCapacityEl.textContent = `On this mission: ${existingCount}/5 saved (${remaining} slots left)`;
@@ -3780,10 +3758,10 @@ SYSTEM MESSAGE:
 ${loadSystemMessage()}
 
 ACTIVE MISSIONS:
-${active.map(i => `[ ] ${i.title} - ${i.desc} (#${i.tag})`).join("\n")}
+${active.map(i => `[ ] ${i.title}  ${i.desc} (#${i.tag})`).join("\n")}
 
 COMPLETED MISSIONS:
-${completed.map(i => `[X] ${i.title} - ${i.desc} (#${i.tag})`).join("\n")}
+${completed.map(i => `[X] ${i.title}  ${i.desc} (#${i.tag})`).join("\n")}
 `;
 
     const blob = new Blob([text], { type: "text/plain" });
@@ -3842,7 +3820,7 @@ ${completed.map(i => `[X] ${i.title} - ${i.desc} (#${i.tag})`).join("\n")}
     overlay.innerHTML = `<div class="sync-overlay-content"><div class="sync-spinner"></div><div>SYNCING...</div></div>`;
     document.body.appendChild(overlay);
 
-    // pull once on load (with overlay) - always remove overlay
+    // pull once on load (with overlay)  always remove overlay
     try {
       await pullRemoteState({ silent: false });
     } catch (e) {
@@ -3877,12 +3855,9 @@ ${completed.map(i => `[X] ${i.title} - ${i.desc} (#${i.tag})`).join("\n")}
       $("closeWhoModal").classList.add("hidden");
     } else {
       $("closeWhoModal").classList.remove("hidden");
-      // [FIX] Set grace period on page load to prevent false conflicts
-      loginGraceUntil = Date.now() + 3000;
-      // Immediately claim device on page load for existing users
+      // [OK] Immediately claim device on page load for existing users
       await pushRemoteState();
       startPresence();
       updateUserDuoPills();
-      console.log("[PRESENCE] Auto-logged in as:", loadUser());
     }
   })();
