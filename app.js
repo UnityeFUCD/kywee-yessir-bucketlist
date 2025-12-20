@@ -8,6 +8,7 @@
   const KEY_SYSTEM_MESSAGE = "bucketlist_2026_system_message";
   const KEY_LAST_VERSION_SEEN = "bucketlist_2026_last_version";
   const KEY_PHOTOS = "bucketlist_2026_photos";
+  const KEY_READ_SYSTEM_NOTIFS = "bucketlist_2026_read_system_notifs"; // [FIX] Track read system notifications
 
   // [OK] VERSION HISTORY for system update notifications
   const VERSION_HISTORY = [
@@ -19,10 +20,11 @@
   const CURRENT_VERSION = "1.3.0";
 
   // [OK] UPCOMING EVENTS (add your special dates here!)
+  // type: "holiday" for special holidays (distinct styling), "event" for other events
   const UPCOMING_EVENTS = [
-    { date: "2025-01-01", title: "New Year's Day " },
-    { date: "2025-02-14", title: "Valentine's Day " },
-    { date: "2025-12-25", title: "Christmas " }
+    { date: "2025-01-01", title: "New Year's Day", type: "holiday", icon: "🎆" },
+    { date: "2025-02-14", title: "Valentine's Day", type: "holiday", icon: "💕" },
+    { date: "2025-12-25", title: "Christmas", type: "holiday", icon: "🎄" }
   ];
 
   // [FIX] Device-based user (like YouTube) - persists across all tabs on same device
@@ -57,6 +59,40 @@
   function getMsgId(msg, idx) {
     // Unique ID based on content + timestamp + index
     return `${msg.timestamp}_${idx}_${(msg.content || "").substring(0,20)}`;
+  }
+
+  // [FIX] System notification read tracking (for bell badge)
+  function getSystemNotifId(notif) {
+    // Stable ID for system notifications (date-based for events)
+    return `${notif.type}_${notif.title}_${notif.date || ''}`;
+  }
+  function loadReadSystemNotifs() {
+    const u = loadUser();
+    if (!u) return [];
+    try { return JSON.parse(localStorage.getItem(`${KEY_READ_SYSTEM_NOTIFS}_${u.toLowerCase()}`)) || []; } catch { return []; }
+  }
+  function saveReadSystemNotifs(arr) {
+    const u = loadUser();
+    if (!u) return;
+    localStorage.setItem(`${KEY_READ_SYSTEM_NOTIFS}_${u.toLowerCase()}`, JSON.stringify(arr));
+  }
+  function markSystemNotifRead(notifId) {
+    const read = loadReadSystemNotifs();
+    if (!read.includes(notifId)) {
+      read.push(notifId);
+      saveReadSystemNotifs(read);
+    }
+  }
+  function isSystemNotifRead(notifId) {
+    return loadReadSystemNotifs().includes(notifId);
+  }
+  function markAllSystemNotifsRead(notifs) {
+    const read = loadReadSystemNotifs();
+    notifs.forEach(n => {
+      const id = getSystemNotifId(n);
+      if (!read.includes(id)) read.push(id);
+    });
+    saveReadSystemNotifs(read);
   }
 
   // [OK] shared room code
@@ -856,6 +892,8 @@ const DAILY_EMOTICONS = [
   let lastPresence = null;
   let takeoverGraceUntil = 0;
   let loginGraceUntil = 0; // [OK] Grace period after login
+  let loginInProgress = false; // [FIX] Prevent spam clicking login
+  let takeoverInProgress = false; // [FIX] Prevent spam clicking takeover
 
   function normalizePerson(name) {
     const n = String(name || "").trim().toLowerCase();
@@ -1166,9 +1204,9 @@ const DAILY_EMOTICONS = [
     }
   }
 
-  // [OK] Bell notifications - system updates only (not messages)
+  // [FIX] Bell notifications - system updates only with READ tracking
   function updateNotifications(opts = {}) {
-    const { silent = false } = opts;
+    const { silent = false, markAsRead = false } = opts;
     const badge = $("notificationBadge");
     const list = $("notificationList");
 
@@ -1186,19 +1224,26 @@ const DAILY_EMOTICONS = [
       const diffMs = eventDate - today;
       const diffDays = Math.round(diffMs / (1000 * 60 * 60 * 24));
       
-      if (diffDays >= 0 && diffDays <= 7) {
+      if (diffDays >= 0 && diffDays <= 14) { // Show 2 weeks out for holidays
+        const notifId = getSystemNotifId({ type: 'event', title: event.title, date: event.date });
+        const isRead = isSystemNotifRead(notifId);
         systemNotifs.push({
           type: "event",
+          eventType: event.type || "event",
           title: event.title,
-          subtitle: diffDays === 0 ? "Today!" : diffDays === 1 ? "Tomorrow" : `In ${diffDays} days`,
-          icon: "[CAL]"
+          date: event.date,
+          subtitle: diffDays === 0 ? "TODAY!" : diffDays === 1 ? "Tomorrow!" : `In ${diffDays} days`,
+          icon: event.icon || "📅",
+          id: notifId,
+          isRead: isRead
         });
       }
     });
 
-    // Show badge if system notifications exist
-    if (systemNotifs.length > 0) {
-      badge.textContent = systemNotifs.length;
+    // [FIX] Only count UNREAD notifications for badge
+    const unreadCount = systemNotifs.filter(n => !n.isRead).length;
+    if (unreadCount > 0) {
+      badge.textContent = unreadCount;
       badge.classList.remove("hidden");
     } else {
       badge.classList.add("hidden");
@@ -1211,13 +1256,56 @@ const DAILY_EMOTICONS = [
       return;
     }
 
+    // [FIX] If markAsRead, mark all as read now
+    if (markAsRead) {
+      markAllSystemNotifsRead(systemNotifs);
+    }
+
     systemNotifs.forEach(notif => {
       const item = document.createElement("div");
-      item.className = "notification-item system-notif";
-      item.innerHTML = `
-        <div class="notification-from">${notif.icon} ${escapeHtml(notif.title)}</div>
-        <div class="notification-preview">${escapeHtml(notif.subtitle)}</div>
-      `;
+      const isChristmas = notif.title.toLowerCase().includes('christmas');
+      const isNewYear = notif.title.toLowerCase().includes('new year');
+      const isValentine = notif.title.toLowerCase().includes('valentine');
+      
+      // [FIX] Better notification card styling for holidays
+      let extraClass = notif.isRead ? '' : ' unread';
+      if (isChristmas) extraClass += ' holiday-christmas';
+      else if (isNewYear) extraClass += ' holiday-newyear';
+      else if (isValentine) extraClass += ' holiday-valentine';
+      else if (notif.eventType === 'holiday') extraClass += ' holiday-generic';
+      
+      item.className = `notification-item system-notif${extraClass}`;
+      item.dataset.notifId = notif.id;
+      
+      // [FIX] Prettier holiday notification cards
+      if (notif.eventType === 'holiday') {
+        const dateFormatted = new Date(notif.date + "T00:00:00").toLocaleDateString('en-US', { 
+          weekday: 'short', month: 'short', day: 'numeric' 
+        });
+        item.innerHTML = `
+          <div class="holiday-notif-card">
+            <div class="holiday-notif-icon">${notif.icon}</div>
+            <div class="holiday-notif-content">
+              <div class="holiday-notif-title">${escapeHtml(notif.title)}</div>
+              <div class="holiday-notif-date">${dateFormatted}</div>
+              <div class="holiday-notif-countdown">${escapeHtml(notif.subtitle)}</div>
+            </div>
+          </div>
+        `;
+      } else {
+        item.innerHTML = `
+          <div class="notification-from">${notif.icon} ${escapeHtml(notif.title)}</div>
+          <div class="notification-preview">${escapeHtml(notif.subtitle)}</div>
+        `;
+      }
+      
+      // Click to mark as read
+      item.addEventListener('click', () => {
+        markSystemNotifRead(notif.id);
+        item.classList.remove('unread');
+        updateNotifications(); // Refresh badge
+      });
+      
       list.appendChild(item);
     });
   }
@@ -1661,11 +1749,11 @@ const DAILY_EMOTICONS = [
     return "green";
   }
 
-  // [OK] Get all dates with events (missions + upcoming events)
+  // [FIX] Get all dates with events (missions + upcoming events) - NOW distinguishes holidays
   function getEventDates() {
-    const eventMap = {}; // { "YYYY-MM-DD": { urgency: "red"|"yellow"|"green", titles: [] } }
+    const eventMap = {}; // { "YYYY-MM-DD": { urgency, titles[], isHoliday, icon } }
     
-    // Add mission due dates
+    // Add mission due dates (NOT holidays)
     const missions = loadActive();
     missions.forEach(m => {
       if (m.dueDate) {
@@ -1673,12 +1761,14 @@ const DAILY_EMOTICONS = [
         const urgency = getUrgencyLevel(days);
         if (urgency) {
           if (!eventMap[m.dueDate]) {
-            eventMap[m.dueDate] = { urgency, titles: [] };
+            eventMap[m.dueDate] = { urgency, titles: [], isHoliday: false, icon: null };
           } else {
-            // Take the most urgent level
-            const levels = ["red", "yellow", "green"];
-            if (levels.indexOf(urgency) < levels.indexOf(eventMap[m.dueDate].urgency)) {
-              eventMap[m.dueDate].urgency = urgency;
+            // Take the most urgent level (only for missions)
+            if (!eventMap[m.dueDate].isHoliday) {
+              const levels = ["red", "yellow", "green"];
+              if (levels.indexOf(urgency) < levels.indexOf(eventMap[m.dueDate].urgency)) {
+                eventMap[m.dueDate].urgency = urgency;
+              }
             }
           }
           eventMap[m.dueDate].titles.push(m.title);
@@ -1686,18 +1776,23 @@ const DAILY_EMOTICONS = [
       }
     });
     
-    // Add upcoming events
+    // [FIX] Add upcoming events with HOLIDAY distinction
     UPCOMING_EVENTS.forEach(event => {
       const days = daysUntil(event.date);
-      const urgency = getUrgencyLevel(days);
-      if (urgency) {
+      if (days !== null && days >= 0) {
+        const isHoliday = event.type === 'holiday';
         if (!eventMap[event.date]) {
-          eventMap[event.date] = { urgency, titles: [] };
-        } else {
-          const levels = ["red", "yellow", "green"];
-          if (levels.indexOf(urgency) < levels.indexOf(eventMap[event.date].urgency)) {
-            eventMap[event.date].urgency = urgency;
-          }
+          eventMap[event.date] = { 
+            urgency: isHoliday ? 'holiday' : getUrgencyLevel(days), 
+            titles: [], 
+            isHoliday: isHoliday,
+            icon: event.icon || null
+          };
+        } else if (isHoliday) {
+          // Holiday takes priority for styling
+          eventMap[event.date].isHoliday = true;
+          eventMap[event.date].urgency = 'holiday';
+          eventMap[event.date].icon = event.icon || eventMap[event.date].icon;
         }
         eventMap[event.date].titles.push(event.title);
       }
@@ -1706,7 +1801,7 @@ const DAILY_EMOTICONS = [
     return eventMap;
   }
 
-  // [OK] Mini calendar for message log (with event indicators)
+  // [FIX] Mini calendar for message log - now with holiday styling
   function renderMiniCalendar() {
     const now = new Date();
     const year = now.getFullYear();
@@ -1741,11 +1836,29 @@ const DAILY_EMOTICONS = [
       
       let classes = "mini-cal-day";
       if (isToday) classes += " today";
-      if (event) classes += ` has-event event-${event.urgency}`;
+      if (event) {
+        classes += ` has-event`;
+        // [FIX] Holidays get special class, missions get urgency class
+        if (event.isHoliday) {
+          classes += ` event-holiday`;
+        } else {
+          classes += ` event-${event.urgency}`;
+        }
+      }
       
       const tooltip = event ? `title="${event.titles.join(', ')}"` : '';
       
-      html += `<span class="${classes}" ${tooltip}>${d}${event ? '<span class="cal-event-dot"></span>' : ''}</span>`;
+      // [FIX] Holidays show their icon, missions show dot
+      let eventIndicator = '';
+      if (event) {
+        if (event.isHoliday && event.icon) {
+          eventIndicator = `<span class="cal-holiday-icon">${event.icon}</span>`;
+        } else {
+          eventIndicator = '<span class="cal-event-dot"></span>';
+        }
+      }
+      
+      html += `<span class="${classes}" ${tooltip}>${d}${eventIndicator}</span>`;
     }
     
     html += `</div></div>`;
@@ -1815,20 +1928,164 @@ const DAILY_EMOTICONS = [
     document.querySelectorAll(".snowflake").forEach(s => s.remove());
   }
 
+  // [FIX] Deluxe Christmas theme with Three.js visualization
+  function createDeluxeChristmasContainer() {
+    let container = $("deluxeChristmasContainer");
+    if (!container) {
+      container = document.createElement("div");
+      container.id = "deluxeChristmasContainer";
+      document.body.insertBefore(container, document.body.firstChild);
+    }
+    return container;
+  }
+
+  function startDeluxeChristmas() {
+    const container = createDeluxeChristmasContainer();
+    // Create an iframe with the Three.js visualizer
+    container.innerHTML = `
+      <iframe src="data:text/html;charset=utf-8,${encodeURIComponent(getDeluxeChristmasHTML())}" 
+              frameborder="0" 
+              allow="autoplay"
+              style="width:100%;height:100%;pointer-events:auto;">
+      </iframe>
+    `;
+    document.body.classList.add("theme-deluxe");
+  }
+
+  function stopDeluxeChristmas() {
+    const container = $("deluxeChristmasContainer");
+    if (container) container.innerHTML = "";
+    document.body.classList.remove("theme-deluxe");
+  }
+
+  function getDeluxeChristmasHTML() {
+    return `<!DOCTYPE html>
+<html><head>
+<style>
+*{box-sizing:border-box}
+body{margin:0;height:100vh;overflow:hidden;display:flex;align-items:center;justify-content:center;background:#161616;color:#c5a880;font-family:sans-serif}
+#overlay{position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);z-index:100;text-align:center}
+.btn{background:#161616;border-radius:10px;color:#c5a880;border:1px solid #c5a880;padding:12px 20px;margin:8px;cursor:pointer;font-size:12px}
+.btn:hover{background:#222;border-color:#fff}
+.title{color:#a07676;font-weight:bold;font-size:14px;margin-bottom:16px}
+.text-loading{font-size:16px}
+</style>
+</head><body>
+<div id="overlay">
+  <div class="title">Deluxe Christmas Mode</div>
+  <button class="btn" onclick="loadAudio(0)">Snowflakes Falling Down</button>
+  <button class="btn" onclick="loadAudio(1)">This Christmas</button>
+  <button class="btn" onclick="loadAudio(2)">No Room at the Inn</button>
+  <button class="btn" onclick="loadAudio(3)">Jingle Bell Swing</button>
+</div>
+<script src="https://cdn.jsdelivr.net/npm/three@0.115.0/build/three.min.js"><\/script>
+<script src="https://cdn.jsdelivr.net/npm/three@0.115.0/examples/js/postprocessing/EffectComposer.js"><\/script>
+<script src="https://cdn.jsdelivr.net/npm/three@0.115.0/examples/js/postprocessing/RenderPass.js"><\/script>
+<script src="https://cdn.jsdelivr.net/npm/three@0.115.0/examples/js/postprocessing/ShaderPass.js"><\/script>
+<script src="https://cdn.jsdelivr.net/npm/three@0.115.0/examples/js/shaders/CopyShader.js"><\/script>
+<script src="https://cdn.jsdelivr.net/npm/three@0.115.0/examples/js/shaders/LuminosityHighPassShader.js"><\/script>
+<script src="https://cdn.jsdelivr.net/npm/three@0.115.0/examples/js/postprocessing/UnrealBloomPass.js"><\/script>
+<script>
+const{PI,sin,cos}=Math,TAU=2*PI;
+const map=(v,sMin,sMax,dMin,dMax)=>dMin+((v-sMin)/(sMax-sMin))*(dMax-dMin);
+const range=(n,m=0)=>Array(n).fill(m).map((i,j)=>i+j);
+const rand=(max,min=0)=>min+Math.random()*(max-min);
+const randInt=(max,min=0)=>Math.floor(min+Math.random()*(max-min));
+const randChoise=arr=>arr[randInt(arr.length)];
+const polar=(ang,r=1)=>[r*cos(ang),r*sin(ang)];
+let scene,camera,renderer,analyser,step=0,composer;
+const uniforms={time:{type:"f",value:0},step:{type:"f",value:0}};
+const params={exposure:1,bloomStrength:0.9,bloomThreshold:0,bloomRadius:0.5};
+const fftSize=2048,totalPoints=4000;
+const listener=new THREE.AudioListener();
+const audio=new THREE.Audio(listener);
+function init(){
+  document.getElementById("overlay").remove();
+  scene=new THREE.Scene();
+  renderer=new THREE.WebGLRenderer({antialias:true});
+  renderer.setPixelRatio(window.devicePixelRatio);
+  renderer.setSize(window.innerWidth,window.innerHeight);
+  document.body.appendChild(renderer.domElement);
+  camera=new THREE.PerspectiveCamera(60,window.innerWidth/window.innerHeight,1,1000);
+  camera.position.set(-0.09,-2.56,24.42);
+  camera.rotation.set(0.10,-0.004,0.0004);
+  const format=renderer.capabilities.isWebGL2?THREE.RedFormat:THREE.LuminanceFormat;
+  uniforms.tAudioData={value:new THREE.DataTexture(analyser.data,fftSize/2,1,format)};
+  addPlane(scene,uniforms,3000);
+  addSnow(scene,uniforms);
+  range(10).map(i=>{addTree(scene,uniforms,totalPoints,[20,0,-20*i]);addTree(scene,uniforms,totalPoints,[-20,0,-20*i]);});
+  const renderScene=new THREE.RenderPass(scene,camera);
+  const bloomPass=new THREE.UnrealBloomPass(new THREE.Vector2(window.innerWidth,window.innerHeight),1.5,0.4,0.85);
+  bloomPass.threshold=params.bloomThreshold;bloomPass.strength=params.bloomStrength;bloomPass.radius=params.bloomRadius;
+  composer=new THREE.EffectComposer(renderer);composer.addPass(renderScene);composer.addPass(bloomPass);
+  window.addEventListener("resize",()=>{camera.aspect=window.innerWidth/window.innerHeight;camera.updateProjectionMatrix();renderer.setSize(window.innerWidth,window.innerHeight);composer.setSize(window.innerWidth,window.innerHeight);},false);
+  animate();
+}
+function animate(time){analyser.getFrequencyData();uniforms.tAudioData.value.needsUpdate=true;step=(step+1)%1000;uniforms.time.value=time;uniforms.step.value=step;composer.render();requestAnimationFrame(animate);}
+function loadAudio(i){
+  document.getElementById("overlay").innerHTML='<div class="text-loading">Loading...</div>';
+  const files=["https://files.freemusicarchive.org/storage-freemusicarchive-org/music/no_curator/Simon_Panrucker/Happy_Christmas_You_Guys/Simon_Panrucker_-_01_-_Snowflakes_Falling_Down.mp3","https://files.freemusicarchive.org/storage-freemusicarchive-org/music/no_curator/Dott/This_Christmas/Dott_-_01_-_This_Christmas.mp3","https://files.freemusicarchive.org/storage-freemusicarchive-org/music/ccCommunity/TRG_Banks/TRG_Banks_Christmas_Album/TRG_Banks_-_12_-_No_room_at_the_inn.mp3","https://files.freemusicarchive.org/storage-freemusicarchive-org/music/ccCommunity/Mark_Smeby/En_attendant_Nol/Mark_Smeby_-_07_-_Jingle_Bell_Swing.mp3"];
+  new THREE.AudioLoader().load(files[i],buffer=>{audio.setBuffer(buffer);audio.play();analyser=new THREE.AudioAnalyser(audio,fftSize);init();});
+}
+function addTree(scene,uniforms,totalPoints,treePosition){
+  const vertexShader=\`attribute float mIndex;varying vec3 vColor;varying float opacity;uniform sampler2D tAudioData;float norm(float v,float min,float max){return(v-min)/(max-min);}float lerp(float n,float min,float max){return(max-min)*n+min;}float map(float v,float sMin,float sMax,float dMin,float dMax){return lerp(norm(v,sMin,sMax),dMin,dMax);}void main(){vColor=color;vec3 p=position;vec4 mvPosition=modelViewMatrix*vec4(p,1.0);float amplitude=texture2D(tAudioData,vec2(mIndex,0.1)).r;float amplitudeClamped=clamp(amplitude-0.4,0.0,0.6);float sizeMapped=map(amplitudeClamped,0.0,0.6,1.0,20.0);opacity=map(mvPosition.z,-200.0,15.0,0.0,1.0);gl_PointSize=sizeMapped*(100.0/-mvPosition.z);gl_Position=projectionMatrix*mvPosition;}\`;
+  const fragmentShader=\`varying vec3 vColor;varying float opacity;uniform sampler2D pointTexture;void main(){gl_FragColor=vec4(vColor,opacity);gl_FragColor=gl_FragColor*texture2D(pointTexture,gl_PointCoord);}\`;
+  const shaderMaterial=new THREE.ShaderMaterial({uniforms:{...uniforms,pointTexture:{value:new THREE.TextureLoader().load("https://assets.codepen.io/3685267/spark1.png")}},vertexShader,fragmentShader,blending:THREE.AdditiveBlending,depthTest:false,transparent:true,vertexColors:true});
+  const geometry=new THREE.BufferGeometry();const positions=[],colors=[],sizes=[],phases=[],mIndexs=[];const color=new THREE.Color();
+  for(let i=0;i<totalPoints;i++){const t=Math.random();const y=map(t,0,1,-8,10);const ang=map(t,0,1,0,6*TAU)+(TAU/2)*(i%2);const[z,x]=polar(ang,map(t,0,1,5,0));const modifier=map(t,0,1,1,0);positions.push(x+rand(-0.3*modifier,0.3*modifier),y+rand(-0.3*modifier,0.3*modifier),z+rand(-0.3*modifier,0.3*modifier));color.setHSL(map(i,0,totalPoints,1.0,0.0),1.0,0.5);colors.push(color.r,color.g,color.b);phases.push(rand(1000));sizes.push(1);mIndexs.push(map(i,0,totalPoints,1.0,0.0));}
+  geometry.setAttribute("position",new THREE.Float32BufferAttribute(positions,3).setUsage(THREE.DynamicDrawUsage));geometry.setAttribute("color",new THREE.Float32BufferAttribute(colors,3));geometry.setAttribute("size",new THREE.Float32BufferAttribute(sizes,1));geometry.setAttribute("phase",new THREE.Float32BufferAttribute(phases,1));geometry.setAttribute("mIndex",new THREE.Float32BufferAttribute(mIndexs,1));
+  const tree=new THREE.Points(geometry,shaderMaterial);const[px,py,pz]=treePosition;tree.position.set(px,py,pz);scene.add(tree);
+}
+function addSnow(scene,uniforms){
+  const vertexShader=\`attribute float size;attribute float phase;attribute float phaseSecondary;varying vec3 vColor;varying float opacity;uniform float time;uniform float step;float norm(float v,float min,float max){return(v-min)/(max-min);}float lerp(float n,float min,float max){return(max-min)*n+min;}float map(float v,float sMin,float sMax,float dMin,float dMax){return lerp(norm(v,sMin,sMax),dMin,dMax);}void main(){float t=time*0.0006;vColor=color;vec3 p=position;p.y=map(mod(phase+step,1000.0),0.0,1000.0,25.0,-8.0);p.x+=sin(t+phase);p.z+=sin(t+phaseSecondary);opacity=map(p.z,-150.0,15.0,0.0,1.0);vec4 mvPosition=modelViewMatrix*vec4(p,1.0);gl_PointSize=size*(100.0/-mvPosition.z);gl_Position=projectionMatrix*mvPosition;}\`;
+  const fragmentShader=\`uniform sampler2D pointTexture;varying vec3 vColor;varying float opacity;void main(){gl_FragColor=vec4(vColor,opacity);gl_FragColor=gl_FragColor*texture2D(pointTexture,gl_PointCoord);}\`;
+  const sprites=["https://assets.codepen.io/3685267/snowflake1.png","https://assets.codepen.io/3685267/snowflake2.png","https://assets.codepen.io/3685267/snowflake3.png","https://assets.codepen.io/3685267/snowflake4.png","https://assets.codepen.io/3685267/snowflake5.png"];
+  sprites.forEach(sprite=>{
+    const shaderMaterial=new THREE.ShaderMaterial({uniforms:{...uniforms,pointTexture:{value:new THREE.TextureLoader().load(sprite)}},vertexShader,fragmentShader,blending:THREE.AdditiveBlending,depthTest:false,transparent:true,vertexColors:true});
+    const geometry=new THREE.BufferGeometry();const positions=[],colors=[],sizes=[],phases=[],phaseSecondaries=[];const color=new THREE.Color();
+    for(let i=0;i<300;i++){positions.push(rand(25,-25),0,rand(15,-150));color.set(randChoise(["#f1d4d4","#f1f6f9","#eeeeee","#f1f1e8"]));colors.push(color.r,color.g,color.b);phases.push(rand(1000));phaseSecondaries.push(rand(1000));sizes.push(rand(4,2));}
+    geometry.setAttribute("position",new THREE.Float32BufferAttribute(positions,3));geometry.setAttribute("color",new THREE.Float32BufferAttribute(colors,3));geometry.setAttribute("size",new THREE.Float32BufferAttribute(sizes,1));geometry.setAttribute("phase",new THREE.Float32BufferAttribute(phases,1));geometry.setAttribute("phaseSecondary",new THREE.Float32BufferAttribute(phaseSecondaries,1));
+    scene.add(new THREE.Points(geometry,shaderMaterial));
+  });
+}
+function addPlane(scene,uniforms,totalPoints){
+  const vertexShader=\`attribute float size;attribute vec3 customColor;varying vec3 vColor;void main(){vColor=customColor;vec4 mvPosition=modelViewMatrix*vec4(position,1.0);gl_PointSize=size*(300.0/-mvPosition.z);gl_Position=projectionMatrix*mvPosition;}\`;
+  const fragmentShader=\`uniform vec3 color;uniform sampler2D pointTexture;varying vec3 vColor;void main(){gl_FragColor=vec4(vColor,1.0);gl_FragColor=gl_FragColor*texture2D(pointTexture,gl_PointCoord);}\`;
+  const shaderMaterial=new THREE.ShaderMaterial({uniforms:{...uniforms,pointTexture:{value:new THREE.TextureLoader().load("https://assets.codepen.io/3685267/spark1.png")}},vertexShader,fragmentShader,blending:THREE.AdditiveBlending,depthTest:false,transparent:true,vertexColors:true});
+  const geometry=new THREE.BufferGeometry();const positions=[],colors=[],sizes=[];const color=new THREE.Color();
+  for(let i=0;i<totalPoints;i++){positions.push(rand(-25,25),0,rand(-150,15));color.set(randChoise(["#93abd3","#f2f4c0","#9ddfd3"]));colors.push(color.r,color.g,color.b);sizes.push(1);}
+  geometry.setAttribute("position",new THREE.Float32BufferAttribute(positions,3).setUsage(THREE.DynamicDrawUsage));geometry.setAttribute("customColor",new THREE.Float32BufferAttribute(colors,3));geometry.setAttribute("size",new THREE.Float32BufferAttribute(sizes,1));
+  const plane=new THREE.Points(geometry,shaderMaterial);plane.position.y=-8;scene.add(plane);
+}
+<\/script></body></html>`;
+  }
+
   function applyTheme(theme) {
     currentTheme = theme;
+
+    // [FIX] Stop deluxe mode when switching away
+    if (theme !== "deluxe") {
+      stopDeluxeChristmas();
+    }
 
     if (theme === "dark") document.documentElement.setAttribute("data-theme", "dark");
     else if (theme === "light") document.documentElement.setAttribute("data-theme", "light");
     else if (theme === "christmas") document.documentElement.setAttribute("data-theme", "christmas");
+    else if (theme === "deluxe") document.documentElement.setAttribute("data-theme", "christmas"); // Use christmas colors
     else document.documentElement.removeAttribute("data-theme");
 
     document.querySelectorAll(".theme-option").forEach(opt => {
       opt.classList.toggle("active", opt.dataset.theme === theme);
     });
 
-    if (theme === "christmas") startSnow();
-    else stopSnow();
+    if (theme === "christmas") {
+      startSnow();
+    } else if (theme === "deluxe") {
+      stopSnow();
+      startDeluxeChristmas();
+    } else {
+      stopSnow();
+    }
   }
 
   // ---------- 2026 tracker ----------
@@ -2087,26 +2344,45 @@ await fetch("/.netlify/functions/room", {
   }
 
   window.forceDeviceTakeover = async function() {
-    console.log("[PRESENCE] 🔄 TAKEOVER starting");
+    // [FIX] Prevent spam clicking
+    if (takeoverInProgress) {
+      console.log("[PRESENCE] Takeover already in progress, ignoring");
+      return;
+    }
     
-    // [OK] Set grace period FIRST
-    takeoverGraceUntil = Date.now() + 6000;
-    deviceLocked = false;
-    hideDeviceConflict();
+    takeoverInProgress = true;
+    console.log("[PRESENCE] TAKEOVER starting");
     
-    // Re-track WebSocket presence
-    try { await stopLivePresence(); } catch(e) {}
-    initLivePresence();
-    
-    // Push to database
-    await pushRemoteState();
-    
-    console.log("[PRESENCE] 🔄 TAKEOVER complete");
-    showToast("You are now the active device");
+    try {
+      // [OK] Set grace period FIRST
+      takeoverGraceUntil = Date.now() + 6000;
+      deviceLocked = false;
+      hideDeviceConflict();
+      
+      // Re-track WebSocket presence with fresh timestamp
+      try { await stopLivePresence(); } catch(e) {}
+      initLivePresence();
+      
+      // Push to database - this updates our timestamp to be newest
+      await pushRemoteState();
+      
+      // [FIX] Complete the login flow since we were blocked before
+      $("closeWhoModal").classList.remove("hidden");
+      closeWhoModal();
+      updateUserDuoPills();
+      
+      // Sync state to get latest data
+      await pullRemoteState({ silent: false });
+      
+      console.log("[PRESENCE] TAKEOVER complete");
+      showToast("You are now the active device");
+    } finally {
+      takeoverInProgress = false;
+    }
   };
 
   window.switchToOtherUser = async function(otherUser) {
-    console.log("[PRESENCE] 🔀 SWITCH starting to:", otherUser);
+    console.log("[PRESENCE] SWITCH starting to:", otherUser);
     
     // [OK] Set grace period
     loginGraceUntil = Date.now() + 5000;
@@ -2128,6 +2404,10 @@ await fetch("/.netlify/functions/room", {
     
     // Switch to the other user
     saveUser(otherUser);
+    
+    // [FIX] Complete the login flow
+    $("closeWhoModal").classList.remove("hidden");
+    closeWhoModal();
     updateUserDuoPills();
     
     // Start WebSocket presence for new user
@@ -2137,7 +2417,7 @@ await fetch("/.netlify/functions/room", {
     await pushRemoteState();
     await pullRemoteState({ silent: false });
     
-    console.log("[PRESENCE] 🔀 SWITCH complete to:", otherUser);
+    console.log("[PRESENCE] SWITCH complete to:", otherUser);
     showToast(`Switched to ${otherUser}`);
 
   };
@@ -2461,34 +2741,99 @@ await fetch("/.netlify/functions/room", {
     modal.setAttribute("aria-hidden", "true");
   }
 
+  // [FIX] Check for existing sessions BEFORE allowing login
+  async function checkForExistingSession(name) {
+    const nameLower = name.toLowerCase();
+    try {
+      // Check WebSocket presence first (fastest)
+      if (presenceChannel) {
+        const state = presenceChannel.presenceState?.() || {};
+        const userPresences = state[nameLower] || [];
+        const myDeviceId = getDeviceId();
+        const now = Date.now();
+        
+        for (const p of userPresences) {
+          if (p.deviceId !== myDeviceId) {
+            const age = p.onlineAt ? (now - Date.parse(p.onlineAt)) : 0;
+            if (age < 60000) {
+              return true; // Active session on another device
+            }
+          }
+        }
+      }
+      
+      // Also check database (backup)
+      const resp = await fetch(`/.netlify/functions/room?room=${ROOM_CODE}`);
+      if (resp.ok) {
+        const data = await resp.json();
+        if (data.presence?.[nameLower]) {
+          const ts = Date.parse(data.presence[nameLower]);
+          if (Date.now() - ts < 30000) { // Within 30 seconds
+            const serverDeviceId = data.devices?.[nameLower];
+            if (serverDeviceId && serverDeviceId !== getDeviceId()) {
+              return true;
+            }
+          }
+        }
+      }
+    } catch (e) {
+      console.log("[PRESENCE] Pre-check error (continuing):", e);
+    }
+    return false;
+  }
+
   async function setUserAndStart(name) {
+    // [FIX] Prevent spam clicking
+    if (loginInProgress) {
+      console.log("[PRESENCE] Login already in progress, ignoring");
+      return;
+    }
+    
+    loginInProgress = true;
     console.log("[PRESENCE] [KEY] LOGIN starting for:", name);
     
-    // [OK] Set login grace period FIRST (6 seconds to handle slow networks)
-    loginGraceUntil = Date.now() + 6000;
-    
-    // Ensure prior presence channel is cleanly removed before switching keys
-    try { await stopLivePresence(); } catch {}
-    saveUser(name);
+    try {
+      // [FIX] Check for existing session BEFORE proceeding
+      const hasExistingSession = await checkForExistingSession(name);
+      if (hasExistingSession) {
+        console.log("[PRESENCE] Existing session detected - showing conflict");
+        // Don't proceed with login - show conflict immediately
+        saveUser(name); // Temporarily save so conflict UI can work
+        loginGraceUntil = 0; // No grace - we KNOW there's a conflict
+        deviceLocked = true;
+        showDeviceConflict(name);
+        loginInProgress = false;
+        return; // DO NOT proceed with login
+      }
+      
+      // [OK] Set login grace period (6 seconds to handle slow networks)
+      loginGraceUntil = Date.now() + 6000;
+      
+      // Ensure prior presence channel is cleanly removed before switching keys
+      try { await stopLivePresence(); } catch {}
+      saveUser(name);
 
-    $("closeWhoModal").classList.remove("hidden");
-    closeWhoModal();
+      $("closeWhoModal").classList.remove("hidden");
+      closeWhoModal();
 
-    updateUserDuoPills();
+      updateUserDuoPills();
 
-    setSyncStatus("pulling");
-    
-    // Sync state
-    showSyncingIndicator();
-    await pullRemoteState({ silent: false });
-    await pushRemoteState();
-    hideSyncingIndicator();
+      setSyncStatus("pulling");
+      
+      // Sync state
+      showSyncingIndicator();
+      await pullRemoteState({ silent: false });
+      await pushRemoteState();
+      hideSyncingIndicator();
 
-    // [OK] Start presence (grace period protects against false conflicts)
-    startPresence();
-    
-    console.log("[PRESENCE] [KEY] LOGIN complete for:", name);
-    showToast(`USER SET: ${String(name).toUpperCase()}`);
+      // [OK] Start presence (grace period protects against false conflicts)
+      startPresence();
+      
+      console.log("[PRESENCE] [KEY] LOGIN complete for:", name);
+      showToast(`USER SET: ${String(name).toUpperCase()}`);
+    } finally {
+      loginInProgress = false;
+    }
   }
 
   async function logOffUser() {
@@ -3021,7 +3366,16 @@ $("systemMessageInput").addEventListener("input", (e) => {
   });
 
   $("notificationBell").addEventListener("click", () => {
-    $("notificationDropdown").classList.toggle("active");
+    const dropdown = $("notificationDropdown");
+    const isOpening = !dropdown.classList.contains("active");
+    dropdown.classList.toggle("active");
+    
+    // [FIX] Mark notifications as read when opening dropdown
+    if (isOpening) {
+      setTimeout(() => {
+        updateNotifications({ markAsRead: true });
+      }, 500); // Short delay so user sees the unread state briefly
+    }
   });
 
   $("btnNotifClearAll").addEventListener("click", (e) => {
