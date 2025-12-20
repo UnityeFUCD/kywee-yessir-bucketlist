@@ -15,15 +15,21 @@
     { version: "1.1.0", date: "2024-12-16", note: "Added attachments, daily emoticons, and character limits" },
     { version: "1.2.0", date: "2024-12-17", note: "New: Mini calendar, date picker, user colors, and stacking toasts" },
     { version: "1.3.0", date: "2024-12-19", note: "Fixed: Instant device conflict detection (~3s auto-resolve)" },
-    { version: "1.4.0", date: "2024-12-20", note: "New: Confetti on completion, delete saved missions, holiday calendar styling" }
+    { version: "1.4.0", date: "2024-12-20", note: "New: Confetti on completion, delete saved missions" },
+    { version: "1.4.1", date: "2024-12-20", note: "Fixed: User switching, undo confirmations, calendar dropdowns, game clips upload" }
   ];
-  const CURRENT_VERSION = "1.4.0";
+  const CURRENT_VERSION = "1.4.1";
 
   // [OK] UPCOMING EVENTS with type for distinct styling
   const UPCOMING_EVENTS = [
     { date: "2025-01-01", title: "New Year's Day", type: "holiday", icon: "🎆" },
     { date: "2025-02-14", title: "Valentine's Day", type: "holiday", icon: "💕" },
-    { date: "2025-12-25", title: "Christmas", type: "holiday", icon: "🎄" }
+    { date: "2025-11-27", title: "Thanksgiving", type: "holiday", icon: "🦃" },
+    { date: "2025-12-25", title: "Christmas", type: "holiday", icon: "🎄" },
+    { date: "2026-01-01", title: "New Year's Day", type: "holiday", icon: "🎆" },
+    { date: "2026-02-14", title: "Valentine's Day", type: "holiday", icon: "💕" },
+    { date: "2026-11-26", title: "Thanksgiving", type: "holiday", icon: "🦃" },
+    { date: "2026-12-25", title: "Christmas", type: "holiday", icon: "🎄" }
   ];
 
   // [FIX] Device-based user storage (like YouTube - persists across tabs on same device)
@@ -203,7 +209,7 @@ const DAILY_EMOTICONS = [
   // [OK] Prevent double-trigger of letter animation
   let letterAnimationInProgress = false;
 
-  const exampleActive = { title: "Test Mission (Example)", desc: "This is an example card", tag: "example", dueDate: "2025-01-15", done: false, isExample: true };
+  const exampleActive = { title: "Test Mission (Example)", desc: "This is an example card - shows all indicator types", tag: "example", done: false, isExample: true };
   const exampleCompleted = { title: "Test Completed (Example)", desc: "This is a completed example", tag: "example", done: true, isExample: true };
 
   let selectedSavedMissions = [];
@@ -275,6 +281,46 @@ const DAILY_EMOTICONS = [
     setTimeout(() => container.remove(), 4500);
   }
 
+  // [NEW] Confirmation modal for actions
+  function showConfirmModal(message, onConfirm, onCancel = null) {
+    // Remove any existing confirm modal
+    const existing = document.querySelector(".confirm-modal-overlay");
+    if (existing) existing.remove();
+    
+    const overlay = document.createElement("div");
+    overlay.className = "confirm-modal-overlay";
+    overlay.innerHTML = `
+      <div class="confirm-modal">
+        <div class="confirm-modal-message">${escapeHtml(message)}</div>
+        <div class="confirm-modal-buttons">
+          <button class="btn confirm-modal-cancel">Cancel</button>
+          <button class="btn primary confirm-modal-confirm">Confirm</button>
+        </div>
+      </div>
+    `;
+    
+    document.body.appendChild(overlay);
+    
+    // Add event listeners
+    overlay.querySelector(".confirm-modal-cancel").addEventListener("click", () => {
+      overlay.remove();
+      if (onCancel) onCancel();
+    });
+    
+    overlay.querySelector(".confirm-modal-confirm").addEventListener("click", () => {
+      overlay.remove();
+      onConfirm();
+    });
+    
+    // Close on backdrop click
+    overlay.addEventListener("click", (e) => {
+      if (e.target === overlay) {
+        overlay.remove();
+        if (onCancel) onCancel();
+      }
+    });
+  }
+
   // [OK] Check for system updates (new version)
   function checkSystemUpdates() {
     const lastSeen = localStorage.getItem(KEY_LAST_VERSION_SEEN);
@@ -285,7 +331,7 @@ const DAILY_EMOTICONS = [
     }
   }
 
-  // [OK] Check for upcoming events (3 days & 24 hours out)
+  // [FIX] Check for upcoming events - now 7 days out with daily countdown
   function checkUpcomingEvents() {
     const now = new Date();
     const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
@@ -295,13 +341,19 @@ const DAILY_EMOTICONS = [
       const diffMs = eventDate - today;
       const diffDays = Math.round(diffMs / (1000 * 60 * 60 * 24));
       
-      if (diffDays === 3) {
-        showToast(`📅 3 days until ${event.title}!`, "event");
-      } else if (diffDays === 1) {
-        showToast(`⏰ Tomorrow: ${event.title}!`, "event");
+      // Show notification for events within 7 days (but not past)
+      if (diffDays > 0 && diffDays <= 7) {
+        const icon = event.icon || "📅";
+        if (diffDays === 1) {
+          showToast(`${icon} Tomorrow: ${event.title}!`, "event");
+        } else {
+          showToast(`${icon} ${event.title} in ${diffDays} days!`, "event");
+        }
       } else if (diffDays === 0) {
-        showToast(`🎉 Today is ${event.title}!`, "event");
+        const icon = event.icon || "🎉";
+        showToast(`${icon} Today is ${event.title}!`, "event");
       }
+      // Events in the past are automatically not shown (diffDays < 0)
     });
   }
 
@@ -772,69 +824,79 @@ const DAILY_EMOTICONS = [
     $("lightboxCounter").textContent = `${lightboxCurrentIndex + 1} / ${photos.length}`;
   }
 
-  // [OK] Medal clips functions
-  async function fetchMedalClips() {
-    const container = $("medalClips");
+  // [FIX] Game Clips (renamed from Medal Clips) - now supports user uploads
+  const KEY_GAME_CLIPS = "bucketlist_2026_game_clips";
+  
+  function loadGameClips() {
+    try {
+      return JSON.parse(localStorage.getItem(KEY_GAME_CLIPS)) || [];
+    } catch { return []; }
+  }
+  
+  function saveGameClips(clips) {
+    localStorage.setItem(KEY_GAME_CLIPS, JSON.stringify(clips));
+    schedulePush();
+  }
+  
+  function renderGameClips() {
+    const container = $("medalClips"); // Keep same container ID for compatibility
     if (!container) return;
     
-    container.innerHTML = '<div class="medal-empty">Loading clips...</div>';
+    const clips = loadGameClips();
     
-    try {
-      const res = await fetch("/.netlify/functions/medal?limit=12");
-      if (!res.ok) throw new Error("Failed to fetch");
-      
-      const data = await res.json();
-      const clips = data.contentObjects || [];
-      
-      if (clips.length === 0) {
-        container.innerHTML = '<div class="medal-empty">No clips found</div>';
-        return;
-      }
-      
-      container.innerHTML = "";
-      clips.forEach(clip => {
-        const card = document.createElement("div");
-        card.className = "medal-card";
-        card.innerHTML = `
-          <div class="medal-thumb" style="background-image: url('${escapeHtml(clip.thumbnail || '')}')">
-            <div class="medal-play"><i class="fas fa-play"></i></div>
-          </div>
-          <div class="medal-info">
-            <div class="medal-title">${escapeHtml(clip.contentTitle || 'Untitled')}</div>
-            <div class="medal-game">${escapeHtml(clip.categoryName || '')}</div>
-          </div>
-        `;
-        
-        card.addEventListener("click", () => {
-          openMedalModal(clip);
-        });
-        
-        container.appendChild(card);
-      });
-    } catch (err) {
-      console.error("Medal fetch error:", err);
-      container.innerHTML = '<div class="medal-empty">Failed to load clips</div>';
+    if (clips.length === 0) {
+      container.innerHTML = '<div class="medal-empty">No clips yet. Upload your first game clip!</div>';
+      return;
     }
+    
+    container.innerHTML = "";
+    clips.forEach((clip, idx) => {
+      const card = document.createElement("div");
+      card.className = "medal-card";
+      
+      // Generate thumbnail from video or use placeholder
+      card.innerHTML = `
+        <div class="medal-thumb" style="background: linear-gradient(45deg, var(--accent), var(--accent-secondary));">
+          <div class="medal-play"><i class="fas fa-play"></i></div>
+        </div>
+        <div class="medal-info">
+          <div class="medal-title">${escapeHtml(clip.title || 'Untitled Clip')}</div>
+          <div class="medal-game">${escapeHtml(clip.date || '')}</div>
+        </div>
+        <button class="medal-delete" data-idx="${idx}" title="Delete clip"><i class="fas fa-times"></i></button>
+      `;
+      
+      card.querySelector(".medal-thumb").addEventListener("click", () => {
+        openGameClipModal(clip);
+      });
+      
+      card.querySelector(".medal-delete").addEventListener("click", (e) => {
+        e.stopPropagation();
+        showConfirmModal("Delete this game clip?", () => {
+          const clipsNow = loadGameClips();
+          clipsNow.splice(idx, 1);
+          saveGameClips(clipsNow);
+          renderGameClips();
+          showToast("Clip deleted");
+        });
+      });
+      
+      container.appendChild(card);
+    });
   }
-
-  // [FIX] Medal modal - open clips in overlay instead of new tab
-  function openMedalModal(clip) {
+  
+  function openGameClipModal(clip) {
     const modal = $("medalModal");
     const content = $("medalModalContent");
     if (!modal || !content) return;
     
-    // Use the embed URL if available, otherwise use direct URL
-    const embedUrl = clip.contentUrl || clip.rawFileUrl || '';
-    
     content.innerHTML = `
       <div class="medal-modal-info">
-        <h4>${escapeHtml(clip.contentTitle || 'Medal Clip')}</h4>
-        <a href="${escapeHtml(embedUrl)}" target="_blank" class="btn" style="font-size:10px;">
-          <i class="fas fa-external-link-alt"></i> Open in Medal
-        </a>
+        <h4>${escapeHtml(clip.title || 'Game Clip')}</h4>
+        ${clip.date ? `<span style="color: var(--muted); font-size: 11px;">${escapeHtml(clip.date)}</span>` : ''}
       </div>
       <video controls autoplay playsinline style="width:100%;max-height:70vh;">
-        <source src="${escapeHtml(embedUrl)}" type="video/mp4">
+        <source src="${escapeHtml(clip.url)}" type="video/mp4">
         Your browser doesn't support video playback.
       </video>
     `;
@@ -852,6 +914,32 @@ const DAILY_EMOTICONS = [
     }
     if (content) {
       content.innerHTML = ""; // Stop video
+    }
+  }
+  
+  // Game clip upload handler
+  async function uploadGameClip(file, title, date) {
+    try {
+      showToast("Uploading clip...");
+      const url = await uploadPhotoToSupabase(file); // Reuse photo upload function
+      
+      const clips = loadGameClips();
+      clips.push({
+        url,
+        title: title || "Untitled Clip",
+        date: date || new Date().toISOString().split('T')[0],
+        uploadedAt: new Date().toISOString(),
+        uploadedBy: loadUser()
+      });
+      
+      saveGameClips(clips);
+      renderGameClips();
+      showToast("Clip uploaded!");
+      return true;
+    } catch (err) {
+      console.error("Game clip upload error:", err);
+      showToast("Upload failed: " + err.message);
+      return false;
     }
   }
 
@@ -1916,6 +2004,9 @@ const DAILY_EMOTICONS = [
 
     // [OK] Build photos array
     const photos = loadPhotos();
+    
+    // [FIX] Build game clips array
+    const gameClips = loadGameClips();
 
     // [OK] Track active device per user
     const user = loadUser()?.toLowerCase();
@@ -1935,6 +2026,7 @@ const DAILY_EMOTICONS = [
       systemMessage: loadSystemMessage(),
       readState,
       photos,
+      gameClips,
       activeDevices,
     };
   }
@@ -1974,6 +2066,11 @@ const DAILY_EMOTICONS = [
     // [OK] Apply photos from server
     if (Array.isArray(state.photos)) {
       localStorage.setItem(KEY_PHOTOS, JSON.stringify(state.photos));
+    }
+    
+    // [FIX] Apply game clips from server
+    if (Array.isArray(state.gameClips)) {
+      localStorage.setItem(KEY_GAME_CLIPS, JSON.stringify(state.gameClips));
     }
 
     // [OK] sanitize messages from remote too
@@ -2349,11 +2446,15 @@ const DAILY_EMOTICONS = [
 
         const rm = el.querySelector("button");
         rm.addEventListener("click", () => {
-          const itemsNow = loadActive();
-          const actualIdx = idx - 1;
-          itemsNow.splice(actualIdx, 1);
-          saveActive(itemsNow);
-          renderActive();
+          // [FIX] Show confirmation before removing
+          showConfirmModal("Are you sure you want to remove this mission?", () => {
+            const itemsNow = loadActive();
+            const actualIdx = idx - 1;
+            itemsNow.splice(actualIdx, 1);
+            saveActive(itemsNow);
+            renderActive();
+            showToast("Mission removed");
+          });
         });
       }
 
@@ -2396,18 +2497,22 @@ const DAILY_EMOTICONS = [
       if (!it.isExample) {
         const undo = el.querySelector("button");
         undo.addEventListener("click", () => {
-          const completedNow = loadCompleted();
-          const actualIdx = idx - 1;
-          const mission = completedNow[actualIdx];
-          completedNow.splice(actualIdx, 1);
-          saveCompleted(completedNow);
+          // [FIX] Show confirmation before undoing
+          showConfirmModal("Are you sure you want to undo this mission?", () => {
+            const completedNow = loadCompleted();
+            const actualIdx = idx - 1;
+            const mission = completedNow[actualIdx];
+            completedNow.splice(actualIdx, 1);
+            saveCompleted(completedNow);
 
-          const active = loadActive();
-          active.push({ ...mission, done: false });
-          saveActive(active);
+            const active = loadActive();
+            active.push({ ...mission, done: false });
+            saveActive(active);
 
-          renderActive();
-          renderCompleted();
+            renderActive();
+            renderCompleted();
+            showToast("Mission moved back to active");
+          });
         });
       }
 
@@ -2458,7 +2563,7 @@ const DAILY_EMOTICONS = [
     }
   }
 
-  // [OK] Big Calendar with arrow navigation
+  // [OK] Big Calendar with arrow navigation AND dropdown selectors
   let calendarYear = new Date().getFullYear();
   let calendarMonth = new Date().getMonth();
 
@@ -2472,15 +2577,27 @@ const DAILY_EMOTICONS = [
     
     const monthNames = ["January", "February", "March", "April", "May", "June", 
                         "July", "August", "September", "October", "November", "December"];
+    const monthShort = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
+    
+    // Generate year options (current year -1 to +5)
+    const yearOptions = [];
+    for (let y = currentYear - 1; y <= currentYear + 5; y++) {
+      yearOptions.push(`<option value="${y}" ${y === calendarYear ? 'selected' : ''}>${y}</option>`);
+    }
+    
+    // Generate month options
+    const monthOptions = monthShort.map((m, i) => 
+      `<option value="${i}" ${i === calendarMonth ? 'selected' : ''}>${m}</option>`
+    ).join('');
     
     const eventDates = getEventDates();
     
     calContainer.innerHTML = `
       <div class="calendar__header">
         <button class="calendar__nav" id="calPrevMonth"><i class="fas fa-chevron-left"></i></button>
-        <div class="calendar__title">
-          <span class="calendar__month-name">${monthNames[calendarMonth]}</span>
-          <span class="calendar__year">${calendarYear}</span>
+        <div class="calendar__selectors">
+          <select class="calendar__select" id="calMonthSelect">${monthOptions}</select>
+          <select class="calendar__select" id="calYearSelect">${yearOptions.join('')}</select>
         </div>
         <button class="calendar__nav" id="calNextMonth"><i class="fas fa-chevron-right"></i></button>
       </div>
@@ -2550,6 +2667,16 @@ const DAILY_EMOTICONS = [
     document.getElementById('calNextMonth').addEventListener('click', () => {
       calendarMonth++;
       if (calendarMonth > 11) { calendarMonth = 0; calendarYear++; }
+      renderBigCalendar();
+    });
+    
+    // Add dropdown change listeners
+    document.getElementById('calMonthSelect').addEventListener('change', (e) => {
+      calendarMonth = parseInt(e.target.value);
+      renderBigCalendar();
+    });
+    document.getElementById('calYearSelect').addEventListener('change', (e) => {
+      calendarYear = parseInt(e.target.value);
       renderBigCalendar();
     });
   }
@@ -2739,6 +2866,14 @@ const DAILY_EMOTICONS = [
   
   if (btnOpenEl) btnOpenEl.addEventListener("click", openGift);
   if (btnHomeEl) btnHomeEl.addEventListener("click", goHome);
+
+  // [FIX] User pill click handler for switching users
+  const userPillEl = $("userPill");
+  if (userPillEl) {
+    userPillEl.addEventListener("click", () => {
+      openWhoModal();
+    });
+  }
 
   const btnWhoYasirEl = $("btnWhoYasir");
   if (btnWhoYasirEl) {
@@ -3484,12 +3619,94 @@ const DAILY_EMOTICONS = [
     });
   }
 
-  // [OK] Refresh Medal clips button
-  const refreshMedalBtn = $("refreshMedal");
-  if (refreshMedalBtn) {
-    refreshMedalBtn.addEventListener("click", () => {
-      showToast("Refreshing clips...");
-      fetchMedalClips();
+  // [FIX] Game Clips upload button (renamed from Medal)
+  const gameClipUploadBtn = $("refreshMedal"); // Reuse same button ID
+  if (gameClipUploadBtn) {
+    // Change button to upload
+    gameClipUploadBtn.innerHTML = '<i class="fas fa-plus"></i>';
+    gameClipUploadBtn.title = "Upload a game clip";
+    
+    gameClipUploadBtn.addEventListener("click", () => {
+      showGameClipUploadModal();
+    });
+  }
+  
+  function showGameClipUploadModal() {
+    const existing = document.querySelector(".game-clip-upload-modal");
+    if (existing) existing.remove();
+    
+    const modal = document.createElement("div");
+    modal.className = "game-clip-upload-modal confirm-modal-overlay";
+    modal.innerHTML = `
+      <div class="confirm-modal" style="max-width: 400px;">
+        <h4 style="margin-bottom: 15px;"><i class="fas fa-video"></i> Upload Game Clip</h4>
+        <div style="margin-bottom: 12px;">
+          <label style="display: block; margin-bottom: 5px; font-size: 11px; color: var(--muted);">Video File *</label>
+          <input type="file" id="gameClipFile" accept="video/*" style="width: 100%;">
+        </div>
+        <div style="margin-bottom: 12px;">
+          <label style="display: block; margin-bottom: 5px; font-size: 11px; color: var(--muted);">Title (optional)</label>
+          <input type="text" id="gameClipTitle" placeholder="Enter clip title..." class="input" style="width: 100%; padding: 8px;">
+        </div>
+        <div style="margin-bottom: 15px;">
+          <label style="display: block; margin-bottom: 5px; font-size: 11px; color: var(--muted);">Date (optional)</label>
+          <input type="date" id="gameClipDate" class="input" style="width: 100%; padding: 8px;">
+        </div>
+        <div class="confirm-modal-buttons">
+          <button class="btn" id="cancelGameClipUpload">Cancel</button>
+          <button class="btn primary" id="confirmGameClipUpload"><i class="fas fa-upload"></i> Upload</button>
+        </div>
+      </div>
+    `;
+    
+    document.body.appendChild(modal);
+    
+    // Set default date to today
+    const dateInput = modal.querySelector("#gameClipDate");
+    dateInput.value = new Date().toISOString().split('T')[0];
+    
+    modal.querySelector("#cancelGameClipUpload").addEventListener("click", () => modal.remove());
+    
+    modal.querySelector("#confirmGameClipUpload").addEventListener("click", async () => {
+      const fileInput = modal.querySelector("#gameClipFile");
+      const titleInput = modal.querySelector("#gameClipTitle");
+      const dateInputVal = modal.querySelector("#gameClipDate");
+      
+      const file = fileInput.files?.[0];
+      if (!file) {
+        showToast("Please select a video file");
+        return;
+      }
+      
+      if (!file.type.startsWith("video/")) {
+        showToast("Only video files are allowed");
+        return;
+      }
+      
+      // Size check (100MB max for videos)
+      if (file.size > 100 * 1024 * 1024) {
+        showToast("Video too large (max 100MB)");
+        return;
+      }
+      
+      const title = titleInput.value.trim();
+      const date = dateInputVal.value;
+      
+      modal.querySelector("#confirmGameClipUpload").disabled = true;
+      modal.querySelector("#confirmGameClipUpload").innerHTML = '<i class="fas fa-spinner fa-spin"></i> Uploading...';
+      
+      const success = await uploadGameClip(file, title, date);
+      
+      if (success) {
+        modal.remove();
+      } else {
+        modal.querySelector("#confirmGameClipUpload").disabled = false;
+        modal.querySelector("#confirmGameClipUpload").innerHTML = '<i class="fas fa-upload"></i> Upload';
+      }
+    });
+    
+    modal.addEventListener("click", (e) => {
+      if (e.target === modal) modal.remove();
     });
   }
 
@@ -3598,8 +3815,8 @@ ${completed.map(i => `[X] ${i.title}  ${i.desc} (#${i.tag})`).join("\n")}
     // [OK] Render photo gallery
     renderPhotoGallery();
 
-    // [OK] Fetch Medal clips (if configured)
-    fetchMedalClips();
+    // [FIX] Render game clips (user uploads)
+    renderGameClips();
 
     // [OK] Render big calendar initially
     renderBigCalendar();
