@@ -3529,9 +3529,12 @@ ${completed.map(i => `[X] ${i.title}  ${i.desc} (#${i.tag})`).join("\n")}
       $("closeWhoModal").classList.add("hidden");
     } else {
       $("closeWhoModal").classList.remove("hidden");
-      // [OK] Immediately claim device on page load for existing users
+      // [FIX] Set grace period on page load to prevent false conflicts
+      loginGraceUntil = Date.now() + 3000;
+      // Immediately claim device on page load for existing users
       await pushRemoteState();
       startPresence();
       updateUserDuoPills();
+      console.log("[DEVICE] Claimed device for", loadUser());
     }
   })();
