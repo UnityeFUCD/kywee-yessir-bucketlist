@@ -9,7 +9,7 @@
   const KEY_LAST_VERSION_SEEN = "bucketlist_2026_last_version";
   const KEY_PHOTOS = "bucketlist_2026_photos";
 
-  // Γ£à VERSION HISTORY for system update notifications
+  // [OK] VERSION HISTORY for system update notifications
   const VERSION_HISTORY = [
     { version: "1.0.0", date: "2024-12-15", note: "Initial release with missions, messages, and sync" },
     { version: "1.1.0", date: "2024-12-16", note: "Added attachments, daily emoticons, and character limits" },
@@ -18,22 +18,22 @@
   ];
   const CURRENT_VERSION = "1.3.0";
 
-  // Γ£à UPCOMING EVENTS (add your special dates here!)
+  // [OK] UPCOMING EVENTS (add your special dates here!)
   const UPCOMING_EVENTS = [
-    { date: "2025-01-01", title: "New Year's Day ≡ƒÄë" },
-    { date: "2025-02-14", title: "Valentine's Day ≡ƒÆò" },
-    { date: "2025-12-25", title: "Christmas ≡ƒÄä" }
+    { date: "2025-01-01", title: "New Year's Day 🎉" },
+    { date: "2025-02-14", title: "Valentine's Day 💕" },
+    { date: "2025-12-25", title: "Christmas 🎄" }
   ];
 
-  // Γ£à session user (per-tab). persists on refresh, new tab asks again.
+  // [OK] session user (per-tab). persists on refresh, new tab asks again.
   const SESSION_USER_KEY = "bucketlist_2026_session_user";
 
-  // Γ£à per-user "read" tracking (local only)
+  // [OK] per-user "read" tracking (local only)
   function keyLastRead(user) {
     return `bucketlist_2026_lastread_${String(user || "").toLowerCase()}`;
   }
 
-  // Γ£à per-user dismissed notifications (local only - doesn't delete messages)
+  // [OK] per-user dismissed notifications (local only - doesn't delete messages)
   function keyDismissed(user) {
     return `bucketlist_2026_dismissed_${String(user || "").toLowerCase()}`;
   }
@@ -59,22 +59,22 @@
     return `${msg.timestamp}_${idx}_${(msg.content || "").substring(0,20)}`;
   }
 
-  // Γ£à shared room code
+  // [OK] shared room code
   const ROOM_CODE = "yasir-kylee";
 
-  // Γ£à [SUPABASE STORAGE CONFIG]
+  // [OK] [SUPABASE STORAGE CONFIG]
   const SUPABASE_URL = "https://pkgrlhwnwqtffdmcyqbk.supabase.co";
   const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InBrZ3JsaHdud3F0ZmZkbWN5cWJrIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjU3MDU2MjMsImV4cCI6MjA4MTI4MTYyM30.aZ8E_BLQW-90-AAJeneXmKnsfZ8LmPkdQ5ERAZ9JHNE";
   const STORAGE_BUCKET = "attachments";
   const PHOTOS_BUCKET = "photos";
 
-  // Γ£à Initialize Supabase client for Realtime Presence (WebSocket)
+  // [OK] Initialize Supabase client for Realtime Presence (WebSocket)
   // Avoid clashing with CDN's global `supabase` identifier
   const sbClient = window.supabase ? window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY) : null;
 
   const $ = (id) => document.getElementById(id);
 
-  // Γ£à Daily rotating ASCII art emoticons (larger braille art)
+  // [OK] Daily rotating ASCII art emoticons (larger braille art)
 const DAILY_EMOTICONS = [
 `⠀⠀⠀⠀⠀⠀⠀⠀⣀⣀⣀⣀⣀⣀⣀⣀⠀⠀⠀⠀⠀⠀⠀
 ⠀⠀⠀⠀⣠⣴⣾⣿⣿⣿⣿⣿⣿⣿⣿⣿⣷⣦⣄⠀⠀⠀⠀
@@ -147,7 +147,7 @@ const DAILY_EMOTICONS = [
         🎀 PRETTY 🎀`
 ];
 
-  // Γ£à Prevent double-trigger of letter animation
+  // [OK] Prevent double-trigger of letter animation
   let letterAnimationInProgress = false;
 
   const exampleActive = { title: "Test Mission (Example)", desc: "This is an example card", tag: "example", dueDate: "2025-01-15", done: false, isExample: true };
@@ -156,7 +156,7 @@ const DAILY_EMOTICONS = [
   let selectedSavedMissions = [];
   let currentTheme = "system";
 
-  // Γ£à SMART POLLING state
+  // [OK] SMART POLLING state
   let lastRemoteUpdatedAt = null;
   let lastPresenceVersion = 0;
   let pollTimer = null;
@@ -171,7 +171,7 @@ const DAILY_EMOTICONS = [
       .replaceAll("'", "&#039;");
   }
 
-  // Γ£à Toast container for stacking notifications
+  // [OK] Toast container for stacking notifications
   function ensureToastContainer() {
     let container = document.getElementById("toastContainer");
     if (!container) {
@@ -196,17 +196,43 @@ const DAILY_EMOTICONS = [
     }, 3000);
   }
 
-  // Γ£à Check for system updates (new version)
+  // Confetti celebration animation for completed missions
+  function triggerConfetti() {
+    const confettiContainer = document.createElement("div");
+    confettiContainer.className = "confetti-container";
+    document.body.appendChild(confettiContainer);
+    
+    const colors = ["#ff6b9d", "#c44569", "#f8b500", "#7bed9f", "#70a1ff", "#5352ed", "#ff4757"];
+    const shapes = ["square", "circle"];
+    
+    // Create 50 confetti pieces
+    for (let i = 0; i < 50; i++) {
+      const confetti = document.createElement("div");
+      confetti.className = `confetti ${shapes[Math.floor(Math.random() * shapes.length)]}`;
+      confetti.style.left = Math.random() * 100 + "vw";
+      confetti.style.backgroundColor = colors[Math.floor(Math.random() * colors.length)];
+      confetti.style.animationDelay = Math.random() * 0.5 + "s";
+      confetti.style.animationDuration = (2 + Math.random() * 2) + "s";
+      confettiContainer.appendChild(confetti);
+    }
+    
+    // Auto-cleanup after animation
+    setTimeout(() => {
+      confettiContainer.remove();
+    }, 4000);
+  }
+
+  // [OK] Check for system updates (new version)
   function checkSystemUpdates() {
     const lastSeen = localStorage.getItem(KEY_LAST_VERSION_SEEN);
     if (lastSeen !== CURRENT_VERSION) {
       const latest = VERSION_HISTORY[VERSION_HISTORY.length - 1];
-      showToast(`≡ƒåò Update v${latest.version}: ${latest.note}`, "info");
+      showToast(`🆕 Update v${latest.version}: ${latest.note}`, "info");
       localStorage.setItem(KEY_LAST_VERSION_SEEN, CURRENT_VERSION);
     }
   }
 
-  // Γ£à Check for upcoming events (3 days & 24 hours out)
+  // [OK] Check for upcoming events (3 days & 24 hours out)
   function checkUpcomingEvents() {
     const now = new Date();
     const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
@@ -217,11 +243,11 @@ const DAILY_EMOTICONS = [
       const diffDays = Math.round(diffMs / (1000 * 60 * 60 * 24));
       
       if (diffDays === 3) {
-        showToast(`≡ƒôà 3 days until ${event.title}!`, "event");
+        showToast(`📅 3 days until ${event.title}!`, "event");
       } else if (diffDays === 1) {
-        showToast(`ΓÅ░ Tomorrow: ${event.title}!`, "event");
+        showToast(`[CLOCK] Tomorrow: ${event.title}!`, "event");
       } else if (diffDays === 0) {
-        showToast(`≡ƒÄë Today is ${event.title}!`, "event");
+        showToast(`🎉 Today is ${event.title}!`, "event");
       }
     });
   }
@@ -245,7 +271,7 @@ const DAILY_EMOTICONS = [
     }
   }
 
-  // Γ£à [FEATURE D] Get daily emoticon based on date
+  // [OK] [FEATURE D] Get daily emoticon based on date
   function getDailyEmoticon() {
     const today = new Date();
     const dateKey = `${today.getFullYear()}-${String(today.getMonth()+1).padStart(2,'0')}-${String(today.getDate()).padStart(2,'0')}`;
@@ -282,7 +308,7 @@ const DAILY_EMOTICONS = [
     const u = loadUser();
     if (!u) return;
     localStorage.setItem(keyLastRead(u), String(n));
-    // Γ£à Sync to server so other devices get updated read state
+    // [OK] Sync to server so other devices get updated read state
     schedulePush();
   }
 
@@ -321,7 +347,7 @@ const DAILY_EMOTICONS = [
   function loadCustomTags() { return loadArray(KEY_CUSTOM_TAGS); }
   function saveCustomTags(tags) { saveArray(KEY_CUSTOM_TAGS, tags); }
 
-  // Γ£à Photo Gallery functions
+  // [OK] Photo Gallery functions
   function loadPhotos() { return loadArray(KEY_PHOTOS); }
   function savePhotos(photos) { saveArray(KEY_PHOTOS, photos); }
 
@@ -355,7 +381,7 @@ const DAILY_EMOTICONS = [
     
     const photos = loadPhotos();
     
-    // Γ£à Save expanded state before re-render
+    // [OK] Save expanded state before re-render
     const expandedBundles = {};
     container.querySelectorAll('.gallery-mission-bundle').forEach(bundle => {
       const missionKey = bundle.dataset.mission;
@@ -376,7 +402,7 @@ const DAILY_EMOTICONS = [
       else {
         const note = document.createElement("div");
         note.className = "gallery-empty-note";
-        note.textContent = "Γåæ Click to expand. Your memories will appear below.";
+        note.textContent = "-> Click to expand. Your memories will appear below.";
         container.appendChild(note);
       }
       return;
@@ -396,10 +422,10 @@ const DAILY_EMOTICONS = [
       const isUnlinked = missionKey === "_unlinked_";
       const displayName = isUnlinked ? "Unlinked Photos" : missionKey;
       const photoCount = missionPhotos.length;
-      // Γ£à Allow adding to unlinked photos too (no limit for unlinked)
+      // [OK] Allow adding to unlinked photos too (no limit for unlinked)
       const canAddMore = isUnlinked || photoCount < 5;
       
-      // Γ£à Check if this bundle was expanded before re-render
+      // [OK] Check if this bundle was expanded before re-render
       const wasExpanded = expandedBundles[missionKey] === true;
       
       const bundle = document.createElement("div");
@@ -440,7 +466,7 @@ const DAILY_EMOTICONS = [
             updateMissionCapacity();
           }
           
-          // Γ£à Open the file picker immediately
+          // [OK] Open the file picker immediately
           const input = $("photoInput");
           if (input) input.click();
           
@@ -494,7 +520,7 @@ const DAILY_EMOTICONS = [
     });
   }
 
-  // Γ£à Link unlinked photos to a mission
+  // [OK] Link unlinked photos to a mission
   function showLinkMissionModal(photosToLink) {
     const existing = document.querySelector(".link-mission-modal");
     if (existing) existing.remove();
@@ -565,7 +591,7 @@ const DAILY_EMOTICONS = [
     });
   }
 
-  // Γ£à Delete confirmation modal
+  // [OK] Delete confirmation modal
   function showDeleteConfirm(type, identifier, photoObj = null) {
     const existing = document.querySelector(".delete-confirm-modal");
     if (existing) existing.remove();
@@ -621,7 +647,7 @@ const DAILY_EMOTICONS = [
     });
   }
 
-  // Γ£à Toggle bundle expand/collapse
+  // [OK] Toggle bundle expand/collapse
   window.toggleBundle = function(header) {
     const bundle = header.closest('.gallery-mission-bundle');
     const photos = bundle.querySelector('.bundle-photos');
@@ -676,7 +702,7 @@ const DAILY_EMOTICONS = [
     }
   }
 
-  // Γ£à Medal API functions
+  // [OK] Medal API functions
   let medalClips = [];
 
   async function fetchMedalClips() {
@@ -725,8 +751,8 @@ const DAILY_EMOTICONS = [
       const title = clip.contentTitle || "Untitled Clip";
       const game = clip.categoryName || clip.gameName || "";
       
-      // Γ£à Use the correct URL from API - contentUrl is the shareable link
-      // Fallback chain: contentUrl ΓåÆ directClipUrl ΓåÆ constructed URL
+      // [OK] Use the correct URL from API - contentUrl is the shareable link
+      // Fallback chain: contentUrl -> directClipUrl -> constructed URL
       const clipUrl = clip.contentUrl || clip.directClipUrl || `https://medal.tv/clips/${clip.contentId}`;
       
       // Debug logging to console
@@ -786,7 +812,7 @@ const DAILY_EMOTICONS = [
     $("loveNote").textContent = `// SYSTEM MESSAGE: ${v.toUpperCase()}`;
   }
 
-  // Γ£à Fix blank letter permanently: sanitize messages (drop empty content / missing from)
+  // [OK] Fix blank letter permanently: sanitize messages (drop empty content / missing from)
   function sanitizeMessages(arr) {
     if (!Array.isArray(arr)) return [];
     const cleaned = [];
@@ -795,10 +821,10 @@ const DAILY_EMOTICONS = [
       const timestamp = String(m?.timestamp || "").trim();
       const content = normalizeNewlines(m?.content ?? "").trim();
       if (!from) continue;
-      if (!content) continue; // ≡ƒöÑ removes blank letters forever
+      if (!content) continue; // [KEY] removes blank letters forever
       
       const cleanMsg = { from, timestamp, content };
-      // Γ£à PRESERVE attachment fields!
+      // [OK] PRESERVE attachment fields!
       if (m.attachment) {
         cleanMsg.attachment = m.attachment;
         cleanMsg.attachmentType = m.attachmentType || 'image';
@@ -823,13 +849,13 @@ const DAILY_EMOTICONS = [
     if (mode === "pulling") {
       setDot(dot, "yellow", true);
       if (label) label.textContent = "PULL";
-      $("syncPill").title = "Pulling updatesΓÇª";
+      $("syncPill").title = "Pulling updates...";
       return;
     }
     if (mode === "saving") {
       setDot(dot, "yellow", true);
       if (label) label.textContent = "SAVE";
-      $("syncPill").title = "Saving updatesΓÇª";
+      $("syncPill").title = "Saving updates...";
       return;
     }
     if (mode === "on") {
@@ -850,11 +876,11 @@ const DAILY_EMOTICONS = [
   }
 
   // ---------- Presence (duo online) ----------
-  const LOCK_TTL_MS = 3000; // ✅ REDUCED from 20000 for faster auto-resolve
+  const LOCK_TTL_MS = 3000; // [OK] REDUCED from 20000 for faster auto-resolve
   let presenceTimer = null;
   let lastPresence = null;
   let takeoverGraceUntil = 0;
-  let loginGraceUntil = 0; // ✅ Grace period after login
+  let loginGraceUntil = 0; // [OK] Grace period after login
 
   function normalizePerson(name) {
     const n = String(name || "").trim().toLowerCase();
@@ -866,11 +892,28 @@ const DAILY_EMOTICONS = [
   function isOnlineLive(nameLower) {
     try {
       if (!nameLower) return false;
+      
       // Use live presence if available
       if (typeof presenceChannel !== 'undefined' && presenceChannel) {
         const st = presenceChannel.presenceState?.() || {};
-        return Array.isArray(st[nameLower]) && st[nameLower].length > 0;
+        
+        // Presence is keyed by deviceId, so we need to iterate all entries
+        // and check if any have a matching user
+        for (const [key, presences] of Object.entries(st)) {
+          if (!Array.isArray(presences)) continue;
+          for (const p of presences) {
+            if (p.user === nameLower) {
+              // Check if presence is recent (within 45 seconds)
+              const age = p.onlineAt ? (Date.now() - Date.parse(p.onlineAt)) : 0;
+              if (age < 45000) {
+                return true;
+              }
+            }
+          }
+        }
+        return false;
       }
+      
       // Fallback to lastPresence timestamp (<=45s old = online)
       const ts = lastPresence?.[nameLower];
       if (!ts) return false;
@@ -924,11 +967,11 @@ const DAILY_EMOTICONS = [
         lastPresence = res.presence;
         updateUserDuoPills();
       }
-      // Γ£à Track presenceVersion from server
+      // [OK] Track presenceVersion from server
       if (res?.presenceVersion !== undefined) {
         lastPresenceVersion = res.presenceVersion;
       }
-      // Γ£à Check for device conflicts in presence response (instant detection)
+      // [OK] Check for device conflicts in presence response (instant detection)
       if (res?.activeDevices) {
         checkDeviceConflict(res.activeDevices);
       }
@@ -937,7 +980,7 @@ const DAILY_EMOTICONS = [
     }
   }
 
-  // Γ£à WebSocket-based presence using Supabase Realtime (fixes ghost session bug)
+  // [OK] WebSocket-based presence using Supabase Realtime (fixes ghost session bug)
   let presenceChannel = null;
   let livePresenceState = {};
 
@@ -956,7 +999,7 @@ const DAILY_EMOTICONS = [
     }
 
     try {
-      // ✅ FIX: Use deviceId as presence key (unique per device!)
+      // [OK] FIX: Use deviceId as presence key (unique per device!)
       const myDeviceId = getDeviceId();
       presenceChannel = sbClient.channel(`presence:${ROOM_CODE}`, {
         config: { presence: { key: myDeviceId } }
@@ -968,14 +1011,14 @@ const DAILY_EMOTICONS = [
           handleLivePresenceSync(livePresenceState);
         })
         .on('presence', { event: 'join' }, ({ key, newPresences }) => {
-          console.log("[PRESENCE] 👋 Join:", key, newPresences?.length || 0);
+          console.log("[PRESENCE] [JOIN/LEAVE] Join:", key, newPresences?.length || 0);
           livePresenceState = presenceChannel.presenceState();
           handleLivePresenceSync(livePresenceState);
           updateUserDuoPills();
         })
         .on('presence', { event: 'leave' }, ({ key, leftPresences }) => {
-          // ✅ ALWAYS check for auto-resolve when someone leaves
-          console.log("[PRESENCE] 👋 Leave:", key, leftPresences?.length || 0);
+          // [OK] ALWAYS check for auto-resolve when someone leaves
+          console.log("[PRESENCE] [JOIN/LEAVE] Leave:", key, leftPresences?.length || 0);
           livePresenceState = presenceChannel.presenceState();
           handleLivePresenceSync(livePresenceState);
           updateUserDuoPills();
@@ -987,7 +1030,7 @@ const DAILY_EMOTICONS = [
               onlineAt: new Date().toISOString(),
               user: user
             });
-            console.log("Γ£à WebSocket presence active for:", user);
+            console.log("[OK] WebSocket presence active for:", user);
           }
         });
     } catch (err) {
@@ -1002,19 +1045,28 @@ const DAILY_EMOTICONS = [
 
     const now = Date.now();
     
-    // ✅ FIX: Find ALL presences for our user across ALL keys (no time filtering!)
+    // Count all presences in state for logging
+    let totalPresenceCount = 0;
     let conflictingDevices = [];
     
+    // Find ALL presences for our user across ALL keys
     for (const [key, presences] of Object.entries(state)) {
+      if (!Array.isArray(presences)) continue;
+      totalPresenceCount += presences.length;
+      
       for (const p of presences) {
         // Same user, different device = CONFLICT
         if (p.user === currentUser && p.deviceId && p.deviceId !== myDeviceId) {
-          conflictingDevices.push({ key, ...p });
+          // Only count if presence is recent (within 30 seconds)
+          const presenceAge = p.onlineAt ? (now - Date.parse(p.onlineAt)) : 0;
+          if (presenceAge < 30000) {
+            conflictingDevices.push({ key, ...p, age: presenceAge });
+          }
         }
       }
     }
 
-    // ✅ Calculate grace period status ONCE
+    // Calculate grace period status
     const inLoginGrace = now < loginGraceUntil;
     const inTakeoverGrace = now < takeoverGraceUntil;
     const inAnyGrace = inLoginGrace || inTakeoverGrace;
@@ -1022,30 +1074,26 @@ const DAILY_EMOTICONS = [
     console.log("[PRESENCE] Sync:", {
       user: currentUser,
       myDevice: myDeviceId.slice(-6),
-      allPresences: allPresences.length,
-      freshPresences: freshPresences.length,
+      totalPresences: totalPresenceCount,
       conflicts: conflictingDevices.length,
       deviceLocked,
       inLoginGrace,
-      inTakeoverGrace,
-      loginGraceRemaining: inLoginGrace ? (loginGraceUntil - now) + "ms" : "none",
-      takeoverGraceRemaining: inTakeoverGrace ? (takeoverGraceUntil - now) + "ms" : "none"
+      inTakeoverGrace
     });
 
-    // ✅ CONFLICT DETECTION with grace period
+    // CONFLICT DETECTION with grace period
     if (conflictingDevices.length > 0) {
       if (inAnyGrace) {
-        console.log("[PRESENCE] ⏳ In grace period - ignoring conflict");
-        // Don't lock, don't show conflict
+        console.log("[PRESENCE] In grace period - ignoring conflict");
       } else if (!deviceLocked) {
-        console.log("[PRESENCE] 🔒 CONFLICT - showing overlay");
+        console.log("[PRESENCE] CONFLICT DETECTED - showing overlay");
         deviceLocked = true;
         showDeviceConflict(currentUser);
       }
     } else {
-      // ✅ AUTO-RESOLVE: No conflicts
+      // AUTO-RESOLVE: No conflicts
       if (deviceLocked) {
-        console.log("[PRESENCE] ✅ AUTO-RESOLVED - no conflicts");
+        console.log("[PRESENCE] AUTO-RESOLVED - no conflicts");
         deviceLocked = false;
         hideDeviceConflict();
       }
@@ -1056,12 +1104,12 @@ const DAILY_EMOTICONS = [
 
   async function stopLivePresence() {
     if (presenceChannel && sbClient) {
-      console.log("[PRESENCE] 🛑 Stopping presence...");
+      console.log("[PRESENCE] [STOP] Stopping presence...");
       try {
         await presenceChannel.untrack();
-        console.log("[PRESENCE] 🛑 Untracked successfully");
+        console.log("[PRESENCE] [STOP] Untracked successfully");
       } catch (e) {
-        console.log("[PRESENCE] 🛑 Untrack error:", e);
+        console.log("[PRESENCE] [STOP] Untrack error:", e);
       }
       try {
         await sbClient.removeChannel(presenceChannel);
@@ -1073,7 +1121,7 @@ const DAILY_EMOTICONS = [
   function startPresence() {
     if (presenceTimer) return;
     presencePing();
-    presenceTimer = setInterval(presencePing, 2000); // ✅ FASTER: 2s instead of 15s
+    presenceTimer = setInterval(presencePing, 2000); // [OK] FASTER: 2s instead of 15s
     // Also start WebSocket presence
     initLivePresence();
   }
@@ -1087,7 +1135,7 @@ const DAILY_EMOTICONS = [
     stopLivePresence();
   }
 
-  // Γ£à Presence is now simplified - no online/offline dots
+  // [OK] Presence is now simplified - no online/offline dots
   // Conflict detection still works via checkDeviceConflict() in pullRemoteState/presencePing
 
   // ---------- Notifications ----------
@@ -1124,7 +1172,7 @@ const DAILY_EMOTICONS = [
     if (deletedIndex <= cur) saveLastRead(cur - 1);
   }
 
-  // Γ£à Update DUO pill with unread count (messages)
+  // [OK] Update DUO pill with unread count (messages)
   function updateDuoUnreadBadge() {
     const messages = loadMessages();
     const unreadIdxs = duoUnreadIndexes(messages);
@@ -1145,16 +1193,16 @@ const DAILY_EMOTICONS = [
     }
   }
 
-  // Γ£à Bell notifications - system updates only (not messages)
+  // [OK] Bell notifications - system updates only (not messages)
   function updateNotifications(opts = {}) {
     const { silent = false } = opts;
     const badge = $("notificationBadge");
     const list = $("notificationList");
 
-    // Γ£à Update DUO pill for messages
+    // [OK] Update DUO pill for messages
     updateDuoUnreadBadge();
 
-    // Γ£à Bell only shows system notifications (updates, events)
+    // [OK] Bell only shows system notifications (updates, events)
     const systemNotifs = [];
     
     // Check for upcoming events
@@ -1170,7 +1218,7 @@ const DAILY_EMOTICONS = [
           type: "event",
           title: event.title,
           subtitle: diffDays === 0 ? "Today!" : diffDays === 1 ? "Tomorrow" : `In ${diffDays} days`,
-          icon: "≡ƒôà"
+          icon: "📅"
         });
       }
     });
@@ -1201,7 +1249,7 @@ const DAILY_EMOTICONS = [
     });
   }
 
-  // Γ£à Letter Viewer State (for TikTok-style swipe)
+  // [OK] Letter Viewer State (for TikTok-style swipe)
   let letterViewerIndex = 0;
   let duoLetters = [];
 
@@ -1248,12 +1296,12 @@ const DAILY_EMOTICONS = [
         const isVideo = msg.attachmentType === 'video';
         if (isVideo) {
           attachmentContainer.innerHTML = `
-            <div class="letter-attachment-label">≡ƒôÄ Video Attachment</div>
+            <div class="letter-attachment-label">📎 Video Attachment</div>
             <video controls playsinline class="letter-attachment-media" src="${escapeHtml(msg.attachment)}"></video>
           `;
         } else {
           attachmentContainer.innerHTML = `
-            <div class="letter-attachment-label">≡ƒôÄ Image Attachment</div>
+            <div class="letter-attachment-label">📎 Image Attachment</div>
             <img class="letter-attachment-media" src="${escapeHtml(msg.attachment)}" alt="Attachment" onclick="openAttachmentModal('${escapeHtml(msg.attachment)}', 'image')">
           `;
         }
@@ -1284,7 +1332,7 @@ const DAILY_EMOTICONS = [
       if (paper) paper.classList.remove("open");
       void modal.offsetHeight;
       
-      // Γ£à Lock body scroll when modal opens
+      // [OK] Lock body scroll when modal opens
       document.body.style.overflow = 'hidden';
       document.body.style.position = 'fixed';
       document.body.style.width = '100%';
@@ -1303,7 +1351,7 @@ const DAILY_EMOTICONS = [
       modal.classList.add("active");
       if (env) env.classList.add("open");
       if (paper) paper.classList.add("open");
-      // Γ£à Lock body scroll
+      // [OK] Lock body scroll
       document.body.style.overflow = 'hidden';
       document.body.style.position = 'fixed';
       document.body.style.width = '100%';
@@ -1327,7 +1375,7 @@ const DAILY_EMOTICONS = [
   }
 
   function openMessage(index) {
-    // Γ£à Guard against double-trigger
+    // [OK] Guard against double-trigger
     if (letterAnimationInProgress) return;
 
     const messages = loadMessages();
@@ -1347,19 +1395,19 @@ const DAILY_EMOTICONS = [
     $("letterTimestamp").textContent = msg.timestamp || "";
     $("letterContent").textContent = safeContent;
 
-    // Γ£à Show attachment in letter if present
+    // [OK] Show attachment in letter if present
     const attachmentContainer = $("letterAttachment");
     if (attachmentContainer) {
       if (msg.attachment) {
         const isVideo = msg.attachmentType === 'video';
         if (isVideo) {
           attachmentContainer.innerHTML = `
-            <div class="letter-attachment-label">≡ƒôÄ Video Attachment</div>
+            <div class="letter-attachment-label">📎 Video Attachment</div>
             <video controls playsinline class="letter-attachment-media" src="${escapeHtml(msg.attachment)}"></video>
           `;
         } else {
           attachmentContainer.innerHTML = `
-            <div class="letter-attachment-label">≡ƒôÄ Image Attachment</div>
+            <div class="letter-attachment-label">📎 Image Attachment</div>
             <img class="letter-attachment-media" src="${escapeHtml(msg.attachment)}" alt="Attachment" onclick="openAttachmentModal('${escapeHtml(msg.attachment)}', 'image')">
           `;
         }
@@ -1377,7 +1425,7 @@ const DAILY_EMOTICONS = [
       updateNotifications();
     }
 
-    // Γ£à CLEAN ANIMATION: Remove all classes, force reflow, then add .open
+    // [OK] CLEAN ANIMATION: Remove all classes, force reflow, then add .open
     const modal = $("letterModal");
     const env = document.querySelector(".letter-envelope");
     const paper = document.querySelector(".letter-paper");
@@ -1404,7 +1452,7 @@ const DAILY_EMOTICONS = [
     setTimeout(() => { letterAnimationInProgress = false; }, 900);
   }
 
-  // Γ£à [FEATURE B] Open attachment in fullscreen modal
+  // [OK] [FEATURE B] Open attachment in fullscreen modal
   window.openAttachmentModal = function(url, type) {
     const modal = $("attachmentModal");
     const content = $("attachmentModalContent");
@@ -1444,7 +1492,7 @@ const DAILY_EMOTICONS = [
       const el = document.createElement("div");
       el.className = "item" + (it.isExample ? " example" : "");
       
-      // Γ£à Format date and calculate urgency
+      // [OK] Format date and calculate urgency
       let dateDisplay = '';
       let urgencyIndicator = '';
       
@@ -1458,7 +1506,7 @@ const DAILY_EMOTICONS = [
         if (urgency === "red") {
           urgencyIndicator = `<span class="urgency-badge urgency-red" title="Due today or tomorrow!">!</span>`;
         } else if (urgency === "yellow") {
-          urgencyIndicator = `<span class="urgency-badge urgency-yellow" title="Due in 2-3 days">ΓÇó</span>`;
+          urgencyIndicator = `<span class="urgency-badge urgency-yellow" title="Due in 2-3 days">•</span>`;
         }
       }
       
@@ -1491,12 +1539,17 @@ const DAILY_EMOTICONS = [
 
           renderActive();
           renderCompleted();
+          
+          // TODO: Add confirmation modal here
+          // Trigger confetti celebration!
+          triggerConfetti();
         });
 
         const rm = el.querySelector("button");
         rm.addEventListener("click", () => {
           const itemsNow = loadActive();
           const actualIdx = idx - 1;
+          // TODO: Add confirmation modal here
           itemsNow.splice(actualIdx, 1);
           saveActive(itemsNow);
           renderActive();
@@ -1507,7 +1560,7 @@ const DAILY_EMOTICONS = [
     });
   }
 
-  // Γ£à Format mission date nicely
+  // [OK] Format mission date nicely
   function formatMissionDate(dateStr) {
     if (!dateStr) return "";
     try {
@@ -1542,6 +1595,7 @@ const DAILY_EMOTICONS = [
       if (!it.isExample) {
         const undo = el.querySelector("button");
         undo.addEventListener("click", () => {
+          // TODO: Add confirmation modal here
           const completedNow = loadCompleted();
           const actualIdx = idx - 1;
           const mission = completedNow[actualIdx];
@@ -1554,13 +1608,14 @@ const DAILY_EMOTICONS = [
 
           renderActive();
           renderCompleted();
+          // Note: No confetti on undo
         });
       }
 
       container.appendChild(el);
     });
     
-    // Γ£à Update photo mission select when completed missions change
+    // [OK] Update photo mission select when completed missions change
     if (typeof populatePhotoMissionSelect === 'function') {
       populatePhotoMissionSelect();
     }
@@ -1574,21 +1629,21 @@ const DAILY_EMOTICONS = [
     const container = $("messageLog");
     container.innerHTML = "";
 
-    // Γ£à [FEATURE A] Render newest-first (reverse order)
+    // [OK] [FEATURE A] Render newest-first (reverse order)
     const reversed = [...messages].reverse();
 
     reversed.forEach((msg) => {
       const displayName = msg.from || "Unknown";
       const hasAttachment = !!(msg.attachment);
       
-      // Γ£à User-specific colors
+      // [OK] User-specific colors
       const userClass = getUserColorClass(msg.from);
       
       const el = document.createElement("div");
       el.className = `message-log-item ${userClass}`;
       el.innerHTML = `
         <div class="message-log-header">
-          <span class="message-from-name">FROM: ${escapeHtml(displayName)} ${hasAttachment ? '<span class="attachment-badge" title="Has attachment">≡ƒôÄ</span>' : ''}</span>
+          <span class="message-from-name">FROM: ${escapeHtml(displayName)} ${hasAttachment ? '<span class="attachment-badge" title="Has attachment">📎</span>' : ''}</span>
           <span>${escapeHtml(msg.timestamp || "")}</span>
         </div>
         <div class="message-log-content">${escapeHtml(msg.content || "")}</div>
@@ -1600,7 +1655,7 @@ const DAILY_EMOTICONS = [
     if (messages.length > 3) container.classList.add("scroll");
     else container.classList.remove("scroll");
 
-    // Γ£à [FEATURE A] With newest-first, scroll to TOP for latest
+    // [OK] [FEATURE A] With newest-first, scroll to TOP for latest
     if (autoScroll || messages.length > lastMsgCount) {
       if (container.classList.contains("scroll")) container.scrollTop = 0;
     }
@@ -1609,7 +1664,7 @@ const DAILY_EMOTICONS = [
     renderBigCalendar();
   }
 
-  // Γ£à Get user-specific color class
+  // [OK] Get user-specific color class
   function getUserColorClass(userName) {
     const name = String(userName || "").trim().toLowerCase();
     if (name === "yasir") return "user-yasir";
@@ -1617,7 +1672,7 @@ const DAILY_EMOTICONS = [
     return "";
   }
 
-  // Γ£à Calculate days until a date (0 = today, negative = past)
+  // [OK] Calculate days until a date (0 = today, negative = past)
   function daysUntil(dateStr) {
     if (!dateStr) return null;
     try {
@@ -1631,7 +1686,7 @@ const DAILY_EMOTICONS = [
     }
   }
 
-  // Γ£à Get urgency level based on days until due
+  // [OK] Get urgency level based on days until due
   // Returns: "red" (0-1 days), "yellow" (2-3 days), "green" (4+ days), null (no date/past)
   function getUrgencyLevel(daysLeft) {
     if (daysLeft === null || daysLeft < 0) return null;
@@ -1640,7 +1695,7 @@ const DAILY_EMOTICONS = [
     return "green";
   }
 
-  // Γ£à Get all dates with events (missions + upcoming events)
+  // [OK] Get all dates with events (missions + upcoming events)
   function getEventDates() {
     const eventMap = {}; // { "YYYY-MM-DD": { urgency: "red"|"yellow"|"green", titles: [] } }
     
@@ -1685,7 +1740,7 @@ const DAILY_EMOTICONS = [
     return eventMap;
   }
 
-  // Γ£à Mini calendar for message log (with event indicators)
+  // [OK] Mini calendar for message log (with event indicators)
   function renderMiniCalendar() {
     const now = new Date();
     const year = now.getFullYear();
@@ -1776,7 +1831,7 @@ const DAILY_EMOTICONS = [
     snowTimer = setInterval(() => {
       const s = document.createElement("div");
       s.className = "snowflake";
-      s.textContent = Math.random() < 0.5 ? "Γ¥ä" : "Γ£ª";
+      s.textContent = Math.random() < 0.5 ? "*" : "+";
       s.style.left = Math.random() * 100 + "vw";
       s.style.animationDuration = (5 + Math.random() * 6) + "s";
       s.style.fontSize = (12 + Math.random() * 14) + "px";
@@ -1842,7 +1897,7 @@ const DAILY_EMOTICONS = [
   let suppressSync = false;
   let syncDebounce = null;
 
-  // Γ£à Generate unique device ID for single-device lock
+  // [OK] Generate unique device ID for single-device lock
   function getDeviceId() {
     let id = sessionStorage.getItem('deviceId');
     if (!id) {
@@ -1856,8 +1911,8 @@ const DAILY_EMOTICONS = [
   let activeDevices = {};
   let deviceLocked = false;
 
-  // Γ£à Dedicated function to check device conflicts (can be called independently)
-  // ✅ Check BOTH WebSocket AND database for conflicts
+  // [OK] Dedicated function to check device conflicts (can be called independently)
+  // [OK] Check BOTH WebSocket AND database for conflicts
   function checkDeviceConflict(serverActiveDevices) {
     if (!serverActiveDevices || typeof serverActiveDevices !== "object") {
       return false;
@@ -1871,7 +1926,7 @@ const DAILY_EMOTICONS = [
     
     if (!user) return false;
     
-    // ✅ Check WebSocket presence FIRST (instant)
+    // [OK] Check WebSocket presence FIRST (instant)
     let hasWebSocketConflict = false;
     if (livePresenceState && Object.keys(livePresenceState).length > 0) {
       for (const [key, presences] of Object.entries(livePresenceState)) {
@@ -1885,7 +1940,7 @@ const DAILY_EMOTICONS = [
       }
     }
     
-    // ✅ Check database as backup
+    // [OK] Check database as backup
     let hasDatabaseConflict = false;
     if (serverActiveDevices[user]) {
       const serverDevice = serverActiveDevices[user];
@@ -1913,14 +1968,14 @@ const DAILY_EMOTICONS = [
   }
 
   function getLocalState() {
-    // Γ£à always sanitize before pushing (prevents blank letters from ever syncing)
+    // [OK] always sanitize before pushing (prevents blank letters from ever syncing)
     const cleanedMessages = sanitizeMessages(loadMessages());
     if (cleanedMessages.length !== loadMessages().length) {
       localStorage.setItem(KEY_MESSAGES, JSON.stringify(cleanedMessages));
       clampLastReadToMessagesLen(cleanedMessages.length);
     }
 
-    // Γ£à Build readState from both users' localStorage
+    // [OK] Build readState from both users' localStorage
     const readState = {};
     ["yasir", "kylee"].forEach(u => {
       const raw = localStorage.getItem(keyLastRead(u));
@@ -1928,10 +1983,10 @@ const DAILY_EMOTICONS = [
       if (Number.isFinite(n)) readState[u] = n;
     });
 
-    // Γ£à Build photos array
+    // [OK] Build photos array
     const photos = loadPhotos();
 
-    // Γ£à Track active device per user
+    // [OK] Track active device per user
     const user = loadUser()?.toLowerCase();
     if (user && !deviceLocked) {
       activeDevices[user] = {
@@ -1972,7 +2027,7 @@ const DAILY_EMOTICONS = [
     if (Array.isArray(state.customTags)) localStorage.setItem(KEY_CUSTOM_TAGS, JSON.stringify(state.customTags));
     if (typeof state.systemMessage === "string") localStorage.setItem(KEY_SYSTEM_MESSAGE, state.systemMessage);
 
-    // Γ£à Apply readState from server (syncs across devices!)
+    // [OK] Apply readState from server (syncs across devices!)
     if (state.readState && typeof state.readState === "object") {
       const user = loadUser()?.toLowerCase();
       if (user && typeof state.readState[user] === "number") {
@@ -1985,12 +2040,12 @@ const DAILY_EMOTICONS = [
       }
     }
 
-    // Γ£à Apply photos from server
+    // [OK] Apply photos from server
     if (Array.isArray(state.photos)) {
       localStorage.setItem(KEY_PHOTOS, JSON.stringify(state.photos));
     }
 
-    // Γ£à sanitize messages from remote too
+    // [OK] sanitize messages from remote too
     if (Array.isArray(state.messages)) {
       const clean = sanitizeMessages(state.messages);
       if (clean.length !== state.messages.length) cleaned = true;
@@ -2003,7 +2058,7 @@ const DAILY_EMOTICONS = [
     return { cleaned };
   }
 
-  // Γ£à Device conflict UI - with Switch User option
+  // [OK] Device conflict UI - with Switch User option
   function showDeviceConflict(currentUser) {
     let overlay = $("deviceConflictOverlay");
     const otherUser = currentUser === "yasir" ? "Kylee" : "Yasir";
@@ -2041,7 +2096,7 @@ const DAILY_EMOTICONS = [
     if (overlay) overlay.classList.remove("active");
   }
 
-  // ✅ NEW: Explicit device removal for clean handoff
+  // [OK] NEW: Explicit device removal for clean handoff
   async function removeMyDevice() {
     const user = loadUser()?.toLowerCase();
     const deviceId = getDeviceId();
@@ -2065,9 +2120,9 @@ await fetch("/.netlify/functions/room", {
   }
 
   window.forceDeviceTakeover = async function() {
-    console.log("[PRESENCE] 🔄 TAKEOVER starting");
+    console.log("[PRESENCE] [REFRESH] TAKEOVER starting");
     
-    // ✅ Set grace period FIRST
+    // [OK] Set grace period FIRST
     takeoverGraceUntil = Date.now() + 6000;
     deviceLocked = false;
     hideDeviceConflict();
@@ -2079,19 +2134,19 @@ await fetch("/.netlify/functions/room", {
     // Push to database
     await pushRemoteState();
     
-    console.log("[PRESENCE] 🔄 TAKEOVER complete");
+    console.log("[PRESENCE] [REFRESH] TAKEOVER complete");
     showToast("You are now the active device");
   };
 
   window.switchToOtherUser = async function(otherUser) {
-    console.log("[PRESENCE] 🔀 SWITCH starting to:", otherUser);
+    console.log("[PRESENCE] [SWITCH] SWITCH starting to:", otherUser);
     
-    // ✅ Set grace period
+    // [OK] Set grace period
     loginGraceUntil = Date.now() + 5000;
     deviceLocked = false;
     hideDeviceConflict();
     
-    // ✅ PROPERLY stop current presence and WAIT
+    // [OK] PROPERLY stop current presence and WAIT
     try {
       if (presenceChannel) {
         await presenceChannel.untrack();
@@ -2101,7 +2156,7 @@ await fetch("/.netlify/functions/room", {
       }
     } catch (e) {}
     
-    // ✅ Remove old device from server
+    // [OK] Remove old device from server
     await removeMyDevice();
     
     // Switch to the other user
@@ -2115,7 +2170,7 @@ await fetch("/.netlify/functions/room", {
     await pushRemoteState();
     await pullRemoteState({ silent: false });
     
-    console.log("[PRESENCE] 🔀 SWITCH complete to:", otherUser);
+    console.log("[PRESENCE] [SWITCH] SWITCH complete to:", otherUser);
     showToast(`Switched to ${otherUser}`);
 
   };
@@ -2163,17 +2218,17 @@ await fetch("/.netlify/functions/room", {
       const remote = await remoteGetState();
       if (!remote || !remote.payload) {
         if (!silent) setSyncStatus("on");
-        // Γ£à Still update presence dots (time-based decay)
+        // [OK] Still update presence dots (time-based decay)
         updateUserDuoPills();
         return;
       }
 
-      // Γ£à Update lastPresence from response (for dot calculations)
+      // [OK] Update lastPresence from response (for dot calculations)
       if (remote.presence) {
         lastPresence = remote.presence;
       }
 
-      // Γ£à Check presenceVersion - if changed, presence/activeDevices updated
+      // [OK] Check presenceVersion - if changed, presence/activeDevices updated
       const serverPresenceVersion = remote.presenceVersion || remote.payload?.presenceVersion || 0;
       const presenceChanged = serverPresenceVersion !== lastPresenceVersion;
       if (presenceChanged) {
@@ -2189,10 +2244,10 @@ await fetch("/.netlify/functions/room", {
         }
       }
 
-      // Γ£à ALWAYS update presence dots (they're time-based, need constant refresh)
+      // [OK] ALWAYS update presence dots (they're time-based, need constant refresh)
       updateUserDuoPills();
 
-      // ≡ƒöÆ Skip full state apply if nothing changed (no UI spam)
+      // [SKIP] Skip full state apply if nothing changed (no UI spam)
       // But still process presence changes above!
       if (remote.updated_at && remote.updated_at === lastRemoteUpdatedAt) {
         if (!silent) setSyncStatus("on");
@@ -2211,14 +2266,14 @@ await fetch("/.netlify/functions/room", {
       renderActive();
       renderCompleted();
       renderMessages(); // do NOT autoscroll on remote updates
-      renderPhotoGallery(); // Γ£à Sync photos across devices
-      // Γ£à Pass silent flag to avoid sound on background pulls
+      renderPhotoGallery(); // [OK] Sync photos across devices
+      // [OK] Pass silent flag to avoid sound on background pulls
       updateNotifications({ silent });
       // updateUserDuoPills already called above
 
       setSyncStatus("on");
 
-      // Γ£à if we cleaned blank letters, push once to make the room clean forever
+      // [OK] if we cleaned blank letters, push once to make the room clean forever
       if (cleaned) {
         schedulePush();
       }
@@ -2233,7 +2288,7 @@ await fetch("/.netlify/functions/room", {
       setSyncStatus("saving");
       const data = await remoteSetState(getLocalState());
 
-      // Γ£à update local poll version so we don't re-apply our own push
+      // [OK] update local poll version so we don't re-apply our own push
       if (data?.updated_at) lastRemoteUpdatedAt = data.updated_at;
 
       setSyncStatus("on");
@@ -2249,7 +2304,7 @@ await fetch("/.netlify/functions/room", {
     syncDebounce = setTimeout(pushRemoteState, 350); // faster + still stable
   }
 
-  // Γ£à SMART polling loop - faster for better notification sync
+  // [OK] SMART polling loop - faster for better notification sync
   function startSmartPolling() {
     if (pollTimer) return;
 
@@ -2264,7 +2319,7 @@ await fetch("/.netlify/functions/room", {
   // Track last sync time for stale detection
   let lastSyncTime = Date.now();
 
-  // Γ£à Show syncing indicator
+  // [OK] Show syncing indicator
   function showSyncingIndicator() {
     let indicator = $("syncingIndicator");
     if (!indicator) {
@@ -2282,7 +2337,7 @@ await fetch("/.netlify/functions/room", {
     if (indicator) indicator.classList.remove("active");
   }
 
-  // Γ£à Immediate sync + conflict check on resume
+  // [OK] Immediate sync + conflict check on resume
   async function onAppResume() {
     if (deviceLocked) return;
     
@@ -2307,7 +2362,7 @@ await fetch("/.netlify/functions/room", {
     }
   }
 
-  // Γ£à Force refresh when tab becomes visible
+  // [OK] Force refresh when tab becomes visible
   document.addEventListener("visibilitychange", () => {
     if (document.visibilityState === "visible") {
       onAppResume();
@@ -2319,7 +2374,7 @@ await fetch("/.netlify/functions/room", {
     onAppResume();
   });
 
-  // Γ£à iOS BFCache support - pageshow fires when returning from home screen
+  // [OK] iOS BFCache support - pageshow fires when returning from home screen
   window.addEventListener("pageshow", (event) => {
     if (event.persisted || performance.getEntriesByType("navigation")[0]?.type === "back_forward") {
       console.log("Page restored from BFCache, forcing sync...");
@@ -2327,7 +2382,7 @@ await fetch("/.netlify/functions/room", {
     }
   });
 
-  // Γ£à Also check on touchstart for iOS (backup)
+  // [OK] Also check on touchstart for iOS (backup)
   let lastTouchSync = 0;
   document.addEventListener("touchstart", () => {
     const now = Date.now();
@@ -2353,7 +2408,7 @@ await fetch("/.netlify/functions/room", {
     }
   }
 
-  // Γ£à Big calendar above message log
+  // [OK] Big calendar above message log
   function renderBigCalendar() {
     const cal = $("bigCalendar");
     if (!cal) return;
@@ -2440,9 +2495,9 @@ await fetch("/.netlify/functions/room", {
   }
 
   async function setUserAndStart(name) {
-    console.log("[PRESENCE] 🔑 LOGIN starting for:", name);
+    console.log("[PRESENCE] [KEY] LOGIN starting for:", name);
     
-    // ✅ Set login grace period FIRST (6 seconds to handle slow networks)
+    // [OK] Set login grace period FIRST (6 seconds to handle slow networks)
     loginGraceUntil = Date.now() + 6000;
     
     // Ensure prior presence channel is cleanly removed before switching keys
@@ -2462,15 +2517,15 @@ await fetch("/.netlify/functions/room", {
     await pushRemoteState();
     hideSyncingIndicator();
 
-    // ✅ Start presence (grace period protects against false conflicts)
+    // [OK] Start presence (grace period protects against false conflicts)
     startPresence();
     
-    console.log("[PRESENCE] 🔑 LOGIN complete for:", name);
+    console.log("[PRESENCE] [KEY] LOGIN complete for:", name);
     showToast(`USER SET: ${String(name).toUpperCase()}`);
   }
 
   async function logOffUser() {
-    // Γ£à Send explicit offline signal BEFORE clearing user
+    // [OK] Send explicit offline signal BEFORE clearing user
     // This lets other devices know immediately (not waiting for 45s timeout)
     const currentUser = loadUser();
     if (currentUser) {
@@ -2482,7 +2537,7 @@ await fetch("/.netlify/functions/room", {
         if (activeDevices[user]) {
           delete activeDevices[user];
         }
-        // Γ£à Mark presence as very old (instant offline detection)
+        // [OK] Mark presence as very old (instant offline detection)
         // Set to epoch so age calculation shows offline immediately
         const offlinePayload = getLocalState();
         offlinePayload.presence = offlinePayload.presence || {};
@@ -2504,17 +2559,17 @@ await fetch("/.netlify/functions/room", {
     showToast("LOGGED OFF");
   }
 
-  // Γ£à Send offline signal on tab close / navigation away
+  // [OK] Send offline signal on tab close / navigation away
   // Uses sendBeacon for reliability (fires even during unload)
-  // ✅ Send offline signal on tab close/navigation
+  // [OK] Send offline signal on tab close/navigation
   function sendOfflineBeacon() {
-    console.log("[PRESENCE] 📤 Sending offline beacon...");
+    console.log("[PRESENCE] [SEND] Sending offline beacon...");
     
-    // ✅ CRITICAL: Untrack from WebSocket FIRST
+    // [OK] CRITICAL: Untrack from WebSocket FIRST
     if (presenceChannel) {
       try {
         presenceChannel.untrack();
-        console.log("[PRESENCE] 📤 Untracked on page close");
+        console.log("[PRESENCE] [SEND] Untracked on page close");
       } catch(e) {}
     }
     
@@ -2546,11 +2601,11 @@ await fetch("/.netlify/functions/room", {
     }
   }
 
-  // Γ£à Try to send offline on page unload
+  // [OK] Try to send offline on page unload
   window.addEventListener("beforeunload", sendOfflineBeacon);
   window.addEventListener("pagehide", sendOfflineBeacon);
 
-  // Γ£à Browser online/offline detection for local UI feedback
+  // [OK] Browser online/offline detection for local UI feedback
   window.addEventListener("offline", () => {
     setSyncStatus("error");
     showToast("You are offline");
@@ -2566,7 +2621,7 @@ await fetch("/.netlify/functions/room", {
     }
   });
 
-  // Γ£à [FEATURE B] Upload file to Supabase Storage
+  // [OK] [FEATURE B] Upload file to Supabase Storage
   async function uploadToSupabase(file) {
     const timestamp = Date.now();
     const safeName = file.name.replace(/[^a-zA-Z0-9.-]/g, '_');
@@ -2591,7 +2646,7 @@ await fetch("/.netlify/functions/room", {
     return `${SUPABASE_URL}/storage/v1/object/public/${STORAGE_BUCKET}/${filename}`;
   }
 
-  // Γ£à Current attachment state
+  // [OK] Current attachment state
   let pendingAttachment = null;
   let pendingAttachmentType = null;
   let isUploading = false; // Guard against sending before upload completes
@@ -2600,12 +2655,12 @@ await fetch("/.netlify/functions/room", {
   $("btnOpen").addEventListener("click", openGift);
   $("btnHome").addEventListener("click", goHome);
 
-  // Γ£à [BUG 1 FIX] iOS Safari keyboard bug - removed setTimeout, focus must be synchronous to preserve gesture context
+  // [OK] [BUG 1 FIX] iOS Safari keyboard bug - removed setTimeout, focus must be synchronous to preserve gesture context
 function openSystemMessageModal() {
   const modal = $("systemMessageModal");
   const input = $("systemMessageInput");
   input.value = loadSystemMessage() || "";
-  // Γ£à [FEATURE E] Update character counter
+  // [OK] [FEATURE E] Update character counter
   updateCharCounter(input.value.length);
   modal.classList.add("active");
   modal.setAttribute("aria-hidden", "false");
@@ -2613,7 +2668,7 @@ function openSystemMessageModal() {
   input.focus();
 }
 
-// Γ£à [FEATURE E] Update character counter - shows "X / 30"
+// [OK] [FEATURE E] Update character counter - shows "X / 30"
 function updateCharCounter(len) {
   const counter = $("charCounter");
   if (!counter) return;
@@ -2661,7 +2716,7 @@ $("systemMessageInput").addEventListener("keydown", (e) => {
   }
 });
 
-// Γ£à [FEATURE E] Live character counter update
+// [OK] [FEATURE E] Live character counter update
 $("systemMessageInput").addEventListener("input", (e) => {
   const len = (e.target.value || "").length;
   updateCharCounter(len);
@@ -2691,7 +2746,7 @@ $("systemMessageInput").addEventListener("input", (e) => {
     const tagSelect = $("newTag");
     let tag = tagSelect.value;
     
-    // Γ£à Get due date if set
+    // [OK] Get due date if set
     const dueDateInput = $("newDueDate");
     const dueDate = dueDateInput ? dueDateInput.value : null;
     // Past-date prompt: do not add silently
@@ -2858,7 +2913,7 @@ $("systemMessageInput").addEventListener("input", (e) => {
     $("savedMissionsModal").classList.remove("active");
   });
 
-  // Γ£à [FEATURE B] Handle attachment file selection with Supabase Storage
+  // [OK] [FEATURE B] Handle attachment file selection with Supabase Storage
   const attachInput = $("attachmentInput");
   if (attachInput) {
     attachInput.addEventListener("change", async (e) => {
@@ -2872,7 +2927,7 @@ $("systemMessageInput").addEventListener("input", (e) => {
         return;
       }
       
-      // Γ£à Only one attachment allowed - clear any existing
+      // [OK] Only one attachment allowed - clear any existing
       if (pendingAttachment) {
         showToast("Replacing previous attachment");
       }
@@ -2895,11 +2950,11 @@ $("systemMessageInput").addEventListener("input", (e) => {
       }
       
       if (preview) {
-        preview.innerHTML = `<span>≡ƒôÄ Uploading ${escapeHtml(file.name)}...</span>`;
+        preview.innerHTML = `<span>📎 Uploading ${escapeHtml(file.name)}...</span>`;
         preview.classList.remove("hidden");
       }
       
-      // Γ£à Set uploading flag
+      // [OK] Set uploading flag
       isUploading = true;
       
       try {
@@ -2911,7 +2966,7 @@ $("systemMessageInput").addEventListener("input", (e) => {
         pendingAttachmentType = isVideo ? "video" : "image";
         
         if (preview) {
-          preview.innerHTML = `<span>≡ƒôÄ ${escapeHtml(file.name)}</span><button type="button" class="btn" id="clearAttachment">Γ£ò</button>`;
+          preview.innerHTML = `<span>📎 ${escapeHtml(file.name)}</span><button type="button" class="btn" id="clearAttachment">X</button>`;
           $("clearAttachment").addEventListener("click", () => {
             pendingAttachment = null;
             pendingAttachmentType = null;
@@ -2936,7 +2991,7 @@ $("systemMessageInput").addEventListener("input", (e) => {
   $("btnSaveNote").addEventListener("click", () => {
     if (!hasUser()) { showToast("Pick USER first"); return; }
     
-    // Γ£à Prevent sending while upload is in progress
+    // [OK] Prevent sending while upload is in progress
     if (isUploading) {
       showToast("Wait for attachment to finish uploading...");
       return;
@@ -2954,7 +3009,7 @@ $("systemMessageInput").addEventListener("input", (e) => {
     const timestamp = formatDT(new Date());
     const messages = loadMessages();
     
-    // Γ£à Capture attachment BEFORE clearing (important!)
+    // [OK] Capture attachment BEFORE clearing (important!)
     const attachmentUrl = pendingAttachment;
     const attachmentType = pendingAttachmentType;
     
@@ -2966,13 +3021,13 @@ $("systemMessageInput").addEventListener("input", (e) => {
     }
     messages.push(newMsg);
 
-    // Γ£à sanitize immediately (preserves attachment fields)
+    // [OK] sanitize immediately (preserves attachment fields)
     const cleaned = sanitizeMessages(messages);
     localStorage.setItem(KEY_MESSAGES, JSON.stringify(cleaned));
 
     $("customNote").value = "";
     
-    // Γ£à Clear attachment AFTER capturing
+    // [OK] Clear attachment AFTER capturing
     pendingAttachment = null;
     pendingAttachmentType = null;
     const attachInputEl = $("attachmentInput");
@@ -2986,13 +3041,13 @@ $("systemMessageInput").addEventListener("input", (e) => {
     schedulePush();
   });
 
-  // Γ£à Envelope button opens letter viewer
+  // [OK] Envelope button opens letter viewer
   $("envelopeBtn").addEventListener("click", () => {
     if (!hasUser()) { showToast("Pick USER first"); return; }
     openLetterViewer();
   });
 
-  // Γ£à DUO pill click opens letter viewer
+  // [OK] DUO pill click opens letter viewer
   $("duoPill").addEventListener("click", () => {
     if (!hasUser()) { showToast("Pick USER first"); return; }
     openLetterViewer();
@@ -3016,7 +3071,7 @@ $("systemMessageInput").addEventListener("input", (e) => {
     if (env) env.classList.remove("open");
     if (paper) paper.classList.remove("open");
     
-    // Γ£à Restore body scroll when modal closes
+    // [OK] Restore body scroll when modal closes
     document.body.style.overflow = '';
     document.body.style.position = '';
     document.body.style.width = '';
@@ -3024,13 +3079,13 @@ $("systemMessageInput").addEventListener("input", (e) => {
     letterAnimationInProgress = false;
   });
 
-  // Γ£à Letter navigation buttons
+  // [OK] Letter navigation buttons
   const prevBtn = $("letterPrev");
   const nextBtn = $("letterNext");
   if (prevBtn) prevBtn.addEventListener("click", (e) => { e.stopPropagation(); prevLetter(); });
   if (nextBtn) nextBtn.addEventListener("click", (e) => { e.stopPropagation(); nextLetter(); });
 
-  // Γ£à Swipe support for letter viewer with better touch handling
+  // [OK] Swipe support for letter viewer with better touch handling
   let touchStartY = 0;
   let touchStartX = 0;
   const letterModal = $("letterModal");
@@ -3074,7 +3129,7 @@ $("systemMessageInput").addEventListener("input", (e) => {
     });
   }
 
-  // Γ£à [FEATURE B] Close attachment modal
+  // [OK] [FEATURE B] Close attachment modal
   const closeAttachmentModal = $("closeAttachmentModal");
   if (closeAttachmentModal) {
     closeAttachmentModal.addEventListener("click", () => {
@@ -3091,7 +3146,7 @@ $("systemMessageInput").addEventListener("input", (e) => {
     });
   }
 
-  // Γ£à Photo Gallery handlers with staging area
+  // [OK] Photo Gallery handlers with staging area
   const photoSelectBtn = $("photoSelectBtn");
   const photoInput = $("photoInput");
   const photoDateInput = $("photoDate");
@@ -3108,18 +3163,18 @@ $("systemMessageInput").addEventListener("input", (e) => {
   // Staged files waiting to be uploaded
   let stagedFiles = [];
   
-  // Γ£à Update staging header to show capacity for selected mission
+  // [OK] Update staging header to show capacity for selected mission
   function updateStagingCapacity() {
     if (!stagingCapacityEl || !photoMissionSelect) return;
     
     const mission = photoMissionSelect.value;
     if (!mission) {
-      stagingCapacityEl.textContent = "ΓÇó Allowed: Unlimited";
+      stagingCapacityEl.textContent = "• Allowed: Unlimited";
       stagingCapacityEl.className = "staging-capacity unlimited";
     } else {
       const existingCount = loadPhotos().filter(p => p.mission === mission).length;
       const remaining = Math.max(0, 5 - existingCount);
-      stagingCapacityEl.textContent = `ΓÇó Allowed for "${mission}": ${remaining}`;
+      stagingCapacityEl.textContent = `• Allowed for "${mission}": ${remaining}`;
       stagingCapacityEl.className = remaining <= 0 ? "staging-capacity full" : "staging-capacity";
     }
   }
@@ -3136,7 +3191,7 @@ $("systemMessageInput").addEventListener("input", (e) => {
       }
     }
     
-    // Γ£à Also update staging capacity display
+    // [OK] Also update staging capacity display
     updateStagingCapacity();
   }
   
@@ -3145,9 +3200,9 @@ $("systemMessageInput").addEventListener("input", (e) => {
     
     const mission = photoMissionSelect.value;
     
-    // Γ£à Show "unlimited" for unlinked photos
+    // [OK] Show "unlimited" for unlinked photos
     if (!mission) {
-      missionCapacityEl.textContent = "Γ£ô Unlinked = unlimited uploads";
+      missionCapacityEl.textContent = "[CHECK] Unlinked = unlimited uploads";
       missionCapacityEl.className = "mission-capacity unlimited";
       return;
     }
@@ -3155,9 +3210,9 @@ $("systemMessageInput").addEventListener("input", (e) => {
     const existingCount = loadPhotos().filter(p => p.mission === mission).length;
     const remaining = 5 - existingCount;
     
-    // Γ£à Clearer labeling: "On this mission: X/5 saved"
+    // [OK] Clearer labeling: "On this mission: X/5 saved"
     if (remaining <= 0) {
-      missionCapacityEl.textContent = "ΓÜá∩╕Å Mission full: 5/5 saved";
+      missionCapacityEl.textContent = "[!] Mission full: 5/5 saved";
       missionCapacityEl.className = "mission-capacity full";
     } else {
       missionCapacityEl.textContent = `On this mission: ${existingCount}/5 saved (${remaining} slots left)`;
@@ -3344,7 +3399,7 @@ $("systemMessageInput").addEventListener("input", (e) => {
   }
   populatePhotoMissionSelect();
 
-  // Γ£à Photo Lightbox handlers
+  // [OK] Photo Lightbox handlers
   const lightboxClose = $("lightboxClose");
   const lightboxPrevBtn = $("lightboxPrev");
   const lightboxNextBtn = $("lightboxNext");
@@ -3373,7 +3428,7 @@ $("systemMessageInput").addEventListener("input", (e) => {
     }, { passive: true });
   }
 
-  // Γ£à Medal Modal handlers
+  // [OK] Medal Modal handlers
   const medalModalClose = $("medalModalClose");
   const medalModal = $("medalModal");
   
@@ -3384,7 +3439,7 @@ $("systemMessageInput").addEventListener("input", (e) => {
     });
   }
 
-  // Γ£à Refresh Medal clips button
+  // [OK] Refresh Medal clips button
   const refreshMedalBtn = $("refreshMedal");
   if (refreshMedalBtn) {
     refreshMedalBtn.addEventListener("click", () => {
@@ -3404,10 +3459,10 @@ SYSTEM MESSAGE:
 ${loadSystemMessage()}
 
 ACTIVE MISSIONS:
-${active.map(i => `[ ] ${i.title} ΓÇö ${i.desc} (#${i.tag})`).join("\n")}
+${active.map(i => `[ ] ${i.title} — ${i.desc} (#${i.tag})`).join("\n")}
 
 COMPLETED MISSIONS:
-${completed.map(i => `[X] ${i.title} ΓÇö ${i.desc} (#${i.tag})`).join("\n")}
+${completed.map(i => `[X] ${i.title} — ${i.desc} (#${i.tag})`).join("\n")}
 `;
 
     const blob = new Blob([text], { type: "text/plain" });
@@ -3448,7 +3503,7 @@ ${completed.map(i => `[X] ${i.title} ΓÇö ${i.desc} (#${i.tag})`).join("\n")}
 
     renderSystemMessage(loadSystemMessage());
     
-    // Γ£à Set daily emoticon
+    // [OK] Set daily emoticon
     const emoticonEl = $("dailyEmoticon");
     if (emoticonEl) {
       emoticonEl.textContent = getDailyEmoticon();
@@ -3460,13 +3515,13 @@ ${completed.map(i => `[X] ${i.title} ΓÇö ${i.desc} (#${i.tag})`).join("\n")}
     updateTracker();
     setInterval(updateTracker, 1000);
 
-    // Γ£à Show sync overlay on initial load
+    // [OK] Show sync overlay on initial load
     const overlay = document.createElement("div");
     overlay.id = "syncOverlay";
     overlay.innerHTML = `<div class="sync-overlay-content"><div class="sync-spinner"></div><div>SYNCING...</div></div>`;
     document.body.appendChild(overlay);
 
-    // pull once on load (with overlay) ΓÇö always remove overlay
+    // pull once on load (with overlay) — always remove overlay
     try {
       await pullRemoteState({ silent: false });
     } catch (e) {
@@ -3479,29 +3534,29 @@ ${completed.map(i => `[X] ${i.title} ΓÇö ${i.desc} (#${i.tag})`).join("\n")}
     // start polling always (cover + main stay synced)
     startSmartPolling();
 
-    // Γ£à Check for system updates and upcoming events
+    // [OK] Check for system updates and upcoming events
     setTimeout(() => {
       checkSystemUpdates();
       checkUpcomingEvents();
     }, 1000);
 
-    // Γ£à Render photo gallery
+    // [OK] Render photo gallery
     renderPhotoGallery();
 
-    // Γ£à Fetch Medal clips (if configured)
+    // [OK] Fetch Medal clips (if configured)
     fetchMedalClips();
 
-    // Γ£à Render big calendar initially
+    // [OK] Render big calendar initially
     renderBigCalendar();
 
-    // Γ£à IMPORTANT: remember user on refresh (no re-asking)
+    // [OK] IMPORTANT: remember user on refresh (no re-asking)
     if (!hasUser()) {
       stopPresence();
       openWhoModal();
       $("closeWhoModal").classList.add("hidden");
     } else {
       $("closeWhoModal").classList.remove("hidden");
-      // Γ£à Immediately claim device on page load for existing users
+      // [OK] Immediately claim device on page load for existing users
       await pushRemoteState();
       startPresence();
       updateUserDuoPills();
