@@ -1,9 +1,9 @@
 // netlify/functions/room.js
-// Stores/loads the shared state in Supabase (server-side key stays secret in Netlify env)
+
 
 const TABLE = "bucket_rooms";
+const DEVICE_TTL_MS = 3000; // 3 seconds for fast auto-resolve
 
-const DEVICE_TTL_MS = Number(process.env.DEVICE_TTL_MS || 20000);
 function json(statusCode, body) {
   return {
     statusCode,
@@ -58,16 +58,46 @@ exports.handler = async (event) => {
 
       const payload = first?.payload || {};
       const presence = payload?.presence || {};
-      const activeDevices = payload?.activeDevices || {};
-      // âœ… Return presenceVersion so clients can detect presence-only changes
-      const presenceVersion = payload?.presenceVersion || 0;
+      let activeDevices = { ...(payload?.activeDevices || {}) };
+      let presenceVersion = payload?.presenceVersion || 0;
+
+      // Prune stale devices on READ
+      const now = Date.now();
+      let pruned = false;
+      for (const u of Object.keys(activeDevices)) {
+        const rec = activeDevices[u] || {};
+        const last = Number(rec.lastActive || 0);
+        if (!Number.isFinite(last) || (now - last) > DEVICE_TTL_MS) {
+          delete activeDevices[u];
+          pruned = true;
+        }
+      }
+
+      // Write back pruned state
+      if (pruned) {
+        const merged = { ...payload, activeDevices };
+        merged.presenceVersion = (merged.presenceVersion || 0) + 1;
+        presenceVersion = merged.presenceVersion;
+        
+        const upsertUrl = `${SUPABASE_URL}/rest/v1/${TABLE}?on_conflict=room`;
+        await fetch(upsertUrl, {
+          method: "POST",
+          headers: { ...headers, Prefer: "resolution=merge-duplicates" },
+          body: JSON.stringify({
+            room,
+            payload: merged,
+            updated_at: first?.updated_at || new Date().toISOString(),
+          }),
+        });
+      }
 
       return json(200, {
-        payload,
+        payload: { ...payload, activeDevices },
         presence,
         activeDevices,
         presenceVersion,
         updated_at: first?.updated_at || null,
+        serverTime: now,
       });
     }
 
@@ -82,10 +112,10 @@ exports.handler = async (event) => {
       const room = (body.room || "").trim();
       const payloadIn = body.payload || null;
       const presenceIn = body.presence || null;
+      const removeDevice = body.removeDevice || null;
 
       if (!room) return json(400, { error: "room required" });
 
-      // Read existing row so presence-patch doesn't overwrite data
       const getUrl =
         `${SUPABASE_URL}/rest/v1/${TABLE}` +
         `?select=payload,updated_at&room=eq.${encodeURIComponent(room)}&limit=1`;
@@ -105,16 +135,25 @@ exports.handler = async (event) => {
       const isPayloadWrite = !!(payloadIn && typeof payloadIn === "object");
       let presenceChanged = false;
 
-      // Merge main payload if provided
       if (isPayloadWrite) {
         merged = { ...merged, ...payloadIn };
-        // âœ… Check if activeDevices changed (for presenceVersion bump)
         if (payloadIn.activeDevices !== undefined) {
           presenceChanged = true;
         }
       }
 
-      // Presence patch (stores last seen for yasir/kylee)
+      // Handle explicit device removal
+      if (removeDevice && typeof removeDevice === "object") {
+        const user = normUser(removeDevice.user);
+        const deviceId = removeDevice.deviceId;
+        if (user && merged.activeDevices?.[user]) {
+          if (!deviceId || merged.activeDevices[user].deviceId === deviceId) {
+            delete merged.activeDevices[user];
+            presenceChanged = true;
+          }
+        }
+      }
+
       if (presenceIn && typeof presenceIn === "object" && presenceIn.user) {
         const key = normUser(presenceIn.user);
         if (key) {
@@ -125,21 +164,17 @@ exports.handler = async (event) => {
         }
       }
 
-      // âœ… Increment presenceVersion when presence or activeDevices changes
-      // This lets clients detect changes even when updated_at doesn't bump
       if (presenceChanged) {
         merged.presenceVersion = (merged.presenceVersion || 0) + 1;
       }
 
-      // âœ… IMPORTANT:
-      // - Only bump updated_at when payload changes (not presence pings)
       let nextUpdatedAt = existingUpdatedAt;
       if (isPayloadWrite) nextUpdatedAt = new Date().toISOString();
-      if (!nextUpdatedAt) nextUpdatedAt = new Date().toISOString(); // first create
+      if (!nextUpdatedAt) nextUpdatedAt = new Date().toISOString();
 
-      // prune stale activeDevices by TTL (server-side auto-resolve)
+      // Prune stale devices
+      const now = Date.now();
       if (merged.activeDevices && typeof merged.activeDevices === "object") {
-        const now = Date.now();
         for (const u of Object.keys(merged.activeDevices)) {
           const rec = merged.activeDevices[u] || {};
           const last = Number(rec.lastActive || 0);
@@ -149,6 +184,7 @@ exports.handler = async (event) => {
           }
         }
       }
+
       const upsertUrl = `${SUPABASE_URL}/rest/v1/${TABLE}?on_conflict=room`;
 
       const r = await fetch(upsertUrl, {
@@ -166,7 +202,6 @@ exports.handler = async (event) => {
 
       if (!r.ok) return json(500, { error: "supabase write failed" });
 
-      // âœ… Always return presenceVersion so clients can track presence changes
       return json(200, {
         ok: true,
         payload: merged,
@@ -174,11 +209,13 @@ exports.handler = async (event) => {
         activeDevices: merged.activeDevices || {},
         presenceVersion: merged.presenceVersion || 0,
         updated_at: nextUpdatedAt,
+        serverTime: now,
       });
     }
 
     return json(405, { error: "method not allowed" });
   } catch (e) {
+    console.error("Room function error:", e);
     return json(500, { error: "server error" });
   }
 };
