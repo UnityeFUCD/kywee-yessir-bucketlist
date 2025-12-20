@@ -14,9 +14,10 @@
     { version: "1.0.0", date: "2024-12-15", note: "Initial release with missions, messages, and sync" },
     { version: "1.1.0", date: "2024-12-16", note: "Added attachments, daily emoticons, and character limits" },
     { version: "1.2.0", date: "2024-12-17", note: "New: Mini calendar, date picker, user colors, and stacking toasts" },
-    { version: "1.3.0", date: "2024-12-19", note: "Fixed: Instant device conflict detection (~3s auto-resolve)" }
+    { version: "1.3.0", date: "2024-12-19", note: "Fixed: Instant device conflict detection (~3s auto-resolve)" },
+    { version: "1.4.0", date: "2024-12-20", note: "New: Confetti on completion, delete saved missions, holiday calendar styling" }
   ];
-  const CURRENT_VERSION = "1.3.0";
+  const CURRENT_VERSION = "1.4.0";
 
   // [OK] UPCOMING EVENTS with type for distinct styling
   const UPCOMING_EVENTS = [
@@ -122,74 +123,81 @@
   // [OK] Daily rotating ASCII art emoticons (larger braille art)
 const DAILY_EMOTICONS = [
 `
-
-
-
-
-
-
-
-
-
-
-          LOVE `,
+⠀⠀⠀⠀⠀⠀⢀⣀⣀⣀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⣀⣀⣀⡀⠀⠀⠀⠀⠀⠀
+⠀⠀⠀⠀⣠⣾⣿⣿⣿⣿⣿⣦⡀⠀⠀⠀⠀⢀⣴⣿⣿⣿⣿⣿⣷⣄⠀⠀⠀⠀
+⠀⠀⢀⣾⣿⣿⣿⣿⣿⣿⣿⣿⣿⣦⠀⠀⣴⣿⣿⣿⣿⣿⣿⣿⣿⣿⣷⡀⠀⠀
+⠀⠀⣾⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣷⣾⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣷⠀⠀
+⠀⢸⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⡇⠀
+⠀⢸⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⡇⠀
+⠀⠸⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⠇⠀
+⠀⠀⠹⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⠏⠀⠀
+⠀⠀⠀⠙⢿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⡿⠋⠀⠀⠀
+⠀⠀⠀⠀⠀⠙⠿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⠿⠋⠀⠀⠀⠀⠀
+⠀⠀⠀⠀⠀⠀⠀⠀⠉⠛⠿⠿⣿⣿⣿⣿⣿⣿⠿⠿⠛⠉⠀⠀⠀⠀⠀⠀⠀⠀
+          LOVE 💕`,
 `
-
-
-
-
-
-
-
-
-
-
-          CUTE `,
+⠀⠀⠀⠀⠀⠀⣠⣴⣶⣿⣿⣶⣦⣄⠀⠀⠀⠀⠀⠀
+⠀⠀⠀⠀⣠⣾⣿⣿⣿⣿⣿⣿⣿⣿⣷⣄⠀⠀⠀⠀
+⠀⠀⠀⣴⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣦⠀⠀⠀
+⠀⠀⣼⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣧⠀⠀
+⠀⢸⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⡇⠀
+⠀⣿⣿⡏⠉⠉⠉⠉⣿⣿⣿⣿⠉⠉⠉⠉⢹⣿⣿⠀
+⠀⣿⣿⡇⠀⠀⠀⠀⣿⣿⣿⣿⠀⠀⠀⠀⢸⣿⣿⠀
+⠀⣿⣿⡇⠀⢀⣀⠀⣿⣿⣿⣿⠀⣀⡀⠀⢸⣿⣿⠀
+⠀⣿⣿⣧⣀⠀⠀⣠⣿⣿⣿⣿⣄⠀⠀⣀⣼⣿⣿⠀
+⠀⠸⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⠇⠀
+⠀⠀⠻⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⠟⠀⠀
+          🥰 CUTE 🥰`,
 `
-
-
-
-
-
-
-
-          HAPPY `,
+⠀⠀⠀⠀⠀⠀⠀⠀⣀⣀⣀⣀⣀⠀⠀⠀⠀⠀⠀⠀⠀
+⠀⠀⠀⠀⢀⣴⣾⣿⣿⣿⣿⣿⣿⣿⣷⣦⡀⠀⠀⠀⠀
+⠀⠀⠀⣴⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣦⠀⠀⠀
+⠀⠀⣼⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣧⠀⠀
+⠀⢰⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⡆⠀
+⠀⣿⣿⣿⡟⠁⣿⣿⣿⣿⣿⣿⣿⣿⠈⠻⣿⣿⣿⣿⠀
+⠀⣿⣿⣿⠀⠀⣿⣿⣿⣿⣿⣿⣿⣿⠀⠀⣿⣿⣿⣿⠀
+⠀⣿⣿⣿⣦⣤⣾⣿⣿⣿⣿⣿⣿⣷⣤⣴⣿⣿⣿⣿⠀
+          HAPPY 😊`,
 `
-
-
-
-
-
-
-
-          SMILE `,
+⠀⠀⠀⠀⠀⠀⢀⣀⣀⣀⣀⣀⣀⡀⠀⠀⠀⠀⠀⠀
+⠀⠀⠀⢀⣴⣾⣿⣿⣿⣿⣿⣿⣿⣿⣷⣦⡀⠀⠀⠀
+⠀⠀⣴⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣦⠀⠀
+⠀⣾⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣷⠀
+⢸⣿⣿⣿⠉⠉⣿⣿⣿⣿⣿⣿⣿⣿⠉⠉⣿⣿⣿⡇
+⣿⣿⣿⣿⣶⣶⣿⣿⣿⣿⣿⣿⣿⣿⣶⣶⣿⣿⣿⣿
+⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿
+⠸⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⠇
+          SMILE 😄`,
 `
-
-
-
-
-
-
-
-        KISSES `,
+⠀⠀⠀⠀⠀⢀⣴⣿⣿⣿⣿⣿⣿⣿⣦⡀⠀⠀⠀⠀
+⠀⠀⠀⢀⣴⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣦⡀⠀⠀
+⠀⠀⣴⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣦⠀
+⠀⣾⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣷
+⢸⣿⣿⣿⠛⠛⣿⣿⣿⣿⣿⣿⣿⣿⠛⠛⣿⣿⣿⣿
+⣿⣿⣿⣿⣷⣾⣿⣿⣿⣿⣿⣿⣿⣿⣷⣾⣿⣿⣿⣿
+⣿⣿⣿⣿⣿⣿⣿⠟⠉⠉⠉⠉⠻⣿⣿⣿⣿⣿⣿⣿
+⠸⣿⣿⣿⣿⣿⣿⣷⣶⣶⣶⣶⣾⣿⣿⣿⣿⣿⣿⠇
+        KISSES 😘`,
 `
-
-
-
-
-
-
-
-        SWEET `,
+⠀⠀⠀⠀⣀⣤⣶⣿⣿⣿⣿⣶⣤⣀⠀⠀⠀⠀
+⠀⠀⣠⣾⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣷⣄⠀⠀
+⠀⣴⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣦⠀
+⢸⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⡇
+⣿⣿⣿⣿⡿⠋⣿⣿⣿⣿⣿⣿⠙⢿⣿⣿⣿⣿
+⣿⣿⣿⣿⣷⣾⣿⣿⣿⣿⣿⣿⣷⣾⣿⣿⣿⣿
+⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿
+⠘⢿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⡿⠃
+        SWEET 🍬`,
 `
-
-
-
-
-
-
-
-         PRETTY `
+⠀⠀⠀⠀⣀⣤⣶⣿⣿⣿⣿⣶⣤⣀⠀⠀⠀⠀
+⠀⠀⣠⣾⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣷⣄⠀⠀
+⠀⣴⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣦⠀
+⢸⣿⣿⣿⠟⠉⠉⣿⣿⣿⣿⠉⠉⠻⣿⣿⣿⡇
+⣿⣿⣿⣿⠀⠀⠀⣿⣿⣿⣿⠀⠀⠀⣿⣿⣿⣿
+⣿⣿⣿⣿⣤⣤⣴⣿⣿⣿⣿⣦⣤⣤⣿⣿⣿⣿
+⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿
+⠘⠿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⠿⠃
+         PRETTY ✨`
 ];
 
   // [OK] Prevent double-trigger of letter animation
@@ -241,12 +249,38 @@ const DAILY_EMOTICONS = [
     }, 3000);
   }
 
+  // [NEW] Confetti animation on mission completion
+  function triggerConfetti() {
+    const container = document.createElement("div");
+    container.className = "confetti-container";
+    document.body.appendChild(container);
+    
+    const colors = ['#ff6b9d', '#ff3b3b', '#3bff6b', '#3b7bff', '#ffe93b', '#ff9f43', '#d4ff00'];
+    const shapes = ['square', 'circle'];
+    
+    // Create 60 confetti pieces
+    for (let i = 0; i < 60; i++) {
+      const confetti = document.createElement("div");
+      confetti.className = `confetti ${shapes[Math.floor(Math.random() * shapes.length)]}`;
+      confetti.style.left = `${Math.random() * 100}vw`;
+      confetti.style.backgroundColor = colors[Math.floor(Math.random() * colors.length)];
+      confetti.style.animationDuration = `${2 + Math.random() * 2}s`;
+      confetti.style.animationDelay = `${Math.random() * 0.5}s`;
+      confetti.style.width = `${6 + Math.random() * 8}px`;
+      confetti.style.height = `${6 + Math.random() * 8}px`;
+      container.appendChild(confetti);
+    }
+    
+    // Clean up after animation
+    setTimeout(() => container.remove(), 4500);
+  }
+
   // [OK] Check for system updates (new version)
   function checkSystemUpdates() {
     const lastSeen = localStorage.getItem(KEY_LAST_VERSION_SEEN);
     if (lastSeen !== CURRENT_VERSION) {
       const latest = VERSION_HISTORY[VERSION_HISTORY.length - 1];
-      showToast(` Update v${latest.version}: ${latest.note}`, "info");
+      showToast(`🎉 Update v${latest.version}: ${latest.note}`, "info");
       localStorage.setItem(KEY_LAST_VERSION_SEEN, CURRENT_VERSION);
     }
   }
@@ -262,11 +296,11 @@ const DAILY_EMOTICONS = [
       const diffDays = Math.round(diffMs / (1000 * 60 * 60 * 24));
       
       if (diffDays === 3) {
-        showToast(` 3 days until ${event.title}!`, "event");
+        showToast(`📅 3 days until ${event.title}!`, "event");
       } else if (diffDays === 1) {
-        showToast(` Tomorrow: ${event.title}!`, "event");
+        showToast(`⏰ Tomorrow: ${event.title}!`, "event");
       } else if (diffDays === 0) {
-        showToast(` Today is ${event.title}!`, "event");
+        showToast(`🎉 Today is ${event.title}!`, "event");
       }
     });
   }
@@ -422,7 +456,7 @@ const DAILY_EMOTICONS = [
       else {
         const note = document.createElement("div");
         note.className = "gallery-empty-note";
-        note.textContent = " Click to expand. Your memories will appear below.";
+        note.textContent = "↑ Click to expand. Your memories will appear below.";
         container.appendChild(note);
       }
       return;
@@ -602,38 +636,28 @@ const DAILY_EMOTICONS = [
       
       savePhotos(photos);
       renderPhotoGallery();
-      showToast(`Linked ${photosToLink.length} photo(s) to "${selectedMission}"`);
       modal.remove();
-    });
-    
-    modal.addEventListener("click", (e) => {
-      if (e.target === modal) modal.remove();
+      showToast(`Linked ${photosToLink.length} photo(s) to "${selectedMission}"`);
     });
   }
 
-  // [OK] Delete confirmation modal
+  // [OK] Delete photo confirmation modal
   function showDeleteConfirm(type, identifier, photoObj = null) {
     const existing = document.querySelector(".delete-confirm-modal");
     if (existing) existing.remove();
     
+    const isSingle = type === "_single_";
+    const displayName = isSingle ? "this photo" : `all photos in "${identifier}"`;
+    
     const modal = document.createElement("div");
     modal.className = "delete-confirm-modal";
-    
-    let message = "";
-    if (type === "_single_") {
-      message = "Delete this photo? This is permanent.";
-    } else if (type === "_unlinked_") {
-      message = "Delete ALL unlinked photos? This is permanent.";
-    } else {
-      message = `Delete ALL photos from "${identifier}"? This is permanent.`;
-    }
-    
     modal.innerHTML = `
       <div class="delete-confirm-content">
-        <p>${escapeHtml(message)}</p>
+        <h4><i class="fas fa-exclamation-triangle"></i> Delete ${displayName}?</h4>
+        <p>This action cannot be undone.</p>
         <div class="delete-confirm-actions">
           <button class="btn" id="cancelDeleteBtn">Cancel</button>
-          <button class="btn btn-danger" id="confirmDeleteBtn"><i class="fas fa-trash"></i> Delete</button>
+          <button class="btn primary" id="confirmDeleteBtn" style="background:#ff3b3b;border-color:#ff3b3b;"><i class="fas fa-trash"></i> Delete</button>
         </div>
       </div>
     `;
@@ -644,308 +668,284 @@ const DAILY_EMOTICONS = [
     modal.querySelector("#confirmDeleteBtn").addEventListener("click", () => {
       let photos = loadPhotos();
       
-      if (type === "_single_" && photoObj) {
-        // Delete single photo by URL
-        photos = photos.filter(p => p.url !== identifier);
+      if (isSingle && photoObj) {
+        // Delete single photo
+        photos = photos.filter(p => p.url !== photoObj.url);
       } else if (type === "_unlinked_") {
         // Delete all unlinked photos
         photos = photos.filter(p => p.mission && p.mission !== "");
       } else {
-        // Delete all photos in this mission
+        // Delete all photos linked to this mission
         photos = photos.filter(p => p.mission !== type);
       }
       
       savePhotos(photos);
       renderPhotoGallery();
-      showToast("Deleted!");
       modal.remove();
-    });
-    
-    // Close on backdrop click
-    modal.addEventListener("click", (e) => {
-      if (e.target === modal) modal.remove();
+      showToast(isSingle ? "Photo deleted" : "Photos deleted");
     });
   }
 
   // [OK] Toggle bundle expand/collapse
-  window.toggleBundle = function(header) {
-    const bundle = header.closest('.gallery-mission-bundle');
-    const photos = bundle.querySelector('.bundle-photos');
+  window.toggleBundle = function(headerOrBundleEl) {
+    const bundle = headerOrBundleEl.closest('.gallery-mission-bundle') || headerOrBundleEl;
+    const photosDiv = bundle.querySelector('.bundle-photos');
     const icon = bundle.querySelector('.bundle-expand i');
     
-    photos.classList.toggle('collapsed');
-    icon.classList.toggle('fa-chevron-down');
-    icon.classList.toggle('fa-chevron-up');
+    if (photosDiv.classList.contains('collapsed')) {
+      photosDiv.classList.remove('collapsed');
+      if (icon) icon.className = 'fas fa-chevron-up';
+    } else {
+      photosDiv.classList.add('collapsed');
+      if (icon) icon.className = 'fas fa-chevron-down';
+    }
   };
 
-  let lightboxIndex = 0;
-  let allPhotos = [];
-
-  function openPhotoLightbox(url, index) {
-    const modal = $("photoLightbox");
-    const img = $("lightboxImage");
-    if (!modal || !img) return;
+  // [OK] Mission capacity indicator
+  function updateMissionCapacity() {
+    const select = $("photoMission");
+    const capacityEl = $("missionCapacity");
+    if (!select || !capacityEl) return;
     
-    allPhotos = loadPhotos();
-    lightboxIndex = index;
-    
-    img.src = url;
-    modal.classList.add("active");
-    updateLightboxCounter();
-  }
-
-  function updateLightboxCounter() {
-    const counter = $("lightboxCounter");
-    if (counter) {
-      counter.textContent = `${lightboxIndex + 1} / ${allPhotos.length}`;
-    }
-  }
-
-  function closeLightbox() {
-    const modal = $("photoLightbox");
-    if (modal) modal.classList.remove("active");
-  }
-
-  function lightboxPrev() {
-    if (lightboxIndex > 0) {
-      lightboxIndex--;
-      $("lightboxImage").src = allPhotos[lightboxIndex].url;
-      updateLightboxCounter();
-    }
-  }
-
-  function lightboxNext() {
-    if (lightboxIndex < allPhotos.length - 1) {
-      lightboxIndex++;
-      $("lightboxImage").src = allPhotos[lightboxIndex].url;
-      updateLightboxCounter();
-    }
-  }
-
-  // [OK] Medal API functions
-  let medalClips = [];
-
-  async function fetchMedalClips() {
-    try {
-      // Use our Netlify function proxy to avoid CORS issues
-      const res = await fetch(`/.netlify/functions/medal?limit=12`);
-      
-      if (!res.ok) {
-        console.error("Medal API error:", res.status);
-        const container = $("medalClips");
-        if (container) {
-          container.innerHTML = '<div class="medal-empty">Could not load clips. Try refreshing!</div>';
-        }
-        return;
-      }
-      
-      const data = await res.json();
-      medalClips = data.contentObjects || [];
-      console.log("Medal clips loaded:", medalClips.length);
-      renderMedalClips();
-    } catch (err) {
-      console.error("Medal fetch error:", err);
-      const container = $("medalClips");
-      if (container) {
-        container.innerHTML = '<div class="medal-empty">Could not load clips. Check console for errors.</div>';
-      }
-    }
-  }
-
-  function renderMedalClips() {
-    const container = $("medalClips");
-    if (!container) return;
-    
-    if (medalClips.length === 0) {
-      container.innerHTML = '<div class="medal-empty">No clips found. Record some gameplay!</div>';
+    const mission = select.value;
+    if (!mission) {
+      capacityEl.textContent = "No limit for unlinked photos";
+      capacityEl.style.color = "var(--muted)";
       return;
     }
     
-    container.innerHTML = "";
+    const existingCount = loadPhotos().filter(p => p.mission === mission).length;
+    const remaining = 5 - existingCount;
     
-    medalClips.forEach(clip => {
-      const item = document.createElement("div");
-      item.className = "medal-clip";
-      
-      const thumbnail = clip.thumbnail || clip.contentThumbnail || "";
-      const title = clip.contentTitle || "Untitled Clip";
-      const game = clip.categoryName || clip.gameName || "";
-      
-      // [OK] Use the correct URL from API - contentUrl is the shareable link
-      // Fallback chain: contentUrl  directClipUrl  constructed URL
-      const clipUrl = clip.contentUrl || clip.directClipUrl || `https://medal.tv/clips/${clip.contentId}`;
-      
-      // Debug logging to console
-      console.log("Medal clip:", { 
-        title, 
-        contentUrl: clip.contentUrl, 
-        directClipUrl: clip.directClipUrl,
-        contentId: clip.contentId,
-        usingUrl: clipUrl
-      });
-      
-      item.innerHTML = `
-        <div class="medal-thumbnail" style="background-image: url('${escapeHtml(thumbnail)}')">
-          <div class="medal-play"><i class="fas fa-play"></i></div>
-        </div>
-        <div class="medal-info">
-          <div class="medal-title">${escapeHtml(title)}</div>
-          ${game ? `<div class="medal-game">${escapeHtml(game)}</div>` : ''}
-        </div>
-      `;
-      
-      // Click to open in new tab
-      item.addEventListener("click", () => {
-        console.log("Opening Medal clip:", clipUrl);
-        window.open(clipUrl, '_blank');
-      });
-      
-      container.appendChild(item);
-    });
+    if (remaining <= 0) {
+      capacityEl.textContent = `Full (${existingCount}/5)`;
+      capacityEl.style.color = "#ff3b3b";
+    } else {
+      capacityEl.textContent = `${remaining} slot(s) remaining`;
+      capacityEl.style.color = remaining <= 2 ? "#ffe93b" : "var(--muted)";
+    }
   }
 
-  function openMedalClip(clip) {
-    // Use the correct URL from API
-    const clipUrl = clip.contentUrl || clip.directClipUrl || `https://medal.tv/clips/${clip.contentId}`;
-    console.log("Opening Medal clip:", clipUrl);
-    window.open(clipUrl, '_blank');
+  // [OK] Photo lightbox state
+  let lightboxCurrentIndex = 0;
+
+  function openPhotoLightbox(url, index) {
+    const lightbox = $("photoLightbox");
+    const img = $("lightboxImage");
+    const counter = $("lightboxCounter");
+    
+    if (!lightbox || !img) return;
+    
+    const photos = loadPhotos();
+    lightboxCurrentIndex = index;
+    
+    img.src = url;
+    if (counter) counter.textContent = `${index + 1} / ${photos.length}`;
+    
+    lightbox.classList.add("active");
+    document.body.style.overflow = 'hidden';
+  }
+
+  function closeLightbox() {
+    const lightbox = $("photoLightbox");
+    if (lightbox) {
+      lightbox.classList.remove("active");
+      document.body.style.overflow = '';
+    }
+  }
+
+  function lightboxPrev() {
+    const photos = loadPhotos();
+    if (photos.length === 0) return;
+    lightboxCurrentIndex = (lightboxCurrentIndex - 1 + photos.length) % photos.length;
+    const photo = photos[lightboxCurrentIndex];
+    $("lightboxImage").src = photo.url;
+    $("lightboxCounter").textContent = `${lightboxCurrentIndex + 1} / ${photos.length}`;
+  }
+
+  function lightboxNext() {
+    const photos = loadPhotos();
+    if (photos.length === 0) return;
+    lightboxCurrentIndex = (lightboxCurrentIndex + 1) % photos.length;
+    const photo = photos[lightboxCurrentIndex];
+    $("lightboxImage").src = photo.url;
+    $("lightboxCounter").textContent = `${lightboxCurrentIndex + 1} / ${photos.length}`;
+  }
+
+  // [OK] Medal clips functions
+  async function fetchMedalClips() {
+    const container = $("medalClips");
+    if (!container) return;
+    
+    container.innerHTML = '<div class="medal-empty">Loading clips...</div>';
+    
+    try {
+      const res = await fetch("/.netlify/functions/medal?limit=12");
+      if (!res.ok) throw new Error("Failed to fetch");
+      
+      const data = await res.json();
+      const clips = data.contentObjects || [];
+      
+      if (clips.length === 0) {
+        container.innerHTML = '<div class="medal-empty">No clips found</div>';
+        return;
+      }
+      
+      container.innerHTML = "";
+      clips.forEach(clip => {
+        const card = document.createElement("div");
+        card.className = "medal-card";
+        card.innerHTML = `
+          <div class="medal-thumb" style="background-image: url('${escapeHtml(clip.thumbnail || '')}')">
+            <div class="medal-play"><i class="fas fa-play"></i></div>
+          </div>
+          <div class="medal-info">
+            <div class="medal-title">${escapeHtml(clip.contentTitle || 'Untitled')}</div>
+            <div class="medal-game">${escapeHtml(clip.categoryName || '')}</div>
+          </div>
+        `;
+        
+        card.addEventListener("click", () => {
+          openMedalModal(clip);
+        });
+        
+        container.appendChild(card);
+      });
+    } catch (err) {
+      console.error("Medal fetch error:", err);
+      container.innerHTML = '<div class="medal-empty">Failed to load clips</div>';
+    }
+  }
+
+  // [FIX] Medal modal - open clips in overlay instead of new tab
+  function openMedalModal(clip) {
+    const modal = $("medalModal");
+    const content = $("medalModalContent");
+    if (!modal || !content) return;
+    
+    // Use the embed URL if available, otherwise use direct URL
+    const embedUrl = clip.contentUrl || clip.rawFileUrl || '';
+    
+    content.innerHTML = `
+      <div class="medal-modal-info">
+        <h4>${escapeHtml(clip.contentTitle || 'Medal Clip')}</h4>
+        <a href="${escapeHtml(embedUrl)}" target="_blank" class="btn" style="font-size:10px;">
+          <i class="fas fa-external-link-alt"></i> Open in Medal
+        </a>
+      </div>
+      <video controls autoplay playsinline style="width:100%;max-height:70vh;">
+        <source src="${escapeHtml(embedUrl)}" type="video/mp4">
+        Your browser doesn't support video playback.
+      </video>
+    `;
+    
+    modal.classList.add("active");
+    document.body.style.overflow = 'hidden';
   }
 
   function closeMedalModal() {
     const modal = $("medalModal");
     const content = $("medalModalContent");
-    if (modal) modal.classList.remove("active");
-    if (content) content.innerHTML = "";
+    if (modal) {
+      modal.classList.remove("active");
+      document.body.style.overflow = '';
+    }
+    if (content) {
+      content.innerHTML = ""; // Stop video
+    }
   }
 
-  function loadTheme() { return localStorage.getItem(KEY_THEME) || "system"; }
-  function saveTheme(theme) { localStorage.setItem(KEY_THEME, theme); }
+  // ---------- System message ----------
+  function loadSystemMessage() {
+    return localStorage.getItem(KEY_SYSTEM_MESSAGE) || "MY LOVE";
+  }
 
-  function loadSystemMessage() { return localStorage.getItem(KEY_SYSTEM_MESSAGE) || "My Love"; }
-  function saveSystemMessageLocalOnly(msg) {
+  function saveSystemMessage(msg) {
     localStorage.setItem(KEY_SYSTEM_MESSAGE, msg);
+    schedulePush();
   }
 
   function renderSystemMessage(msg) {
-    const v = String(msg || "My Love");
-    $("herName").textContent = v.toUpperCase();
-    $("loveNote").textContent = `// SYSTEM MESSAGE: ${v.toUpperCase()}`;
+    const herName = $("herName");
+    if (herName) {
+      // Typewriter effect
+      const text = msg || "MY LOVE";
+      herName.textContent = "";
+      let i = 0;
+      const typeInterval = setInterval(() => {
+        if (i < text.length) {
+          herName.textContent += text[i];
+          i++;
+        } else {
+          clearInterval(typeInterval);
+        }
+      }, 80);
+    }
+    
+    const loveNote = $("loveNote");
+    if (loveNote) {
+      loveNote.textContent = `// SYSTEM MESSAGE: ${msg || "MY LOVE"}`;
+    }
   }
 
-  // [OK] Fix blank letter permanently: sanitize messages (drop empty content / missing from)
-  function sanitizeMessages(arr) {
-    if (!Array.isArray(arr)) return [];
-    const cleaned = [];
-    for (const m of arr) {
-      const from = String(m?.from || "").trim();
-      const timestamp = String(m?.timestamp || "").trim();
-      const content = normalizeNewlines(m?.content ?? "").trim();
-      if (!from) continue;
-      if (!content) continue; //  removes blank letters forever
-      
-      const cleanMsg = { from, timestamp, content };
-      // [OK] PRESERVE attachment fields!
-      if (m.attachment) {
-        cleanMsg.attachment = m.attachment;
-        cleanMsg.attachmentType = m.attachmentType || 'image';
-      }
-      cleaned.push(cleanMsg);
-    }
-    return cleaned;
-  }
+  function loadTheme() { return localStorage.getItem(KEY_THEME) || "system"; }
+  function saveTheme(t) { localStorage.setItem(KEY_THEME, t); }
 
-  // ---------- Sync indicator ----------
-  function setDot(el, color, pulse=false) {
-    el.classList.remove("green", "yellow", "red", "gray", "pulse");
-    el.classList.add(color);
-    if (pulse) el.classList.add("pulse");
-  }
-
-  function setSyncStatus(mode) {
-    // mode: off | pulling | saving | on | error
-    const dot = $("syncDot");
-    const label = $("syncPill")?.querySelector("span:last-child"); // no HTML change needed
-
-    if (mode === "pulling") {
-      setDot(dot, "yellow", true);
-      if (label) label.textContent = "PULL";
-      $("syncPill").title = "Pulling updates";
-      return;
-    }
-    if (mode === "saving") {
-      setDot(dot, "yellow", true);
-      if (label) label.textContent = "SAVE";
-      $("syncPill").title = "Saving updates";
-      return;
-    }
-    if (mode === "on") {
-      setDot(dot, "green", false);
-      if (label) label.textContent = "SYNC";
-      $("syncPill").title = "Synced";
-      return;
-    }
-    if (mode === "error") {
-      setDot(dot, "red", false);
-      if (label) label.textContent = "ERR";
-      $("syncPill").title = "Sync error";
-      return;
-    }
-    setDot(dot, "gray", false);
-    if (label) label.textContent = "OFF";
-    $("syncPill").title = "Sync off";
-  }
-
-  // ============================================
-  // [FIX] NEW DEVICE CONFLICT SYSTEM - DATABASE ONLY
-  // No WebSocket reliance - works on iOS Safari
-  // ============================================
-  
-  const DEVICE_ACTIVE_TIMEOUT = 5000; // 5 seconds - if no heartbeat, considered offline
-  const HEARTBEAT_INTERVAL = 2000;    // Send heartbeat every 2 seconds
-  
+  // ---------- Presence and sync ----------
   let presenceTimer = null;
-  let lastPresence = null;
+  let lastPresence = {};
+  
+  // [FIX] Device conflict state
   let deviceLocked = false;
   let loginInProgress = false;
   let takeoverInProgress = false;
-  let takeoverGraceUntil = 0;
   let loginGraceUntil = 0;
+  let takeoverGraceUntil = 0;
   let kickCheckTimer = null;
+  
+  // [FIX] Device active timeout (3 seconds for fast detection)
+  const DEVICE_ACTIVE_TIMEOUT = 3000;
 
-  function normalizePerson(name) {
-    const n = String(name || "").trim().toLowerCase();
-    if (n === "yasir") return "yasir";
-    if (n === "kylee") return "kylee";
+  // [OK] Presence visibility based on WebSocket
+  function isOnlineLive(user) {
+    if (!user) return false;
+    const u = user.toLowerCase();
+    
+    // Check WebSocket presence first (most reliable)
+    if (livePresenceState && Object.keys(livePresenceState).length > 0) {
+      for (const [key, presences] of Object.entries(livePresenceState)) {
+        for (const p of presences) {
+          if (p.user === u) return true;
+        }
+      }
+    }
+    
+    // Fallback to activeDevices from database
+    if (activeDevices[u]) {
+      const age = Date.now() - (activeDevices[u].lastActive || 0);
+      return age < DEVICE_ACTIVE_TIMEOUT;
+    }
+    
+    return false;
+  }
+
+  function getUserColorClass(user) {
+    const u = String(user || "").trim().toLowerCase();
+    if (u === "yasir") return "user-yasir";
+    if (u === "kylee") return "user-kylee";
     return "";
   }
 
-  function isOnlineLive(nameLower) {
-    try {
-      if (!nameLower) return false;
-      // Use live presence if available
-      if (typeof presenceChannel !== 'undefined' && presenceChannel) {
-        const st = presenceChannel.presenceState?.() || {};
-        return Array.isArray(st[nameLower]) && st[nameLower].length > 0;
-      }
-      // Fallback to lastPresence timestamp (<=45s old = online)
-      const ts = lastPresence?.[nameLower];
-      if (!ts) return false;
-      const age = Date.now() - new Date(ts).getTime();
-      return Number.isFinite(age) && age <= 45000;
-    } catch { return false; }
-  }
-
   function updateUserDuoPills() {
-    const user = loadUser().trim();
-    const duo = getDuoName(user);
+    const user = loadUser().trim().toLowerCase();
+    const duo = getDuoName(user)?.toLowerCase();
 
-    $("userText").textContent = user ? `USER: ${user.toUpperCase()}` : "USER: --";
-    $("duoText").textContent = user ? `DUO: ${duo.toUpperCase()}` : "DUO: --";
-    $("envelopeLabel").textContent = user ? `DUO: ${duo.toUpperCase()}` : "DUO";
-
-    // Icon styles
     const userIcon = $("userIcon");
     const duoIcon = $("duoIcon");
+
+    $("userText").textContent = user ? `USER: ${user.toUpperCase()}` : "USER: --";
+    $("duoText").textContent = duo ? `DUO: ${duo.toUpperCase()}` : "DUO: --";
+
     const userClass = getUserColorClass(user);
     const duoClass = getUserColorClass(duo);
 
@@ -1012,7 +1012,7 @@ const DAILY_EMOTICONS = [
     }
 
     try {
-      //  FIX: Use deviceId as presence key (unique per device!)
+      // [FIX] Use deviceId as presence key (unique per device!)
       const myDeviceId = getDeviceId();
       presenceChannel = sbClient.channel(`presence:${ROOM_CODE}`, {
         config: { presence: { key: myDeviceId } }
@@ -1024,14 +1024,14 @@ const DAILY_EMOTICONS = [
           handleLivePresenceSync(livePresenceState);
         })
         .on('presence', { event: 'join' }, ({ key, newPresences }) => {
-          console.log("[PRESENCE]  Join:", key, newPresences?.length || 0);
+          console.log("[PRESENCE] Join:", key, newPresences?.length || 0);
           livePresenceState = presenceChannel.presenceState();
           handleLivePresenceSync(livePresenceState);
           updateUserDuoPills();
         })
         .on('presence', { event: 'leave' }, ({ key, leftPresences }) => {
-          //  ALWAYS check for auto-resolve when someone leaves
-          console.log("[PRESENCE]  Leave:", key, leftPresences?.length || 0);
+          // [FIX] ALWAYS check for auto-resolve when someone leaves
+          console.log("[PRESENCE] Leave:", key, leftPresences?.length || 0);
           livePresenceState = presenceChannel.presenceState();
           handleLivePresenceSync(livePresenceState);
           updateUserDuoPills();
@@ -1058,7 +1058,7 @@ const DAILY_EMOTICONS = [
 
     const now = Date.now();
     
-    //  FIX: Find ALL presences for our user across ALL keys (no time filtering!)
+    // [FIX] Find ALL presences for our user across ALL keys (no time filtering!)
     let conflictingDevices = [];
     
     for (const [key, presences] of Object.entries(state)) {
@@ -1070,7 +1070,7 @@ const DAILY_EMOTICONS = [
       }
     }
 
-    //  Calculate grace period status ONCE
+    // [FIX] Calculate grace period status ONCE
     const inLoginGrace = now < loginGraceUntil;
     const inTakeoverGrace = now < takeoverGraceUntil;
     const inAnyGrace = inLoginGrace || inTakeoverGrace;
@@ -1084,20 +1084,21 @@ const DAILY_EMOTICONS = [
       inTakeoverGrace
     });
 
-    //  CONFLICT DETECTION with grace period
+    // [FIX] CONFLICT DETECTION - Show overlay on THIS device (newer session)
+    // The device with the conflict gets the overlay - this is the NEW device trying to login
     if (conflictingDevices.length > 0) {
       if (inAnyGrace) {
-        console.log("[PRESENCE]  In grace period - ignoring conflict");
+        console.log("[PRESENCE] In grace period - ignoring conflict");
         // Don't lock, don't show conflict
       } else if (!deviceLocked) {
-        console.log("[PRESENCE]  CONFLICT - showing overlay");
+        console.log("[PRESENCE] CONFLICT - showing overlay");
         deviceLocked = true;
         showDeviceConflict(currentUser);
       }
     } else {
-      //  AUTO-RESOLVE: No conflicts
+      // [FIX] AUTO-RESOLVE: No conflicts
       if (deviceLocked) {
-        console.log("[PRESENCE]  AUTO-RESOLVED - no conflicts");
+        console.log("[PRESENCE] AUTO-RESOLVED - no conflicts");
         deviceLocked = false;
         hideDeviceConflict();
       }
@@ -1108,12 +1109,12 @@ const DAILY_EMOTICONS = [
 
   async function stopLivePresence() {
     if (presenceChannel && sbClient) {
-      console.log("[PRESENCE]  Stopping presence...");
+      console.log("[PRESENCE] Stopping presence...");
       try {
         await presenceChannel.untrack();
-        console.log("[PRESENCE]  Untracked successfully");
+        console.log("[PRESENCE] Untracked successfully");
       } catch (e) {
-        console.log("[PRESENCE]  Untrack error:", e);
+        console.log("[PRESENCE] Untrack error:", e);
       }
       try {
         await sbClient.removeChannel(presenceChannel);
@@ -1125,7 +1126,7 @@ const DAILY_EMOTICONS = [
   function startPresence() {
     if (presenceTimer) return;
     presencePing();
-    presenceTimer = setInterval(presencePing, 2000); //  FASTER: 2s instead of 15s
+    presenceTimer = setInterval(presencePing, 2000); // [FIX] FASTER: 2s instead of 15s
     // Also start WebSocket presence
     initLivePresence();
   }
@@ -1226,7 +1227,7 @@ const DAILY_EMOTICONS = [
           title: event.title,
           date: event.date,
           subtitle: diffDays === 0 ? "TODAY!" : diffDays === 1 ? "Tomorrow!" : `In ${diffDays} days`,
-          icon: event.icon || "",
+          icon: event.icon || "📅",
           id: notifId,
           isRead: isRead
         });
@@ -1245,7 +1246,7 @@ const DAILY_EMOTICONS = [
     list.innerHTML = "";
 
     if (systemNotifs.length === 0) {
-      list.innerHTML = '<div style="padding: 20px; text-align: center; color: var(--muted); font-size: 11px;">No notifications</div>';
+      list.innerHTML = '<div class="notif-empty">No notifications</div>';
       return;
     }
 
@@ -1302,6 +1303,24 @@ const DAILY_EMOTICONS = [
     });
   }
 
+  // [FIX] Clear all notifications
+  function clearAllNotifications() {
+    const systemNotifs = [];
+    const now = new Date();
+    const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+    UPCOMING_EVENTS.forEach(event => {
+      const eventDate = new Date(event.date + "T00:00:00");
+      const diffMs = eventDate - today;
+      const diffDays = Math.round(diffMs / (1000 * 60 * 60 * 24));
+      if (diffDays >= 0 && diffDays <= 14) {
+        systemNotifs.push({ type: 'event', title: event.title, date: event.date });
+      }
+    });
+    markAllSystemNotifsRead(systemNotifs);
+    updateNotifications();
+    showToast("Notifications cleared");
+  }
+
   // [OK] Letter Viewer State (for TikTok-style swipe)
   let letterViewerIndex = 0;
   let duoLetters = [];
@@ -1349,404 +1368,145 @@ const DAILY_EMOTICONS = [
         const isVideo = msg.attachmentType === 'video';
         if (isVideo) {
           attachmentContainer.innerHTML = `
-            <div class="letter-attachment-label"> Video Attachment</div>
-            <video controls playsinline class="letter-attachment-media" src="${escapeHtml(msg.attachment)}"></video>
+            <div class="letter-attachment-label">Attachment</div>
+            <video class="letter-attachment-media" controls playsinline>
+              <source src="${escapeHtml(msg.attachment)}" type="video/mp4">
+            </video>
           `;
         } else {
           attachmentContainer.innerHTML = `
-            <div class="letter-attachment-label"> Image Attachment</div>
+            <div class="letter-attachment-label">Attachment</div>
             <img class="letter-attachment-media" src="${escapeHtml(msg.attachment)}" alt="Attachment" onclick="openAttachmentModal('${escapeHtml(msg.attachment)}', 'image')">
           `;
         }
         attachmentContainer.classList.remove("hidden");
       } else {
-        attachmentContainer.innerHTML = "";
         attachmentContainer.classList.add("hidden");
+        attachmentContainer.innerHTML = "";
       }
     }
 
     // Mark as read
-    const userLower = loadUser().trim().toLowerCase();
-    const fromLower = String(msg.from || "").trim().toLowerCase();
-    if (userLower && fromLower && fromLower !== userLower) {
-      markReadUpTo(idx);
-      updateNotifications();
-    }
+    markReadUpTo(idx);
+    updateNotifications({ silent: true });
 
+    // Show modal with animation
     const modal = $("letterModal");
     const env = document.querySelector(".letter-envelope");
     const paper = document.querySelector(".letter-paper");
 
-    if (animate) {
-      // First open - show animation
+    if (animate && !letterAnimationInProgress) {
       letterAnimationInProgress = true;
-      modal.classList.remove("active");
-      if (env) env.classList.remove("open");
-      if (paper) paper.classList.remove("open");
-      void modal.offsetHeight;
-      
-      // [OK] Lock body scroll when modal opens
+      modal.classList.add("active");
       document.body.style.overflow = 'hidden';
-      document.body.style.position = 'fixed';
-      document.body.style.width = '100%';
       
-      requestAnimationFrame(() => {
-        modal.classList.add("active");
+      setTimeout(() => {
         if (env) env.classList.add("open");
-        setTimeout(() => {
-          if (paper) paper.classList.add("open");
-        }, 300);
-      });
+      }, 100);
       
-      setTimeout(() => { letterAnimationInProgress = false; }, 900);
-    } else {
-      // Seamless transition - no animation, just update content
+      setTimeout(() => {
+        if (paper) paper.classList.add("open");
+        letterAnimationInProgress = false;
+      }, 600);
+    } else if (!animate) {
       modal.classList.add("active");
       if (env) env.classList.add("open");
       if (paper) paper.classList.add("open");
-      // [OK] Lock body scroll
-      document.body.style.overflow = 'hidden';
-      document.body.style.position = 'fixed';
-      document.body.style.width = '100%';
-    }
-  }
-
-  function nextLetter() {
-    if (letterViewerIndex < duoLetters.length - 1) {
-      showLetterAt(letterViewerIndex + 1, false);
-    } else {
-      showToast("No more letters");
     }
   }
 
   function prevLetter() {
     if (letterViewerIndex > 0) {
       showLetterAt(letterViewerIndex - 1, false);
-    } else {
-      showToast("This is the newest letter");
     }
   }
 
-  function openMessage(index) {
-    // [OK] Guard against double-trigger
-    if (letterAnimationInProgress) return;
-
-    const messages = loadMessages();
-    const msg = messages[index];
-    if (!msg) return;
-
-    const safeContent = normalizeNewlines(msg.content ?? "").trim();
-    if (!safeContent) {
-      showToast("That letter is empty");
-      return;
+  function nextLetter() {
+    if (letterViewerIndex < duoLetters.length - 1) {
+      showLetterAt(letterViewerIndex + 1, false);
     }
-
-    letterAnimationInProgress = true;
-
-    const displayName = msg.from || "Unknown";
-    $("letterFrom").textContent = displayName.toUpperCase();
-    $("letterTimestamp").textContent = msg.timestamp || "";
-    $("letterContent").textContent = safeContent;
-
-    // [OK] Show attachment in letter if present
-    const attachmentContainer = $("letterAttachment");
-    if (attachmentContainer) {
-      if (msg.attachment) {
-        const isVideo = msg.attachmentType === 'video';
-        if (isVideo) {
-          attachmentContainer.innerHTML = `
-            <div class="letter-attachment-label"> Video Attachment</div>
-            <video controls playsinline class="letter-attachment-media" src="${escapeHtml(msg.attachment)}"></video>
-          `;
-        } else {
-          attachmentContainer.innerHTML = `
-            <div class="letter-attachment-label"> Image Attachment</div>
-            <img class="letter-attachment-media" src="${escapeHtml(msg.attachment)}" alt="Attachment" onclick="openAttachmentModal('${escapeHtml(msg.attachment)}', 'image')">
-          `;
-        }
-        attachmentContainer.classList.remove("hidden");
-      } else {
-        attachmentContainer.innerHTML = "";
-        attachmentContainer.classList.add("hidden");
-      }
-    }
-
-    const userLower = loadUser().trim().toLowerCase();
-    const fromLower = String(msg.from || "").trim().toLowerCase();
-    if (userLower && fromLower && fromLower !== userLower) {
-      markReadUpTo(index);
-      updateNotifications();
-    }
-
-    // [OK] CLEAN ANIMATION: Remove all classes, force reflow, then add .open
-    const modal = $("letterModal");
-    const env = document.querySelector(".letter-envelope");
-    const paper = document.querySelector(".letter-paper");
-    
-    // Reset state
-    modal.classList.remove("active");
-    if (env) env.classList.remove("open");
-    if (paper) paper.classList.remove("open");
-    
-    // Force reflow
-    void modal.offsetHeight;
-    
-    // Trigger animation via classes
-    requestAnimationFrame(() => {
-      modal.classList.add("active");
-      if (env) env.classList.add("open");
-      // Delay paper animation slightly
-      setTimeout(() => {
-        if (paper) paper.classList.add("open");
-      }, 300);
-    });
-
-    // Unlock after animation completes
-    setTimeout(() => { letterAnimationInProgress = false; }, 900);
   }
 
-  // [OK] [FEATURE B] Open attachment in fullscreen modal
+  // [OK] Open attachment in fullscreen modal
   window.openAttachmentModal = function(url, type) {
     const modal = $("attachmentModal");
     const content = $("attachmentModalContent");
+    
     if (!modal || !content) return;
+    
     if (type === 'video') {
-      content.innerHTML = `<video controls autoplay playsinline class="attachment-fullscreen" src="${escapeHtml(url)}"></video>`;
+      content.innerHTML = `<video class="attachment-fullscreen" controls autoplay playsinline><source src="${escapeHtml(url)}" type="video/mp4"></video>`;
     } else {
       content.innerHTML = `<img class="attachment-fullscreen" src="${escapeHtml(url)}" alt="Attachment">`;
     }
+    
     modal.classList.add("active");
   };
 
-  function clearAllNotifications() {
-    const messages = loadMessages();
-    const userLower = loadUser().trim().toLowerCase();
-    if (!userLower) return;
-
-    let lastDuo = -1;
-    for (let i = 0; i < messages.length; i++) {
-      const from = String(messages[i]?.from || "").trim().toLowerCase();
-      if (from && from !== userLower) lastDuo = i;
-    }
-    if (lastDuo >= 0) saveLastRead(lastDuo);
-    updateNotifications();
-    showToast("All read");
-  }
-
-  // ---------- UI render ----------
-  function renderActive() {
-    const items = loadActive();
-    const container = $("itemsActive");
-    container.innerHTML = "";
-
-    const withExample = [exampleActive, ...items];
-
-    withExample.forEach((it, idx) => {
-      const el = document.createElement("div");
-      el.className = "item" + (it.isExample ? " example" : "");
-      
-      // [OK] Format date and calculate urgency
-      let dateDisplay = '';
-      let urgencyIndicator = '';
-      
-      if (it.dueDate) {
-        const days = daysUntil(it.dueDate);
-        const urgency = getUrgencyLevel(days);
-        
-        dateDisplay = `<span class="item-date"><i class="fas fa-calendar"></i> ${formatMissionDate(it.dueDate)}</span>`;
-        
-        // Add urgency indicator for missions due soon
-        if (urgency === "red") {
-          urgencyIndicator = `<span class="urgency-badge urgency-red" title="Due today or tomorrow!">!</span>`;
-        } else if (urgency === "yellow") {
-          urgencyIndicator = `<span class="urgency-badge urgency-yellow" title="Due in 2-3 days"></span>`;
-        }
-      }
-      
-      el.innerHTML = `
-        <input type="checkbox" ${it.done ? "checked" : ""} ${it.isExample ? "disabled" : ""} aria-label="Mark done">
-        <div class="itext">
-          <div class="ititle">
-            <span>${escapeHtml(it.title)}</span>
-            <span class="itag">${escapeHtml(it.tag || "idea")}</span>
-            ${dateDisplay}
-            ${urgencyIndicator}
-          </div>
-          <p class="idesc">${escapeHtml(it.desc || "")}</p>
-        </div>
-        ${!it.isExample ? '<button class="btn" style="padding:8px 12px;" title="Remove">[X]</button>' : ""}
-      `;
-
-      if (!it.isExample) {
-        const cb = el.querySelector("input");
-        cb.addEventListener("change", () => {
-          const itemsNow = loadActive();
-          const actualIdx = idx - 1;
-          const mission = itemsNow[actualIdx];
-          itemsNow.splice(actualIdx, 1);
-          saveActive(itemsNow);
-
-          const completed = loadCompleted();
-          completed.push({ ...mission, done: true });
-          saveCompleted(completed);
-
-          renderActive();
-          renderCompleted();
-        });
-
-        const rm = el.querySelector("button");
-        rm.addEventListener("click", () => {
-          const itemsNow = loadActive();
-          const actualIdx = idx - 1;
-          itemsNow.splice(actualIdx, 1);
-          saveActive(itemsNow);
-          renderActive();
-        });
-      }
-
-      container.appendChild(el);
+  // [OK] Sanitize messages (remove blank letters)
+  function sanitizeMessages(msgs) {
+    if (!Array.isArray(msgs)) return [];
+    return msgs.filter(m => {
+      const content = normalizeNewlines(m?.content ?? "").trim();
+      return content.length > 0;
     });
   }
 
-  // [OK] Format mission date nicely
-  function formatMissionDate(dateStr) {
-    if (!dateStr) return "";
-    try {
-      const d = new Date(dateStr + "T00:00:00");
-      return d.toLocaleDateString(undefined, { month: "short", day: "numeric" });
-    } catch {
-      return dateStr;
-    }
-  }
-
-  function renderCompleted() {
-    const items = loadCompleted();
-    const container = $("itemsCompleted");
-    container.innerHTML = "";
-
-    const withExample = [exampleCompleted, ...items];
-
-    withExample.forEach((it, idx) => {
-      const el = document.createElement("div");
-      el.className = "item" + (it.isExample ? " example" : "");
-      el.innerHTML = `
-        <div class="itext">
-          <div class="ititle">
-            <span>${escapeHtml(it.title)}</span>
-            <span class="itag">${escapeHtml(it.tag || "idea")}</span>
-          </div>
-          <p class="idesc">${escapeHtml(it.desc || "")}</p>
-        </div>
-        ${!it.isExample ? '<button class="btn" style="padding:8px 12px;" title="Undo">UNDO</button>' : ""}
-      `;
-
-      if (!it.isExample) {
-        const undo = el.querySelector("button");
-        undo.addEventListener("click", () => {
-          const completedNow = loadCompleted();
-          const actualIdx = idx - 1;
-          const mission = completedNow[actualIdx];
-          completedNow.splice(actualIdx, 1);
-          saveCompleted(completedNow);
-
-          const active = loadActive();
-          active.push({ ...mission, done: false });
-          saveActive(active);
-
-          renderActive();
-          renderCompleted();
-        });
-      }
-
-      container.appendChild(el);
-    });
+  // ---------- Sync status indicator ----------
+  function setSyncStatus(status) {
+    const dot = $("syncDot");
+    if (!dot) return;
     
-    // [OK] Update photo mission select when completed missions change
-    if (typeof populatePhotoMissionSelect === 'function') {
-      populatePhotoMissionSelect();
+    dot.classList.remove("green", "yellow", "red", "gray", "pulse");
+    
+    if (status === "on") {
+      dot.classList.add("green");
+    } else if (status === "saving" || status === "pulling") {
+      dot.classList.add("yellow", "pulse");
+    } else if (status === "error") {
+      dot.classList.add("red");
+    } else {
+      dot.classList.add("gray");
     }
   }
 
-  let lastMsgCount = 0;
-
-  function renderMessages(opts = {}) {
-    const { autoScroll = false } = opts;
-    const messages = loadMessages();
-    const container = $("messageLog");
-    container.innerHTML = "";
-
-    // [OK] [FEATURE A] Render newest-first (reverse order)
-    const reversed = [...messages].reverse();
-
-    reversed.forEach((msg) => {
-      const displayName = msg.from || "Unknown";
-      const hasAttachment = !!(msg.attachment);
-      
-      // [OK] User-specific colors
-      const userClass = getUserColorClass(msg.from);
-      
-      const el = document.createElement("div");
-      el.className = `message-log-item ${userClass}`;
-      el.innerHTML = `
-        <div class="message-log-header">
-          <span class="message-from-name">FROM: ${escapeHtml(displayName)} ${hasAttachment ? '<span class="attachment-badge" title="Has attachment"></span>' : ''}</span>
-          <span>${escapeHtml(msg.timestamp || "")}</span>
-        </div>
-        <div class="message-log-content">${escapeHtml(msg.content || "")}</div>
-        ${hasAttachment ? `<div class="message-attachment-preview" onclick="openAttachmentModal('${escapeHtml(msg.attachment)}', '${escapeHtml(msg.attachmentType || 'image')}')">View Attachment</div>` : ''}
-      `;
-      container.appendChild(el);
-    });
-
-    if (messages.length > 3) container.classList.add("scroll");
-    else container.classList.remove("scroll");
-
-    // [OK] [FEATURE A] With newest-first, scroll to TOP for latest
-    if (autoScroll || messages.length > lastMsgCount) {
-      if (container.classList.contains("scroll")) container.scrollTop = 0;
-    }
-    lastMsgCount = messages.length;
-    // Keep big calendar in sync with new messages
-    renderBigCalendar();
+  function showSyncingIndicator() {
+    // Could add a syncing indicator
   }
 
-  // [OK] Get user-specific color class
-  function getUserColorClass(userName) {
-    const name = String(userName || "").trim().toLowerCase();
-    if (name === "yasir") return "user-yasir";
-    if (name === "kylee") return "user-kylee";
-    return "";
+  function hideSyncingIndicator() {
+    // Remove syncing indicator
   }
 
-  // [OK] Calculate days until a date (0 = today, negative = past)
+  function openWhoModal() {
+    const modal = $("whoModal");
+    if (!modal) return;
+    modal.classList.add("active");
+    modal.setAttribute("aria-hidden", "false");
+  }
+
+  // [OK] Date utilities for mission urgency
   function daysUntil(dateStr) {
-    if (!dateStr) return null;
-    try {
-      const target = new Date(dateStr + "T00:00:00");
-      const today = new Date();
-      today.setHours(0, 0, 0, 0);
-      const diff = target.getTime() - today.getTime();
-      return Math.ceil(diff / (1000 * 60 * 60 * 24));
-    } catch {
-      return null;
-    }
+    if (!dateStr) return Infinity;
+    const target = new Date(dateStr + "T00:00:00");
+    const now = new Date();
+    const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+    return Math.ceil((target - today) / (1000 * 60 * 60 * 24));
   }
 
-  // [OK] Get urgency level based on days until due
-  // Returns: "red" (0-1 days), "yellow" (2-3 days), "green" (4+ days), null (no date/past)
   function getUrgencyLevel(daysLeft) {
-    if (daysLeft === null || daysLeft < 0) return null;
-    if (daysLeft <= 1) return "red";
-    if (daysLeft <= 3) return "yellow";
-    return "green";
+    if (daysLeft <= 0) return "red";
+    if (daysLeft <= 3) return "red";
+    if (daysLeft <= 7) return "yellow";
+    if (daysLeft <= 14) return "green";
+    return null;
   }
 
-  // [OK] Get all dates with events (missions + upcoming events)
+  // [OK] Get event dates for calendar (including missions and holidays)
   function getEventDates() {
-    const eventMap = {}; // { "YYYY-MM-DD": { urgency, titles, isHoliday, icon } }
-    
-    // Add mission due dates
+    const eventMap = {};
     const missions = loadActive();
+    
     missions.forEach(m => {
       if (m.dueDate) {
         const days = daysUntil(m.dueDate);
@@ -2267,7 +2027,7 @@ const DAILY_EMOTICONS = [
     if (overlay) overlay.classList.remove("active");
   }
 
-  //  NEW: Explicit device removal for clean handoff
+  // [FIX] NEW: Explicit device removal for clean handoff
   async function removeMyDevice() {
     const user = loadUser()?.toLowerCase();
     const deviceId = getDeviceId();
@@ -2275,8 +2035,7 @@ const DAILY_EMOTICONS = [
     if (!user) return;
     
     try {
-await fetch("/.netlify/functions/room", {
-
+      await fetch("/.netlify/functions/room", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ 
@@ -2284,7 +2043,7 @@ await fetch("/.netlify/functions/room", {
           removeDevice: { user, deviceId }
         })
       });
-      console.log("[PRESENCE]  Removed device from server");
+      console.log("[PRESENCE] Removed device from server");
     } catch (e) {
       console.error("[PRESENCE] Failed to remove device:", e);
     }
@@ -2449,7 +2208,7 @@ await fetch("/.netlify/functions/room", {
       // [OK] ALWAYS update presence dots (they're time-based, need constant refresh)
       updateUserDuoPills();
 
-      //  Skip full state apply if nothing changed (no UI spam)
+      // [FIX] Skip full state apply if nothing changed (no UI spam)
       // But still process presence changes above!
       if (remote.updated_at && remote.updated_at === lastRemoteUpdatedAt) {
         if (!silent) setSyncStatus("on");
@@ -2502,151 +2261,228 @@ await fetch("/.netlify/functions/room", {
 
   function schedulePush() {
     if (suppressSync) return;
-    clearTimeout(syncDebounce);
-    syncDebounce = setTimeout(pushRemoteState, 350); // faster + still stable
+    if (syncDebounce) clearTimeout(syncDebounce);
+    syncDebounce = setTimeout(() => pushRemoteState(), 500);
   }
 
-  // [OK] SMART polling loop - faster for better notification sync
+  // [OK] Smart polling: only pull if server says something changed
   function startSmartPolling() {
     if (pollTimer) return;
-
-    // Poll every 1 second for fast notification updates
-    pollTimer = setInterval(() => {
-      if (document.visibilityState !== "visible") return;
-      if (deviceLocked) return; // Don't poll if device is locked
-      pullRemoteState({ silent: true });
-    }, 1000); // 1s = instant notifications
+    pollTimer = setInterval(async () => {
+      await pullRemoteState({ silent: true });
+    }, 3000); // Poll every 3s for fast sync
   }
 
-  // Track last sync time for stale detection
-  let lastSyncTime = Date.now();
-
-  // [OK] Show syncing indicator
-  function showSyncingIndicator() {
-    let indicator = $("syncingIndicator");
-    if (!indicator) {
-      indicator = document.createElement("div");
-      indicator.id = "syncingIndicator";
-      indicator.className = "syncing-indicator";
-      indicator.innerHTML = '<i class="fas fa-sync fa-spin"></i> Syncing...';
-      document.body.appendChild(indicator);
+  function stopSmartPolling() {
+    if (pollTimer) {
+      clearInterval(pollTimer);
+      pollTimer = null;
     }
-    indicator.classList.add("active");
   }
 
-  function hideSyncingIndicator() {
-    const indicator = $("syncingIndicator");
-    if (indicator) indicator.classList.remove("active");
-  }
+  // ---------- Render functions ----------
+  function renderActive() {
+    const items = loadActive();
+    const container = $("itemsActive");
+    container.innerHTML = "";
 
-  // [OK] Immediate sync + conflict check on resume
-  async function onAppResume() {
-    if (deviceLocked) return;
-    
-    const timeSinceSync = Date.now() - lastSyncTime;
-    
-    // Show indicator if stale
-    if (timeSinceSync > 3000) {
-      showSyncingIndicator();
-    }
-    
-    try {
-      // First, send our presence to mark us as active
-      if (hasUser()) {
-        await presencePing();
+    // Add example item first
+    const withExample = [exampleActive, ...items];
+
+    withExample.forEach((it, idx) => {
+      const el = document.createElement("div");
+      el.className = "item" + (it.isExample ? " example" : "");
+      
+      // [OK] Calculate urgency for due dates
+      const daysLeft = it.dueDate ? daysUntil(it.dueDate) : Infinity;
+      const urgency = getUrgencyLevel(daysLeft);
+      
+      // Format due date
+      let dateDisplay = "";
+      if (it.dueDate) {
+        const formatted = formatMissionDate(it.dueDate);
+        dateDisplay = `<span class="item-date"><i class="fas fa-calendar-alt"></i> ${formatted}</span>`;
       }
       
-      // Then pull state to check for conflicts
-      await pullRemoteState({ silent: false });
-      lastSyncTime = Date.now();
-    } finally {
-      hideSyncingIndicator();
+      // Urgency indicator
+      let urgencyIndicator = "";
+      if (urgency === "red") {
+        urgencyIndicator = `<span class="urgency-badge urgency-red" title="${daysLeft <= 0 ? 'Overdue!' : daysLeft + ' days left'}">!</span>`;
+      } else if (urgency === "yellow") {
+        urgencyIndicator = `<span class="urgency-badge urgency-yellow" title="${daysLeft} days left">!</span>`;
+      }
+      
+      el.innerHTML = `
+        <input type="checkbox" ${it.done ? "checked" : ""}>
+        <div class="itext">
+          <div class="ititle">
+            <span>${escapeHtml(it.title)}</span>
+            <span class="itag">${escapeHtml(it.tag || "idea")}</span>
+            ${dateDisplay}
+            ${urgencyIndicator}
+          </div>
+          <p class="idesc">${escapeHtml(it.desc || "")}</p>
+        </div>
+        ${!it.isExample ? '<button class="btn" style="padding:8px 12px;" title="Remove">[X]</button>' : ""}
+      `;
+
+      if (!it.isExample) {
+        const cb = el.querySelector("input");
+        cb.addEventListener("change", () => {
+          const itemsNow = loadActive();
+          const actualIdx = idx - 1;
+          const mission = itemsNow[actualIdx];
+          itemsNow.splice(actualIdx, 1);
+          saveActive(itemsNow);
+
+          const completed = loadCompleted();
+          completed.push({ ...mission, done: true });
+          saveCompleted(completed);
+
+          // [NEW] Trigger confetti on mission completion!
+          triggerConfetti();
+          showToast("Mission completed! 🎉");
+
+          renderActive();
+          renderCompleted();
+        });
+
+        const rm = el.querySelector("button");
+        rm.addEventListener("click", () => {
+          const itemsNow = loadActive();
+          const actualIdx = idx - 1;
+          itemsNow.splice(actualIdx, 1);
+          saveActive(itemsNow);
+          renderActive();
+        });
+      }
+
+      container.appendChild(el);
+    });
+  }
+
+  // [OK] Format mission date nicely
+  function formatMissionDate(dateStr) {
+    if (!dateStr) return "";
+    try {
+      const d = new Date(dateStr + "T00:00:00");
+      return d.toLocaleDateString(undefined, { month: "short", day: "numeric" });
+    } catch {
+      return dateStr;
     }
   }
 
-  // [OK] Force refresh when tab becomes visible
-  document.addEventListener("visibilitychange", () => {
-    if (document.visibilityState === "visible") {
-      onAppResume();
-    } else {
-      try { if (presenceChannel) presenceChannel.untrack(); } catch {}
-    }
-  });
-  window.addEventListener("focus", () => {
-    onAppResume();
-  });
+  function renderCompleted() {
+    const items = loadCompleted();
+    const container = $("itemsCompleted");
+    container.innerHTML = "";
 
-  // [OK] iOS BFCache support - pageshow fires when returning from home screen
-  window.addEventListener("pageshow", (event) => {
-    if (event.persisted || performance.getEntriesByType("navigation")[0]?.type === "back_forward") {
-      console.log("Page restored from BFCache, forcing sync...");
-      onAppResume();
-    }
-  });
+    const withExample = [exampleCompleted, ...items];
 
-  // [OK] Also check on touchstart for iOS (backup)
-  let lastTouchSync = 0;
-  document.addEventListener("touchstart", () => {
-    const now = Date.now();
-    if (now - lastTouchSync > 10000 && now - lastSyncTime > 10000) {
-      // Haven't synced in 10 seconds, do a silent sync
-      lastTouchSync = now;
-      pullRemoteState({ silent: true }).finally(() => {
-        lastSyncTime = Date.now();
-      });
-    }
-  }, { passive: true });
+    withExample.forEach((it, idx) => {
+      const el = document.createElement("div");
+      el.className = "item" + (it.isExample ? " example" : "");
+      el.innerHTML = `
+        <div class="itext">
+          <div class="ititle">
+            <span>${escapeHtml(it.title)}</span>
+            <span class="itag">${escapeHtml(it.tag || "idea")}</span>
+          </div>
+          <p class="idesc">${escapeHtml(it.desc || "")}</p>
+        </div>
+        ${!it.isExample ? '<button class="btn" style="padding:8px 12px;" title="Undo">UNDO</button>' : ""}
+      `;
 
-  // ---------- Who modal ----------
-  function openWhoModal() {
-    const modal = $("whoModal");
-    if (modal) {
-      modal.classList.add("active");
-      modal.setAttribute("aria-hidden", "false");
-    }
-    const logoffBtn = $("btnLogOff");
-    if (logoffBtn) {
-      logoffBtn.classList.toggle("hidden", !hasUser());
+      if (!it.isExample) {
+        const undo = el.querySelector("button");
+        undo.addEventListener("click", () => {
+          const completedNow = loadCompleted();
+          const actualIdx = idx - 1;
+          const mission = completedNow[actualIdx];
+          completedNow.splice(actualIdx, 1);
+          saveCompleted(completedNow);
+
+          const active = loadActive();
+          active.push({ ...mission, done: false });
+          saveActive(active);
+
+          renderActive();
+          renderCompleted();
+        });
+      }
+
+      container.appendChild(el);
+    });
+    
+    // [OK] Update photo mission select when completed missions change
+    if (typeof populatePhotoMissionSelect === 'function') {
+      populatePhotoMissionSelect();
     }
   }
 
-  // [FIX] Big calendar with month/year header and arrow navigation
-  let calendarMonth = new Date().getMonth();
+  let lastMsgCount = 0;
+
+  function renderMessages(opts = {}) {
+    const { autoScroll = false } = opts;
+    const messages = loadMessages();
+    const container = $("messageLog");
+    container.innerHTML = "";
+
+    // [OK] [FEATURE A] Render newest-first (reverse order)
+    const reversed = [...messages].reverse();
+
+    reversed.forEach((msg) => {
+      const displayName = msg.from || "Unknown";
+      const hasAttachment = !!(msg.attachment);
+      
+      // [OK] User-specific colors
+      const userClass = getUserColorClass(msg.from);
+      
+      const el = document.createElement("div");
+      el.className = `message-log-item ${userClass}`;
+      el.innerHTML = `
+        <div class="message-log-header">
+          <span class="message-from-name">FROM: ${escapeHtml(displayName)} ${hasAttachment ? '<span class="attachment-badge" title="Has attachment">📎</span>' : ''}</span>
+          <span>${escapeHtml(msg.timestamp || "")}</span>
+        </div>
+        <div class="message-log-content">${escapeHtml(msg.content || "")}</div>
+        ${hasAttachment ? `<div class="message-attachment-preview" onclick="openAttachmentModal('${escapeHtml(msg.attachment)}', '${escapeHtml(msg.attachmentType || 'image')}')">📎 View Attachment</div>` : ''}
+      `;
+      container.appendChild(el);
+    });
+
+    lastMsgCount = messages.length;
+
+    if (autoScroll) {
+      container.scrollTop = 0; // Since newest first, scroll to top
+    }
+  }
+
+  // [OK] Big Calendar with arrow navigation
   let calendarYear = new Date().getFullYear();
+  let calendarMonth = new Date().getMonth();
 
   function renderBigCalendar() {
-    const cal = $("bigCalendar");
-    if (!cal) return;
-    const now = new Date();
-    const currentYear = now.getFullYear();
-    const currentMonth = now.getMonth();
-    const currentDate = now.getDate();
-
-    // Load messages to mark days with messages
-    const msgs = loadMessages();
-    const msgDates = new Set(
-      msgs.map(m => {
-        const d = new Date(m.timestamp || Date.now());
-        if (isNaN(d)) return null;
-        return `${d.getFullYear()}-${d.getMonth()}-${d.getDate()}`;
-      }).filter(Boolean)
-    );
-    const eventDates = getEventDates();
-
-    const months = ["January","February","March","April","May","June","July","August","September","October","November","December"];
+    const calContainer = $("bigCalendar");
+    if (!calContainer) return;
     
-    cal.innerHTML = `
+    const currentYear = new Date().getFullYear();
+    const currentMonth = new Date().getMonth();
+    const currentDate = new Date().getDate();
+    
+    const monthNames = ["January", "February", "March", "April", "May", "June", 
+                        "July", "August", "September", "October", "November", "December"];
+    
+    const eventDates = getEventDates();
+    
+    calContainer.innerHTML = `
       <div class="calendar__header">
-        <div class="calendar__nav">
-          <button class="cal-nav-btn" id="calPrevMonth"><i class="fas fa-chevron-left"></i></button>
-        </div>
+        <button class="calendar__nav" id="calPrevMonth"><i class="fas fa-chevron-left"></i></button>
         <div class="calendar__title">
-          <span class="calendar__month-name">${months[calendarMonth]}</span>
+          <span class="calendar__month-name">${monthNames[calendarMonth]}</span>
           <span class="calendar__year">${calendarYear}</span>
         </div>
-        <div class="calendar__nav">
-          <button class="cal-nav-btn" id="calNextMonth"><i class="fas fa-chevron-right"></i></button>
-        </div>
+        <button class="calendar__nav" id="calNextMonth"><i class="fas fa-chevron-right"></i></button>
       </div>
       <div class="calendar__body">
         <div class="calendar__days">
@@ -2692,7 +2528,7 @@ await fetch("/.netlify/functions/room", {
       const cls = ["calendar__date"];
       if (c.grey) cls.push("calendar__date--grey");
       if (c.today) cls.push("calendar__date--today");
-      if (c.isHoliday) cls.push("event-holiday");
+      if (c.isHoliday) cls.push("calendar__date--holiday");
       else if (c.hasEvent) cls.push("has-event");
       
       let indicator = '';
@@ -2807,15 +2643,15 @@ await fetch("/.netlify/functions/room", {
 
   // [OK] Send offline signal on tab close / navigation away
   // Uses sendBeacon for reliability (fires even during unload)
-  //  Send offline signal on tab close/navigation
+  // [FIX] Send offline signal on tab close/navigation
   function sendOfflineBeacon() {
-    console.log("[PRESENCE]  Sending offline beacon...");
+    console.log("[PRESENCE] Sending offline beacon...");
     
-    //  CRITICAL: Untrack from WebSocket FIRST
+    // [FIX] CRITICAL: Untrack from WebSocket FIRST
     if (presenceChannel) {
       try {
         presenceChannel.untrack();
-        console.log("[PRESENCE]  Untracked on page close");
+        console.log("[PRESENCE] Untracked on page close");
       } catch(e) {}
     }
     
@@ -2900,151 +2736,107 @@ await fetch("/.netlify/functions/room", {
   // ---------- Wire up events ----------
   $("btnOpen").addEventListener("click", openGift);
   $("btnHome").addEventListener("click", goHome);
+  $("userPill").addEventListener("click", openWhoModal);
+  $("closeWhoModal").addEventListener("click", closeWhoModal);
 
-  // [OK] [BUG 1 FIX] iOS Safari keyboard bug - removed setTimeout, focus must be synchronous to preserve gesture context
-function openSystemMessageModal() {
-  const modal = $("systemMessageModal");
-  const input = $("systemMessageInput");
-  input.value = loadSystemMessage() || "";
-  // [OK] [FEATURE E] Update character counter
-  updateCharCounter(input.value.length);
-  modal.classList.add("active");
-  modal.setAttribute("aria-hidden", "false");
-  // Focus immediately to preserve user gesture context on iOS
-  input.focus();
-}
-
-// [OK] [FEATURE E] Update character counter - shows "X / 30"
-function updateCharCounter(len) {
-  const counter = $("charCounter");
-  if (!counter) return;
-  counter.textContent = `${len} / 30`;
-  counter.style.color = len >= 25 ? "var(--accent)" : "var(--muted)";
-}
-
-function closeSystemMessageModal() {
-  const modal = $("systemMessageModal");
-  if (!modal) return;
-  if (modal.contains(document.activeElement)) {
-    document.activeElement.blur();
-  }
-  modal.classList.remove("active");
-  modal.setAttribute("aria-hidden", "true");
-}
-
-async function saveSystemMessageFromModal() {
-  const input = $("systemMessageInput");
-  const msg = (input.value || "").trim();
-  if (!msg) return showToast("Type a message first.");
-  showToast("Updating system message...");
-  saveSystemMessageLocalOnly(msg);
-  renderSystemMessage(msg);
-  closeSystemMessageModal();
-  await pushRemoteState();
-  showToast("System message updated.");
-}
-
-$("btnEditSystemMessage").addEventListener("click", openSystemMessageModal);
-$("closeSystemMessageModal").addEventListener("click", closeSystemMessageModal);
-$("btnSystemMessageCancel").addEventListener("click", closeSystemMessageModal);
-$("btnSystemMessageSave").addEventListener("click", saveSystemMessageFromModal);
-
-$("systemMessageModal").addEventListener("click", (e) => {
-  if (e.target && e.target.id === "systemMessageModal") closeSystemMessageModal();
-});
-
-$("systemMessageInput").addEventListener("keydown", (e) => {
-  if (e.key === "Enter") {
-    e.preventDefault();
-    saveSystemMessageFromModal();
-  } else if (e.key === "Escape") {
-    closeSystemMessageModal();
-  }
-});
-
-// [OK] [FEATURE E] Live character counter update
-$("systemMessageInput").addEventListener("input", (e) => {
-  const len = (e.target.value || "").length;
-  updateCharCounter(len);
-  if (len > 30) {
-    e.target.value = e.target.value.substring(0, 30);
-    updateCharCounter(30);
-  }
-});
-
-  const userPillEl = $("userPill");
-  if (userPillEl) userPillEl.addEventListener("click", openWhoModal);
-
-  const whoYasirBtn = $("btnWhoYasir");
-  if (whoYasirBtn) whoYasirBtn.addEventListener("click", () => setUserAndStart("Yasir"));
-  const whoKyleeBtn = $("btnWhoKylee");
-  if (whoKyleeBtn) whoKyleeBtn.addEventListener("click", () => setUserAndStart("Kylee"));
-  const closeWhoBtn = $("closeWhoModal");
-  if (closeWhoBtn) closeWhoBtn.addEventListener("click", closeWhoModal);
-  const logoffBtn = $("btnLogOff");
-  if (logoffBtn) logoffBtn.addEventListener("click", logOffUser);
-
-  $("btnAdd").addEventListener("click", () => {
-    if (!hasUser()) { showToast("Pick USER first"); return; }
-
-    const title = $("newTitle").value.trim();
-    const desc = $("newDesc").value.trim();
-    const tagSelect = $("newTag");
-    let tag = tagSelect.value;
-    
-    // [OK] Get due date if set
-    const dueDateInput = $("newDueDate");
-    const dueDate = dueDateInput ? dueDateInput.value : null;
-    // Past-date prompt: do not add silently
-    if (dueDate) {
-      const today = new Date(); today.setHours(0,0,0,0);
-      const d = new Date(dueDate + 'T00:00:00');
-      if (d < today) {
-        const proceed = window.confirm('That due date is in the past. Do you want to keep it anyway?');
-        if (!proceed) return; // Let user change date first
-      }
-    }
-
-    if (tag === "custom") {
-      tag = $("customTagInput").value.trim() || "custom";
-      const customTags = loadCustomTags();
-      if (!customTags.includes(tag)) {
-        customTags.push(tag);
-        saveCustomTags(customTags);
-        const opt = document.createElement("option");
-        opt.value = tag;
-        opt.textContent = tag;
-        tagSelect.insertBefore(opt, tagSelect.lastElementChild);
-      }
-    }
-
-    if (!title) return alert("Add a title first");
-
-    const mission = { title, desc, tag, done: false };
-    if (dueDate) mission.dueDate = dueDate;
-
-    const active = loadActive();
-    active.push(mission);
-    saveActive(active);
-
-    const saved = loadSaved();
-    const isDuplicate = saved.some(s => s.title === mission.title && s.desc === mission.desc && s.tag === mission.tag);
-    if (!isDuplicate) {
-      saved.push(mission);
-      saveSaved(saved);
-    }
-
-    $("newTitle").value = "";
-    $("newDesc").value = "";
-    $("newTag").value = "date";
-    $("customTagInput").value = "";
-    $("customTagField").classList.add("hidden");
-    if (dueDateInput) dueDateInput.value = "";
-
-    renderActive();
+  $("btnWhoYasir").addEventListener("click", async () => {
+    await setUserAndStart("Yasir");
   });
 
-  $("btnClearFields").addEventListener("click", () => {
+  $("btnWhoKylee").addEventListener("click", async () => {
+    await setUserAndStart("Kylee");
+  });
+
+  $("btnLogOff").addEventListener("click", async () => {
+    await logOffUser();
+  });
+
+  // [OK] System message modal
+  $("btnEditSystemMessage").addEventListener("click", () => {
+    const modal = $("systemMessageModal");
+    const input = $("systemMessageInput");
+    if (input) input.value = loadSystemMessage();
+    if (modal) {
+      modal.classList.add("active");
+      modal.setAttribute("aria-hidden", "false");
+      updateCharCounter();
+    }
+  });
+
+  $("closeSystemMessageModal").addEventListener("click", () => {
+    const modal = $("systemMessageModal");
+    if (modal) {
+      modal.classList.remove("active");
+      modal.setAttribute("aria-hidden", "true");
+    }
+  });
+
+  $("btnSystemMessageCancel").addEventListener("click", () => {
+    const modal = $("systemMessageModal");
+    if (modal) {
+      modal.classList.remove("active");
+      modal.setAttribute("aria-hidden", "true");
+    }
+  });
+
+  $("btnSystemMessageSave").addEventListener("click", () => {
+    const input = $("systemMessageInput");
+    const value = (input?.value || "").trim();
+    if (value) {
+      saveSystemMessage(value);
+      renderSystemMessage(value);
+      showToast("System message updated!");
+    }
+    const modal = $("systemMessageModal");
+    if (modal) {
+      modal.classList.remove("active");
+      modal.setAttribute("aria-hidden", "true");
+    }
+  });
+
+  // Character counter for system message
+  function updateCharCounter() {
+    const input = $("systemMessageInput");
+    const counter = $("charCounter");
+    if (input && counter) {
+      counter.textContent = `${input.value.length} / 30`;
+    }
+  }
+
+  const sysInput = $("systemMessageInput");
+  if (sysInput) {
+    sysInput.addEventListener("input", updateCharCounter);
+  }
+
+  // [OK] Add mission form
+  $("btnAddMission").addEventListener("click", () => {
+    const title = $("newTitle").value.trim();
+    if (!title) return alert("Enter a title");
+
+    let tag = $("newTag").value;
+    if (tag === "custom") {
+      tag = $("customTagInput").value.trim() || "idea";
+      const tags = loadCustomTags();
+      if (!tags.includes(tag)) {
+        tags.push(tag);
+        saveCustomTags(tags);
+        ensureCustomTagsInSelect();
+      }
+    }
+
+    const dueDate = $("newDueDate")?.value || "";
+
+    const active = loadActive();
+    active.push({
+      title,
+      desc: $("newDesc").value.trim(),
+      tag,
+      dueDate,
+      done: false
+    });
+    saveActive(active);
+    renderActive();
+
     $("newTitle").value = "";
     $("newDesc").value = "";
     $("newTag").value = "date";
@@ -3074,6 +2866,7 @@ $("systemMessageInput").addEventListener("input", (e) => {
     });
   });
 
+  // [FIX] Saved missions modal with DELETE functionality
   $("btnAddSaved").addEventListener("click", () => {
     const saved = loadSaved();
     const container = $("savedMissionsList");
@@ -3099,6 +2892,7 @@ $("systemMessageInput").addEventListener("input", (e) => {
             <div class="saved-mission-actions">
               <button class="btn" data-action="select">SELECT</button>
               <button class="btn" data-action="edit">EDIT & ADD</button>
+              <button class="btn saved-mission-delete" data-action="delete" title="Delete this mission"><i class="fas fa-trash"></i></button>
             </div>
           </div>
         `;
@@ -3128,7 +2922,20 @@ $("systemMessageInput").addEventListener("input", (e) => {
           }
 
           $("savedMissionsModal").classList.remove("active");
-          alert("Mission loaded for editing. Click 'Add Mission' to add the edited version to Active list.");
+          showToast("Mission loaded for editing");
+        });
+
+        // [NEW] Delete saved mission
+        card.querySelector('[data-action="delete"]').addEventListener("click", (e) => {
+          e.stopPropagation();
+          if (confirm(`Delete "${mission.title}" from saved missions?`)) {
+            const savedNow = loadSaved();
+            savedNow.splice(idx, 1);
+            saveSaved(savedNow);
+            showToast("Mission deleted from saved");
+            // Re-render the modal
+            $("btnAddSaved").click();
+          }
         });
 
         container.appendChild(card);
@@ -3196,7 +3003,7 @@ $("systemMessageInput").addEventListener("input", (e) => {
       }
       
       if (preview) {
-        preview.innerHTML = `<span> Uploading ${escapeHtml(file.name)}...</span>`;
+        preview.innerHTML = `<span>⏳ Uploading ${escapeHtml(file.name)}...</span>`;
         preview.classList.remove("hidden");
       }
       
@@ -3212,7 +3019,7 @@ $("systemMessageInput").addEventListener("input", (e) => {
         pendingAttachmentType = isVideo ? "video" : "image";
         
         if (preview) {
-          preview.innerHTML = `<span> ${escapeHtml(file.name)}</span><button type="button" class="btn" id="clearAttachment"></button>`;
+          preview.innerHTML = `<span>📎 ${escapeHtml(file.name)}</span><button type="button" class="btn" id="clearAttachment">✖</button>`;
           $("clearAttachment").addEventListener("click", () => {
             pendingAttachment = null;
             pendingAttachmentType = null;
@@ -3349,206 +3156,117 @@ $("systemMessageInput").addEventListener("input", (e) => {
       touchStartY = e.touches[0].clientY;
       touchStartX = e.touches[0].clientX;
     }, { passive: true });
-    
-    letterModal.addEventListener("touchmove", (e) => {
-      // Prevent background scroll on letter modal
-      const paper = document.querySelector(".letter-paper");
-      if (paper && !paper.contains(e.target)) {
-        e.preventDefault();
-      }
-    }, { passive: false });
-    
+
     letterModal.addEventListener("touchend", (e) => {
-      const touchEndY = e.changedTouches[0].clientY;
-      const touchEndX = e.changedTouches[0].clientX;
-      const diffY = touchStartY - touchEndY;
-      const diffX = touchStartX - touchEndX;
+      const diffY = touchStartY - e.changedTouches[0].clientY;
+      const diffX = touchStartX - e.changedTouches[0].clientX;
       
-      // Only trigger if vertical swipe is dominant
-      if (Math.abs(diffY) > 50 && Math.abs(diffY) > Math.abs(diffX)) {
-        if (diffY > 0) {
-          // Swipe up = next (older) letter
-          nextLetter();
-        } else {
-          // Swipe down = previous (newer) letter
-          prevLetter();
-        }
+      // Prefer vertical swipe for letters
+      if (Math.abs(diffY) > Math.abs(diffX) && Math.abs(diffY) > 50) {
+        if (diffY > 0) nextLetter();
+        else prevLetter();
       }
     }, { passive: true });
-    
-    // Close modal when clicking backdrop
-    letterModal.addEventListener("click", (e) => {
-      if (e.target === letterModal) {
-        $("closeLetterModal").click();
-      }
-    });
   }
 
-  // [OK] [FEATURE B] Close attachment modal
-  const closeAttachmentModal = $("closeAttachmentModal");
-  if (closeAttachmentModal) {
-    closeAttachmentModal.addEventListener("click", () => {
-      $("attachmentModal").classList.remove("active");
-    });
-  }
-  
-  const attachmentModal = $("attachmentModal");
-  if (attachmentModal) {
-    attachmentModal.addEventListener("click", (e) => {
-      if (e.target === attachmentModal) {
-        attachmentModal.classList.remove("active");
-      }
-    });
-  }
+  // [OK] Close attachment modal
+  $("closeAttachmentModal").addEventListener("click", () => {
+    const modal = $("attachmentModal");
+    const content = $("attachmentModalContent");
+    if (modal) modal.classList.remove("active");
+    if (content) content.innerHTML = "";
+  });
 
-  // [OK] Photo Gallery handlers with staging area
-  const photoSelectBtn = $("photoSelectBtn");
+  // [OK] Photo upload handling
   const photoInput = $("photoInput");
-  const photoDateInput = $("photoDate");
-  const photoMissionSelect = $("photoMission");
+  const photoSelectBtn = $("photoSelectBtn");
   const photoStagingArea = $("photoStagingArea");
   const stagingPreview = $("stagingPreview");
+  const photoDateInput = $("photoDate");
+  const photoMissionSelect = $("photoMission");
   const clearStagingBtn = $("clearStagingBtn");
   const photoSubmitBtn = $("photoSubmitBtn");
-  const photoCountHint = $("photoCountHint");
-  const stagedCountEl = $("stagedCount");
-  const missionCapacityEl = $("missionCapacity");
-  const stagingCapacityEl = $("stagingCapacity");
   
-  // Staged files waiting to be uploaded
   let stagedFiles = [];
   
-  // [OK] Update staging header to show capacity for selected mission
-  function updateStagingCapacity() {
-    if (!stagingCapacityEl || !photoMissionSelect) return;
-    
-    const mission = photoMissionSelect.value;
-    if (!mission) {
-      stagingCapacityEl.textContent = " Allowed: Unlimited";
-      stagingCapacityEl.className = "staging-capacity unlimited";
-    } else {
-      const existingCount = loadPhotos().filter(p => p.mission === mission).length;
-      const remaining = Math.max(0, 5 - existingCount);
-      stagingCapacityEl.textContent = ` Allowed for "${mission}": ${remaining}`;
-      stagingCapacityEl.className = remaining <= 0 ? "staging-capacity full" : "staging-capacity";
-    }
-  }
-  
   function updateStagedCount() {
-    if (stagedCountEl) stagedCountEl.textContent = stagedFiles.length;
-    
-    // Update button text
-    if (photoSelectBtn) {
-      if (stagedFiles.length > 0) {
-        photoSelectBtn.innerHTML = '<i class="fa-solid fa-plus"></i> Add More Photos';
-      } else {
-        photoSelectBtn.innerHTML = '<i class="fa-solid fa-upload"></i> Select Photos';
-      }
-    }
-    
-    // [OK] Also update staging capacity display
-    updateStagingCapacity();
-  }
-  
-  function updateMissionCapacity() {
-    if (!missionCapacityEl || !photoMissionSelect) return;
-    
-    const mission = photoMissionSelect.value;
-    
-    // [OK] Show "unlimited" for unlinked photos
-    if (!mission) {
-      missionCapacityEl.textContent = " Unlinked = unlimited uploads";
-      missionCapacityEl.className = "mission-capacity unlimited";
-      return;
-    }
-    
-    const existingCount = loadPhotos().filter(p => p.mission === mission).length;
-    const remaining = 5 - existingCount;
-    
-    // [OK] Clearer labeling: "On this mission: X/5 saved"
-    if (remaining <= 0) {
-      missionCapacityEl.textContent = " Mission full: 5/5 saved";
-      missionCapacityEl.className = "mission-capacity full";
-    } else {
-      missionCapacityEl.textContent = `On this mission: ${existingCount}/5 saved (${remaining} slots left)`;
-      missionCapacityEl.className = "mission-capacity";
-    }
-  }
-  
-  function renderStagingPreview() {
-    if (!stagingPreview) return;
-    stagingPreview.innerHTML = "";
-    
-    stagedFiles.forEach((file, idx) => {
-      const item = document.createElement("div");
-      item.className = "staging-item";
-      
-      // Create thumbnail
-      const url = URL.createObjectURL(file);
-      const isVideo = file.type.startsWith("video/");
-      
-      item.innerHTML = `
-        ${isVideo 
-          ? `<video src="${url}" class="staging-thumb"></video>`
-          : `<img src="${url}" class="staging-thumb" alt="Preview">`
-        }
-        <span class="staging-name">${escapeHtml(file.name.substring(0, 15))}${file.name.length > 15 ? '...' : ''}</span>
-        <button class="staging-remove" data-idx="${idx}" title="Remove"><i class="fas fa-times"></i></button>
-      `;
-      
-      // Remove button handler
-      item.querySelector(".staging-remove").addEventListener("click", (e) => {
-        e.stopPropagation();
-        const removeIdx = parseInt(e.currentTarget.dataset.idx);
-        stagedFiles.splice(removeIdx, 1);
-        renderStagingPreview();
-        updateStagedCount();
-        if (stagedFiles.length === 0) {
-          photoStagingArea.classList.add("hidden");
-        }
-      });
-      
-      stagingPreview.appendChild(item);
-    });
-    
-    updateStagedCount();
+    const count = $("stagedCount");
+    if (count) count.textContent = stagedFiles.length;
   }
   
   if (photoSelectBtn && photoInput) {
     photoSelectBtn.addEventListener("click", () => photoInput.click());
-    
+  }
+  
+  if (photoInput) {
     photoInput.addEventListener("change", (e) => {
       const files = Array.from(e.target.files || []);
       if (files.length === 0) return;
       
-      // Add to staged files (not replace)
+      // Add to staged files
       files.forEach(file => {
         if (file.type.startsWith("image/") || file.type.startsWith("video/")) {
           stagedFiles.push(file);
+          
+          // Create preview
+          const previewItem = document.createElement("div");
+          previewItem.className = "staging-item";
+          
+          if (file.type.startsWith("video/")) {
+            previewItem.innerHTML = `
+              <div class="staging-video-icon"><i class="fas fa-video"></i></div>
+              <button class="staging-remove" data-idx="${stagedFiles.length - 1}"><i class="fas fa-times"></i></button>
+            `;
+          } else {
+            const reader = new FileReader();
+            reader.onload = (ev) => {
+              previewItem.innerHTML = `
+                <img src="${ev.target.result}" alt="Preview">
+                <button class="staging-remove" data-idx="${stagedFiles.length - 1}"><i class="fas fa-times"></i></button>
+              `;
+            };
+            reader.readAsDataURL(file);
+          }
+          
+          stagingPreview.appendChild(previewItem);
         }
       });
       
-      if (stagedFiles.length > 0) {
-        photoStagingArea.classList.remove("hidden");
-        renderStagingPreview();
-        
-        // Set default date to today if not set
-        if (!photoDateInput.value) {
-          photoDateInput.value = new Date().toISOString().split('T')[0];
-        }
-      }
+      photoStagingArea.classList.remove("hidden");
+      updateStagedCount();
+      updateMissionCapacity();
       
-      // Reset input so same file can be selected again
+      // Clear input so same files can be selected again
       photoInput.value = "";
     });
   }
   
-  // Update capacity when mission changes
-  if (photoMissionSelect) {
-    photoMissionSelect.addEventListener("change", () => {
-      updateMissionCapacity();
-      updateStagingCapacity();
+  // Handle remove from staging
+  if (stagingPreview) {
+    stagingPreview.addEventListener("click", (e) => {
+      const removeBtn = e.target.closest(".staging-remove");
+      if (removeBtn) {
+        const idx = parseInt(removeBtn.dataset.idx);
+        stagedFiles.splice(idx, 1);
+        removeBtn.closest(".staging-item").remove();
+        updateStagedCount();
+        updateMissionCapacity();
+        
+        // Re-index remaining items
+        stagingPreview.querySelectorAll(".staging-remove").forEach((btn, i) => {
+          btn.dataset.idx = i;
+        });
+        
+        if (stagedFiles.length === 0) {
+          photoStagingArea.classList.add("hidden");
+        }
+      }
     });
+  }
+  
+  // Mission select change updates capacity
+  if (photoMissionSelect) {
+    photoMissionSelect.addEventListener("change", updateMissionCapacity);
   }
   
   // Clear all staged files
