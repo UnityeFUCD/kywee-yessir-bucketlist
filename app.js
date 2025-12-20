@@ -20,13 +20,13 @@
 
   // [OK] UPCOMING EVENTS (add your special dates here!)
   const UPCOMING_EVENTS = [
-    { date: "2025-01-01", title: "New Year's Day 🎉" },
-    { date: "2025-02-14", title: "Valentine's Day 💕" },
-    { date: "2025-12-25", title: "Christmas 🎄" }
+    { date: "2025-01-01", title: "New Year's Day " },
+    { date: "2025-02-14", title: "Valentine's Day " },
+    { date: "2025-12-25", title: "Christmas " }
   ];
 
-  // [OK] session user (per-tab). persists on refresh, new tab asks again.
-  const SESSION_USER_KEY = "bucketlist_2026_session_user";
+  // [FIX] Device-based user (like YouTube) - persists across all tabs on same device
+  const KEY_CURRENT_USER = "bucketlist_2026_current_user";
 
   // [OK] per-user "read" tracking (local only)
   function keyLastRead(user) {
@@ -196,38 +196,12 @@ const DAILY_EMOTICONS = [
     }, 3000);
   }
 
-  // Confetti celebration animation for completed missions
-  function triggerConfetti() {
-    const confettiContainer = document.createElement("div");
-    confettiContainer.className = "confetti-container";
-    document.body.appendChild(confettiContainer);
-    
-    const colors = ["#ff6b9d", "#c44569", "#f8b500", "#7bed9f", "#70a1ff", "#5352ed", "#ff4757"];
-    const shapes = ["square", "circle"];
-    
-    // Create 50 confetti pieces
-    for (let i = 0; i < 50; i++) {
-      const confetti = document.createElement("div");
-      confetti.className = `confetti ${shapes[Math.floor(Math.random() * shapes.length)]}`;
-      confetti.style.left = Math.random() * 100 + "vw";
-      confetti.style.backgroundColor = colors[Math.floor(Math.random() * colors.length)];
-      confetti.style.animationDelay = Math.random() * 0.5 + "s";
-      confetti.style.animationDuration = (2 + Math.random() * 2) + "s";
-      confettiContainer.appendChild(confetti);
-    }
-    
-    // Auto-cleanup after animation
-    setTimeout(() => {
-      confettiContainer.remove();
-    }, 4000);
-  }
-
   // [OK] Check for system updates (new version)
   function checkSystemUpdates() {
     const lastSeen = localStorage.getItem(KEY_LAST_VERSION_SEEN);
     if (lastSeen !== CURRENT_VERSION) {
       const latest = VERSION_HISTORY[VERSION_HISTORY.length - 1];
-      showToast(`🆕 Update v${latest.version}: ${latest.note}`, "info");
+      showToast(`[!] Update v${latest.version}: ${latest.note}`, "info");
       localStorage.setItem(KEY_LAST_VERSION_SEEN, CURRENT_VERSION);
     }
   }
@@ -243,11 +217,11 @@ const DAILY_EMOTICONS = [
       const diffDays = Math.round(diffMs / (1000 * 60 * 60 * 24));
       
       if (diffDays === 3) {
-        showToast(`📅 3 days until ${event.title}!`, "event");
+        showToast(`[CAL] 3 days until ${event.title}!`, "event");
       } else if (diffDays === 1) {
-        showToast(`[CLOCK] Tomorrow: ${event.title}!`, "event");
+        showToast(`[!] Tomorrow: ${event.title}!`, "event");
       } else if (diffDays === 0) {
-        showToast(`🎉 Today is ${event.title}!`, "event");
+        showToast(` Today is ${event.title}!`, "event");
       }
     });
   }
@@ -284,10 +258,11 @@ const DAILY_EMOTICONS = [
   }
 
   // ---------- user (SESSION) ----------
-  function loadUser() { return sessionStorage.getItem(SESSION_USER_KEY) || ""; }
+  // [FIX] User login persists across all tabs (like YouTube)
+  function loadUser() { return localStorage.getItem(KEY_CURRENT_USER) || ""; }
   function hasUser() { return !!loadUser().trim(); }
-  function saveUser(name) { sessionStorage.setItem(SESSION_USER_KEY, name); }
-  function clearUser() { sessionStorage.removeItem(SESSION_USER_KEY); }
+  function saveUser(name) { localStorage.setItem(KEY_CURRENT_USER, name); }
+  function clearUser() { localStorage.removeItem(KEY_CURRENT_USER); }
 
   function getDuoName(user) {
     const u = String(user || "").trim().toLowerCase();
@@ -821,7 +796,7 @@ const DAILY_EMOTICONS = [
       const timestamp = String(m?.timestamp || "").trim();
       const content = normalizeNewlines(m?.content ?? "").trim();
       if (!from) continue;
-      if (!content) continue; // [KEY] removes blank letters forever
+      if (!content) continue; //  removes blank letters forever
       
       const cleanMsg = { from, timestamp, content };
       // [OK] PRESERVE attachment fields!
@@ -893,32 +868,26 @@ const DAILY_EMOTICONS = [
     try {
       if (!nameLower) return false;
       
-      // Use live presence if available
+      // [FIX] Presence is keyed by username now, so check directly
       if (typeof presenceChannel !== 'undefined' && presenceChannel) {
         const st = presenceChannel.presenceState?.() || {};
-        
-        // Presence is keyed by deviceId, so we need to iterate all entries
-        // and check if any have a matching user
-        for (const [key, presences] of Object.entries(st)) {
-          if (!Array.isArray(presences)) continue;
-          for (const p of presences) {
-            if (p.user === nameLower) {
-              // Check if presence is recent (within 45 seconds)
-              const age = p.onlineAt ? (Date.now() - Date.parse(p.onlineAt)) : 0;
-              if (age < 45000) {
-                return true;
-              }
-            }
+        // Check if user has any presence entries
+        const userPresences = st[nameLower] || [];
+        if (userPresences.length > 0) {
+          // Check if any presence is recent (within 60 seconds)
+          const now = Date.now();
+          for (const p of userPresences) {
+            const age = p.onlineAt ? (now - Date.parse(p.onlineAt)) : 0;
+            if (age < 60000) return true;
           }
         }
-        return false;
       }
       
-      // Fallback to lastPresence timestamp (<=45s old = online)
+      // Fallback to lastPresence timestamp (<=60s old = online)
       const ts = lastPresence?.[nameLower];
       if (!ts) return false;
       const age = Date.now() - new Date(ts).getTime();
-      return Number.isFinite(age) && age <= 45000;
+      return Number.isFinite(age) && age <= 60000;
     } catch { return false; }
   }
 
@@ -999,10 +968,10 @@ const DAILY_EMOTICONS = [
     }
 
     try {
-      // [OK] FIX: Use deviceId as presence key (unique per device!)
-      const myDeviceId = getDeviceId();
+      // [FIX] Key presence by USERNAME so all devices can see who's online
+      // DeviceId is stored IN the payload to detect conflicts
       presenceChannel = sbClient.channel(`presence:${ROOM_CODE}`, {
-        config: { presence: { key: myDeviceId } }
+        config: { presence: { key: user } }  // Key by username, NOT deviceId!
       });
 
       presenceChannel
@@ -1011,14 +980,14 @@ const DAILY_EMOTICONS = [
           handleLivePresenceSync(livePresenceState);
         })
         .on('presence', { event: 'join' }, ({ key, newPresences }) => {
-          console.log("[PRESENCE] [JOIN/LEAVE] Join:", key, newPresences?.length || 0);
+          console.log("[PRESENCE] [JOIN-LEAVE] Join:", key, newPresences?.length || 0);
           livePresenceState = presenceChannel.presenceState();
           handleLivePresenceSync(livePresenceState);
           updateUserDuoPills();
         })
         .on('presence', { event: 'leave' }, ({ key, leftPresences }) => {
           // [OK] ALWAYS check for auto-resolve when someone leaves
-          console.log("[PRESENCE] [JOIN/LEAVE] Leave:", key, leftPresences?.length || 0);
+          console.log("[PRESENCE] [JOIN-LEAVE] Leave:", key, leftPresences?.length || 0);
           livePresenceState = presenceChannel.presenceState();
           handleLivePresenceSync(livePresenceState);
           updateUserDuoPills();
@@ -1030,7 +999,7 @@ const DAILY_EMOTICONS = [
               onlineAt: new Date().toISOString(),
               user: user
             });
-            console.log("[OK] WebSocket presence active for:", user);
+            console.log("[PRESENCE] WebSocket active for:", user);
           }
         });
     } catch (err) {
@@ -1045,28 +1014,26 @@ const DAILY_EMOTICONS = [
 
     const now = Date.now();
     
-    // Count all presences in state for logging
-    let totalPresenceCount = 0;
-    let conflictingDevices = [];
+    // [FIX] Now that presence is keyed by USERNAME, get our user's presences directly
+    const userPresences = state[currentUser] || [];
     
-    // Find ALL presences for our user across ALL keys
-    for (const [key, presences] of Object.entries(state)) {
-      if (!Array.isArray(presences)) continue;
-      totalPresenceCount += presences.length;
-      
-      for (const p of presences) {
-        // Same user, different device = CONFLICT
-        if (p.user === currentUser && p.deviceId && p.deviceId !== myDeviceId) {
-          // Only count if presence is recent (within 30 seconds)
-          const presenceAge = p.onlineAt ? (now - Date.parse(p.onlineAt)) : 0;
-          if (presenceAge < 30000) {
-            conflictingDevices.push({ key, ...p, age: presenceAge });
-          }
+    // Find conflicting devices (same user, different device)
+    let conflictingDevices = [];
+    let myOnlineAt = now; // Default to now if not found
+    
+    for (const p of userPresences) {
+      if (p.deviceId === myDeviceId) {
+        myOnlineAt = p.onlineAt ? Date.parse(p.onlineAt) : now;
+      } else if (p.deviceId) {
+        // Different device, same user
+        const age = p.onlineAt ? (now - Date.parse(p.onlineAt)) : 0;
+        if (age < 60000) { // Only count recent presences
+          conflictingDevices.push({ ...p, parsedOnlineAt: p.onlineAt ? Date.parse(p.onlineAt) : 0 });
         }
       }
     }
 
-    // Calculate grace period status
+    // [OK] Calculate grace period status ONCE
     const inLoginGrace = now < loginGraceUntil;
     const inTakeoverGrace = now < takeoverGraceUntil;
     const inAnyGrace = inLoginGrace || inTakeoverGrace;
@@ -1074,24 +1041,30 @@ const DAILY_EMOTICONS = [
     console.log("[PRESENCE] Sync:", {
       user: currentUser,
       myDevice: myDeviceId.slice(-6),
-      totalPresences: totalPresenceCount,
       conflicts: conflictingDevices.length,
       deviceLocked,
-      inLoginGrace,
-      inTakeoverGrace
+      inGrace: inAnyGrace
     });
 
-    // CONFLICT DETECTION with grace period
+    // [FIX] CONFLICT DETECTION - only show on NEWER device (not the first one)
     if (conflictingDevices.length > 0) {
+      // Find the oldest conflicting device
+      const oldestConflictTime = Math.min(...conflictingDevices.map(c => c.parsedOnlineAt || 0));
+      const weAreNewer = myOnlineAt > oldestConflictTime;
+      
       if (inAnyGrace) {
         console.log("[PRESENCE] In grace period - ignoring conflict");
-      } else if (!deviceLocked) {
-        console.log("[PRESENCE] CONFLICT DETECTED - showing overlay");
+      } else if (weAreNewer && !deviceLocked) {
+        // WE logged in AFTER someone else - show conflict to US
+        console.log("[PRESENCE] CONFLICT - we are newer device, showing overlay");
         deviceLocked = true;
         showDeviceConflict(currentUser);
+      } else if (!weAreNewer) {
+        // We were first - the other device should see the conflict, not us
+        console.log("[PRESENCE] Other device joined after us - they should see conflict");
       }
     } else {
-      // AUTO-RESOLVE: No conflicts
+      // No conflicts - auto-resolve
       if (deviceLocked) {
         console.log("[PRESENCE] AUTO-RESOLVED - no conflicts");
         deviceLocked = false;
@@ -1218,7 +1191,7 @@ const DAILY_EMOTICONS = [
           type: "event",
           title: event.title,
           subtitle: diffDays === 0 ? "Today!" : diffDays === 1 ? "Tomorrow" : `In ${diffDays} days`,
-          icon: "📅"
+          icon: "[CAL]"
         });
       }
     });
@@ -1296,12 +1269,12 @@ const DAILY_EMOTICONS = [
         const isVideo = msg.attachmentType === 'video';
         if (isVideo) {
           attachmentContainer.innerHTML = `
-            <div class="letter-attachment-label">📎 Video Attachment</div>
+            <div class="letter-attachment-label">[ATTACH] Video Attachment</div>
             <video controls playsinline class="letter-attachment-media" src="${escapeHtml(msg.attachment)}"></video>
           `;
         } else {
           attachmentContainer.innerHTML = `
-            <div class="letter-attachment-label">📎 Image Attachment</div>
+            <div class="letter-attachment-label">[ATTACH] Image Attachment</div>
             <img class="letter-attachment-media" src="${escapeHtml(msg.attachment)}" alt="Attachment" onclick="openAttachmentModal('${escapeHtml(msg.attachment)}', 'image')">
           `;
         }
@@ -1402,12 +1375,12 @@ const DAILY_EMOTICONS = [
         const isVideo = msg.attachmentType === 'video';
         if (isVideo) {
           attachmentContainer.innerHTML = `
-            <div class="letter-attachment-label">📎 Video Attachment</div>
+            <div class="letter-attachment-label">[ATTACH] Video Attachment</div>
             <video controls playsinline class="letter-attachment-media" src="${escapeHtml(msg.attachment)}"></video>
           `;
         } else {
           attachmentContainer.innerHTML = `
-            <div class="letter-attachment-label">📎 Image Attachment</div>
+            <div class="letter-attachment-label">[ATTACH] Image Attachment</div>
             <img class="letter-attachment-media" src="${escapeHtml(msg.attachment)}" alt="Attachment" onclick="openAttachmentModal('${escapeHtml(msg.attachment)}', 'image')">
           `;
         }
@@ -1506,7 +1479,7 @@ const DAILY_EMOTICONS = [
         if (urgency === "red") {
           urgencyIndicator = `<span class="urgency-badge urgency-red" title="Due today or tomorrow!">!</span>`;
         } else if (urgency === "yellow") {
-          urgencyIndicator = `<span class="urgency-badge urgency-yellow" title="Due in 2-3 days">•</span>`;
+          urgencyIndicator = `<span class="urgency-badge urgency-yellow" title="Due in 2-3 days">*</span>`;
         }
       }
       
@@ -1539,17 +1512,12 @@ const DAILY_EMOTICONS = [
 
           renderActive();
           renderCompleted();
-          
-          // TODO: Add confirmation modal here
-          // Trigger confetti celebration!
-          triggerConfetti();
         });
 
         const rm = el.querySelector("button");
         rm.addEventListener("click", () => {
           const itemsNow = loadActive();
           const actualIdx = idx - 1;
-          // TODO: Add confirmation modal here
           itemsNow.splice(actualIdx, 1);
           saveActive(itemsNow);
           renderActive();
@@ -1595,7 +1563,6 @@ const DAILY_EMOTICONS = [
       if (!it.isExample) {
         const undo = el.querySelector("button");
         undo.addEventListener("click", () => {
-          // TODO: Add confirmation modal here
           const completedNow = loadCompleted();
           const actualIdx = idx - 1;
           const mission = completedNow[actualIdx];
@@ -1608,7 +1575,6 @@ const DAILY_EMOTICONS = [
 
           renderActive();
           renderCompleted();
-          // Note: No confetti on undo
         });
       }
 
@@ -1643,7 +1609,7 @@ const DAILY_EMOTICONS = [
       el.className = `message-log-item ${userClass}`;
       el.innerHTML = `
         <div class="message-log-header">
-          <span class="message-from-name">FROM: ${escapeHtml(displayName)} ${hasAttachment ? '<span class="attachment-badge" title="Has attachment">📎</span>' : ''}</span>
+          <span class="message-from-name">FROM: ${escapeHtml(displayName)} ${hasAttachment ? '<span class="attachment-badge" title="Has attachment">[ATTACH]</span>' : ''}</span>
           <span>${escapeHtml(msg.timestamp || "")}</span>
         </div>
         <div class="message-log-content">${escapeHtml(msg.content || "")}</div>
@@ -1897,12 +1863,13 @@ const DAILY_EMOTICONS = [
   let suppressSync = false;
   let syncDebounce = null;
 
-  // [OK] Generate unique device ID for single-device lock
+  // [FIX] Device ID persists across all tabs (same device = same ID)
+  const KEY_DEVICE_ID = "bucketlist_2026_device_id";
   function getDeviceId() {
-    let id = sessionStorage.getItem('deviceId');
+    let id = localStorage.getItem(KEY_DEVICE_ID);
     if (!id) {
       id = 'dev_' + Date.now() + '_' + Math.random().toString(36).substr(2, 9);
-      sessionStorage.setItem('deviceId', id);
+      localStorage.setItem(KEY_DEVICE_ID, id);
     }
     return id;
   }
@@ -2120,7 +2087,7 @@ await fetch("/.netlify/functions/room", {
   }
 
   window.forceDeviceTakeover = async function() {
-    console.log("[PRESENCE] [REFRESH] TAKEOVER starting");
+    console.log("[PRESENCE] 🔄 TAKEOVER starting");
     
     // [OK] Set grace period FIRST
     takeoverGraceUntil = Date.now() + 6000;
@@ -2134,12 +2101,12 @@ await fetch("/.netlify/functions/room", {
     // Push to database
     await pushRemoteState();
     
-    console.log("[PRESENCE] [REFRESH] TAKEOVER complete");
+    console.log("[PRESENCE] 🔄 TAKEOVER complete");
     showToast("You are now the active device");
   };
 
   window.switchToOtherUser = async function(otherUser) {
-    console.log("[PRESENCE] [SWITCH] SWITCH starting to:", otherUser);
+    console.log("[PRESENCE] 🔀 SWITCH starting to:", otherUser);
     
     // [OK] Set grace period
     loginGraceUntil = Date.now() + 5000;
@@ -2170,7 +2137,7 @@ await fetch("/.netlify/functions/room", {
     await pushRemoteState();
     await pullRemoteState({ silent: false });
     
-    console.log("[PRESENCE] [SWITCH] SWITCH complete to:", otherUser);
+    console.log("[PRESENCE] 🔀 SWITCH complete to:", otherUser);
     showToast(`Switched to ${otherUser}`);
 
   };
@@ -2247,7 +2214,7 @@ await fetch("/.netlify/functions/room", {
       // [OK] ALWAYS update presence dots (they're time-based, need constant refresh)
       updateUserDuoPills();
 
-      // [SKIP] Skip full state apply if nothing changed (no UI spam)
+      //  Skip full state apply if nothing changed (no UI spam)
       // But still process presence changes above!
       if (remote.updated_at && remote.updated_at === lastRemoteUpdatedAt) {
         if (!silent) setSyncStatus("on");
@@ -2950,7 +2917,7 @@ $("systemMessageInput").addEventListener("input", (e) => {
       }
       
       if (preview) {
-        preview.innerHTML = `<span>📎 Uploading ${escapeHtml(file.name)}...</span>`;
+        preview.innerHTML = `<span>[ATTACH] Uploading ${escapeHtml(file.name)}...</span>`;
         preview.classList.remove("hidden");
       }
       
@@ -2966,7 +2933,7 @@ $("systemMessageInput").addEventListener("input", (e) => {
         pendingAttachmentType = isVideo ? "video" : "image";
         
         if (preview) {
-          preview.innerHTML = `<span>📎 ${escapeHtml(file.name)}</span><button type="button" class="btn" id="clearAttachment">X</button>`;
+          preview.innerHTML = `<span>[ATTACH] ${escapeHtml(file.name)}</span><button type="button" class="btn" id="clearAttachment">X</button>`;
           $("clearAttachment").addEventListener("click", () => {
             pendingAttachment = null;
             pendingAttachmentType = null;
@@ -3169,12 +3136,12 @@ $("systemMessageInput").addEventListener("input", (e) => {
     
     const mission = photoMissionSelect.value;
     if (!mission) {
-      stagingCapacityEl.textContent = "• Allowed: Unlimited";
+      stagingCapacityEl.textContent = "* Allowed: Unlimited";
       stagingCapacityEl.className = "staging-capacity unlimited";
     } else {
       const existingCount = loadPhotos().filter(p => p.mission === mission).length;
       const remaining = Math.max(0, 5 - existingCount);
-      stagingCapacityEl.textContent = `• Allowed for "${mission}": ${remaining}`;
+      stagingCapacityEl.textContent = `* Allowed for "${mission}": ${remaining}`;
       stagingCapacityEl.className = remaining <= 0 ? "staging-capacity full" : "staging-capacity";
     }
   }
@@ -3202,7 +3169,7 @@ $("systemMessageInput").addEventListener("input", (e) => {
     
     // [OK] Show "unlimited" for unlinked photos
     if (!mission) {
-      missionCapacityEl.textContent = "[CHECK] Unlinked = unlimited uploads";
+      missionCapacityEl.textContent = " Unlinked = unlimited uploads";
       missionCapacityEl.className = "mission-capacity unlimited";
       return;
     }
@@ -3459,10 +3426,10 @@ SYSTEM MESSAGE:
 ${loadSystemMessage()}
 
 ACTIVE MISSIONS:
-${active.map(i => `[ ] ${i.title} — ${i.desc} (#${i.tag})`).join("\n")}
+${active.map(i => `[ ] ${i.title} - ${i.desc} (#${i.tag})`).join("\n")}
 
 COMPLETED MISSIONS:
-${completed.map(i => `[X] ${i.title} — ${i.desc} (#${i.tag})`).join("\n")}
+${completed.map(i => `[X] ${i.title} - ${i.desc} (#${i.tag})`).join("\n")}
 `;
 
     const blob = new Blob([text], { type: "text/plain" });
@@ -3521,7 +3488,7 @@ ${completed.map(i => `[X] ${i.title} — ${i.desc} (#${i.tag})`).join("\n")}
     overlay.innerHTML = `<div class="sync-overlay-content"><div class="sync-spinner"></div><div>SYNCING...</div></div>`;
     document.body.appendChild(overlay);
 
-    // pull once on load (with overlay) — always remove overlay
+    // pull once on load (with overlay) - always remove overlay
     try {
       await pullRemoteState({ silent: false });
     } catch (e) {
@@ -3556,9 +3523,12 @@ ${completed.map(i => `[X] ${i.title} — ${i.desc} (#${i.tag})`).join("\n")}
       $("closeWhoModal").classList.add("hidden");
     } else {
       $("closeWhoModal").classList.remove("hidden");
-      // [OK] Immediately claim device on page load for existing users
+      // [FIX] Set grace period on page load to prevent false conflicts
+      loginGraceUntil = Date.now() + 3000;
+      // Immediately claim device on page load for existing users
       await pushRemoteState();
       startPresence();
       updateUserDuoPills();
+      console.log("[PRESENCE] Auto-logged in as:", loadUser());
     }
   })();
