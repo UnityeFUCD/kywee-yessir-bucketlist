@@ -905,11 +905,12 @@ const DAILY_EMOTICONS = [
   
   let presenceTimer = null;
   let lastPresence = null;
-  let heartbeatTimer = null;
-  let kickCheckTimer = null;
   let deviceLocked = false;
   let loginInProgress = false;
   let takeoverInProgress = false;
+  let takeoverGraceUntil = 0;
+  let loginGraceUntil = 0;
+  let kickCheckTimer = null;
 
   function normalizePerson(name) {
     const n = String(name || "").trim().toLowerCase();
@@ -1077,14 +1078,10 @@ const DAILY_EMOTICONS = [
     console.log("[PRESENCE] Sync:", {
       user: currentUser,
       myDevice: myDeviceId.slice(-6),
-      allPresences: allPresences.length,
-      freshPresences: freshPresences.length,
       conflicts: conflictingDevices.length,
       deviceLocked,
       inLoginGrace,
-      inTakeoverGrace,
-      loginGraceRemaining: inLoginGrace ? (loginGraceUntil - now) + "ms" : "none",
-      takeoverGraceRemaining: inTakeoverGrace ? (takeoverGraceUntil - now) + "ms" : "none"
+      inTakeoverGrace
     });
 
     //  CONFLICT DETECTION with grace period
@@ -1746,7 +1743,7 @@ const DAILY_EMOTICONS = [
 
   // [OK] Get all dates with events (missions + upcoming events)
   function getEventDates() {
-    const eventMap = {}; // { "YYYY-MM-DD": { urgency: "red"|"yellow"|"green", titles: [] } }
+    const eventMap = {}; // { "YYYY-MM-DD": { urgency, titles, isHoliday, icon } }
     
     // Add mission due dates
     const missions = loadActive();
@@ -1756,7 +1753,7 @@ const DAILY_EMOTICONS = [
         const urgency = getUrgencyLevel(days);
         if (urgency) {
           if (!eventMap[m.dueDate]) {
-            eventMap[m.dueDate] = { urgency, titles: [] };
+            eventMap[m.dueDate] = { urgency, titles: [], isHoliday: false };
           } else {
             // Take the most urgent level
             const levels = ["red", "yellow", "green"];
@@ -1769,20 +1766,21 @@ const DAILY_EMOTICONS = [
       }
     });
     
-    // Add upcoming events
+    // Add upcoming events (holidays get special treatment)
     UPCOMING_EVENTS.forEach(event => {
-      const days = daysUntil(event.date);
-      const urgency = getUrgencyLevel(days);
-      if (urgency) {
-        if (!eventMap[event.date]) {
-          eventMap[event.date] = { urgency, titles: [] };
-        } else {
-          const levels = ["red", "yellow", "green"];
-          if (levels.indexOf(urgency) < levels.indexOf(eventMap[event.date].urgency)) {
-            eventMap[event.date].urgency = urgency;
-          }
-        }
-        eventMap[event.date].titles.push(event.title);
+      const isHoliday = event.type === 'holiday';
+      if (!eventMap[event.date]) {
+        eventMap[event.date] = { 
+          urgency: isHoliday ? 'holiday' : 'green', 
+          titles: [], 
+          isHoliday: isHoliday,
+          icon: event.icon 
+        };
+      }
+      eventMap[event.date].titles.push(event.title);
+      if (isHoliday) {
+        eventMap[event.date].isHoliday = true;
+        eventMap[event.date].icon = event.icon;
       }
     });
     
@@ -1898,149 +1896,20 @@ const DAILY_EMOTICONS = [
     document.querySelectorAll(".snowflake").forEach(s => s.remove());
   }
 
-  // [FIX] Deluxe Christmas Theme - Three.js with auto-play Jingle Bell Swing
-  let deluxeContainer = null;
-
-  function createDeluxeChristmasHTML() {
-    return `<!DOCTYPE html>
-<html><head>
-<style>
-*{box-sizing:border-box}
-body{margin:0;height:100vh;overflow:hidden;background:#161616;font-family:sans-serif}
-#loadingText{position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);color:#c5a880;font-size:14px;text-align:center}
-</style>
-</head><body>
-<div id="loadingText">Loading Christmas Experience...</div>
-<script src="https://cdn.jsdelivr.net/npm/three@0.115.0/build/three.min.js"><\/script>
-<script src="https://cdn.jsdelivr.net/npm/three@0.115.0/examples/js/postprocessing/EffectComposer.js"><\/script>
-<script src="https://cdn.jsdelivr.net/npm/three@0.115.0/examples/js/postprocessing/RenderPass.js"><\/script>
-<script src="https://cdn.jsdelivr.net/npm/three@0.115.0/examples/js/postprocessing/ShaderPass.js"><\/script>
-<script src="https://cdn.jsdelivr.net/npm/three@0.115.0/examples/js/shaders/CopyShader.js"><\/script>
-<script src="https://cdn.jsdelivr.net/npm/three@0.115.0/examples/js/shaders/LuminosityHighPassShader.js"><\/script>
-<script src="https://cdn.jsdelivr.net/npm/three@0.115.0/examples/js/postprocessing/UnrealBloomPass.js"><\/script>
-<script>
-const{PI,sin,cos}=Math,TAU=2*PI;
-const map=(v,sMin,sMax,dMin,dMax)=>dMin+((v-sMin)/(sMax-sMin))*(dMax-dMin);
-const range=(n,m=0)=>Array(n).fill(m).map((i,j)=>i+j);
-const rand=(max,min=0)=>min+Math.random()*(max-min);
-const randInt=(max,min=0)=>Math.floor(min+Math.random()*(max-min));
-const randChoise=arr=>arr[randInt(arr.length)];
-const polar=(ang,r=1)=>[r*cos(ang),r*sin(ang)];
-let scene,camera,renderer,analyser,step=0,composer;
-const uniforms={time:{type:"f",value:0},step:{type:"f",value:0}};
-const params={exposure:1,bloomStrength:0.9,bloomThreshold:0,bloomRadius:0.5};
-const fftSize=2048,totalPoints=4000;
-const listener=new THREE.AudioListener();
-const audio=new THREE.Audio(listener);
-
-// Auto-load Jingle Bell Swing
-setTimeout(()=>{
-  new THREE.AudioLoader().load(
-    "https://files.freemusicarchive.org/storage-freemusicarchive-org/music/ccCommunity/Mark_Smeby/En_attendant_Nol/Mark_Smeby_-_07_-_Jingle_Bell_Swing.mp3",
-    buffer=>{audio.setBuffer(buffer);audio.play();analyser=new THREE.AudioAnalyser(audio,fftSize);init();},
-    undefined,
-    err=>{document.getElementById("loadingText").textContent="Audio failed to load";}
-  );
-},100);
-
-function init(){
-  document.getElementById("loadingText")?.remove();
-  scene=new THREE.Scene();
-  renderer=new THREE.WebGLRenderer({antialias:true});
-  renderer.setPixelRatio(window.devicePixelRatio);
-  renderer.setSize(window.innerWidth,window.innerHeight);
-  document.body.appendChild(renderer.domElement);
-  camera=new THREE.PerspectiveCamera(60,window.innerWidth/window.innerHeight,1,1000);
-  camera.position.set(-0.09,-2.56,24.42);
-  camera.rotation.set(0.10,-0.004,0.0004);
-  const format=renderer.capabilities.isWebGL2?THREE.RedFormat:THREE.LuminanceFormat;
-  uniforms.tAudioData={value:new THREE.DataTexture(analyser.data,fftSize/2,1,format)};
-  addPlane(scene,uniforms,3000);
-  addSnow(scene,uniforms);
-  range(10).map(i=>{addTree(scene,uniforms,totalPoints,[20,0,-20*i]);addTree(scene,uniforms,totalPoints,[-20,0,-20*i]);});
-  const renderScene=new THREE.RenderPass(scene,camera);
-  const bloomPass=new THREE.UnrealBloomPass(new THREE.Vector2(window.innerWidth,window.innerHeight),1.5,0.4,0.85);
-  bloomPass.threshold=params.bloomThreshold;bloomPass.strength=params.bloomStrength;bloomPass.radius=params.bloomRadius;
-  composer=new THREE.EffectComposer(renderer);composer.addPass(renderScene);composer.addPass(bloomPass);
-  window.addEventListener("resize",()=>{camera.aspect=window.innerWidth/window.innerHeight;camera.updateProjectionMatrix();renderer.setSize(window.innerWidth,window.innerHeight);composer.setSize(window.innerWidth,window.innerHeight);},false);
-  animate();
-}
-function animate(time){analyser.getFrequencyData();uniforms.tAudioData.value.needsUpdate=true;step=(step+1)%1000;uniforms.time.value=time;uniforms.step.value=step;composer.render();requestAnimationFrame(animate);}
-function addTree(scene,uniforms,totalPoints,treePosition){
-  const vertexShader=\`attribute float mIndex;varying vec3 vColor;varying float opacity;uniform sampler2D tAudioData;float norm(float v,float min,float max){return(v-min)/(max-min);}float lerp(float n,float min,float max){return(max-min)*n+min;}float map(float v,float sMin,float sMax,float dMin,float dMax){return lerp(norm(v,sMin,sMax),dMin,dMax);}void main(){vColor=color;vec3 p=position;vec4 mvPosition=modelViewMatrix*vec4(p,1.0);float amplitude=texture2D(tAudioData,vec2(mIndex,0.1)).r;float amplitudeClamped=clamp(amplitude-0.4,0.0,0.6);float sizeMapped=map(amplitudeClamped,0.0,0.6,1.0,20.0);opacity=map(mvPosition.z,-200.0,15.0,0.0,1.0);gl_PointSize=sizeMapped*(100.0/-mvPosition.z);gl_Position=projectionMatrix*mvPosition;}\`;
-  const fragmentShader=\`varying vec3 vColor;varying float opacity;uniform sampler2D pointTexture;void main(){gl_FragColor=vec4(vColor,opacity);gl_FragColor=gl_FragColor*texture2D(pointTexture,gl_PointCoord);}\`;
-  const shaderMaterial=new THREE.ShaderMaterial({uniforms:{...uniforms,pointTexture:{value:new THREE.TextureLoader().load("https://assets.codepen.io/3685267/spark1.png")}},vertexShader,fragmentShader,blending:THREE.AdditiveBlending,depthTest:false,transparent:true,vertexColors:true});
-  const geometry=new THREE.BufferGeometry();const positions=[],colors=[],sizes=[],phases=[],mIndexs=[];const color=new THREE.Color();
-  for(let i=0;i<totalPoints;i++){const t=Math.random();const y=map(t,0,1,-8,10);const ang=map(t,0,1,0,6*TAU)+(TAU/2)*(i%2);const[z,x]=polar(ang,map(t,0,1,5,0));const modifier=map(t,0,1,1,0);positions.push(x+rand(-0.3*modifier,0.3*modifier),y+rand(-0.3*modifier,0.3*modifier),z+rand(-0.3*modifier,0.3*modifier));color.setHSL(map(i,0,totalPoints,1.0,0.0),1.0,0.5);colors.push(color.r,color.g,color.b);phases.push(rand(1000));sizes.push(1);mIndexs.push(map(i,0,totalPoints,1.0,0.0));}
-  geometry.setAttribute("position",new THREE.Float32BufferAttribute(positions,3).setUsage(THREE.DynamicDrawUsage));geometry.setAttribute("color",new THREE.Float32BufferAttribute(colors,3));geometry.setAttribute("size",new THREE.Float32BufferAttribute(sizes,1));geometry.setAttribute("phase",new THREE.Float32BufferAttribute(phases,1));geometry.setAttribute("mIndex",new THREE.Float32BufferAttribute(mIndexs,1));
-  const tree=new THREE.Points(geometry,shaderMaterial);const[px,py,pz]=treePosition;tree.position.set(px,py,pz);scene.add(tree);
-}
-function addSnow(scene,uniforms){
-  const vertexShader=\`attribute float size;attribute float phase;attribute float phaseSecondary;varying vec3 vColor;varying float opacity;uniform float time;uniform float step;float norm(float v,float min,float max){return(v-min)/(max-min);}float lerp(float n,float min,float max){return(max-min)*n+min;}float map(float v,float sMin,float sMax,float dMin,float dMax){return lerp(norm(v,sMin,sMax),dMin,dMax);}void main(){float t=time*0.0006;vColor=color;vec3 p=position;p.y=map(mod(phase+step,1000.0),0.0,1000.0,25.0,-8.0);p.x+=sin(t+phase);p.z+=sin(t+phaseSecondary);opacity=map(p.z,-150.0,15.0,0.0,1.0);vec4 mvPosition=modelViewMatrix*vec4(p,1.0);gl_PointSize=size*(100.0/-mvPosition.z);gl_Position=projectionMatrix*mvPosition;}\`;
-  const fragmentShader=\`uniform sampler2D pointTexture;varying vec3 vColor;varying float opacity;void main(){gl_FragColor=vec4(vColor,opacity);gl_FragColor=gl_FragColor*texture2D(pointTexture,gl_PointCoord);}\`;
-  const sprites=["https://assets.codepen.io/3685267/snowflake1.png","https://assets.codepen.io/3685267/snowflake2.png","https://assets.codepen.io/3685267/snowflake3.png","https://assets.codepen.io/3685267/snowflake4.png","https://assets.codepen.io/3685267/snowflake5.png"];
-  sprites.forEach(sprite=>{
-    const shaderMaterial=new THREE.ShaderMaterial({uniforms:{...uniforms,pointTexture:{value:new THREE.TextureLoader().load(sprite)}},vertexShader,fragmentShader,blending:THREE.AdditiveBlending,depthTest:false,transparent:true,vertexColors:true});
-    const geometry=new THREE.BufferGeometry();const positions=[],colors=[],sizes=[],phases=[],phaseSecondaries=[];const color=new THREE.Color();
-    for(let i=0;i<300;i++){positions.push(rand(25,-25),0,rand(15,-150));color.set(randChoise(["#f1d4d4","#f1f6f9","#eeeeee","#f1f1e8"]));colors.push(color.r,color.g,color.b);phases.push(rand(1000));phaseSecondaries.push(rand(1000));sizes.push(rand(4,2));}
-    geometry.setAttribute("position",new THREE.Float32BufferAttribute(positions,3));geometry.setAttribute("color",new THREE.Float32BufferAttribute(colors,3));geometry.setAttribute("size",new THREE.Float32BufferAttribute(sizes,1));geometry.setAttribute("phase",new THREE.Float32BufferAttribute(phases,1));geometry.setAttribute("phaseSecondary",new THREE.Float32BufferAttribute(phaseSecondaries,1));
-    scene.add(new THREE.Points(geometry,shaderMaterial));
-  });
-}
-function addPlane(scene,uniforms,totalPoints){
-  const vertexShader=\`attribute float size;attribute vec3 customColor;varying vec3 vColor;void main(){vColor=customColor;vec4 mvPosition=modelViewMatrix*vec4(position,1.0);gl_PointSize=size*(300.0/-mvPosition.z);gl_Position=projectionMatrix*mvPosition;}\`;
-  const fragmentShader=\`uniform vec3 color;uniform sampler2D pointTexture;varying vec3 vColor;void main(){gl_FragColor=vec4(vColor,1.0);gl_FragColor=gl_FragColor*texture2D(pointTexture,gl_PointCoord);}\`;
-  const shaderMaterial=new THREE.ShaderMaterial({uniforms:{...uniforms,pointTexture:{value:new THREE.TextureLoader().load("https://assets.codepen.io/3685267/spark1.png")}},vertexShader,fragmentShader,blending:THREE.AdditiveBlending,depthTest:false,transparent:true,vertexColors:true});
-  const geometry=new THREE.BufferGeometry();const positions=[],colors=[],sizes=[];const color=new THREE.Color();
-  for(let i=0;i<totalPoints;i++){positions.push(rand(-25,25),0,rand(-150,15));color.set(randChoise(["#93abd3","#f2f4c0","#9ddfd3"]));colors.push(color.r,color.g,color.b);sizes.push(1);}
-  geometry.setAttribute("position",new THREE.Float32BufferAttribute(positions,3).setUsage(THREE.DynamicDrawUsage));geometry.setAttribute("customColor",new THREE.Float32BufferAttribute(colors,3));geometry.setAttribute("size",new THREE.Float32BufferAttribute(sizes,1));
-  const plane=new THREE.Points(geometry,shaderMaterial);plane.position.y=-8;scene.add(plane);
-}
-<\/script></body></html>`;
-  }
-
-  function startDeluxeChristmas() {
-    if (deluxeContainer) return;
-    deluxeContainer = document.createElement("div");
-    deluxeContainer.id = "deluxeChristmasContainer";
-    deluxeContainer.style.cssText = "position:fixed;top:0;left:0;width:100%;height:100%;z-index:-1;pointer-events:none;";
-    deluxeContainer.innerHTML = `<iframe src="data:text/html;charset=utf-8,${encodeURIComponent(createDeluxeChristmasHTML())}" frameborder="0" allow="autoplay" style="width:100%;height:100%;pointer-events:auto;"></iframe>`;
-    document.body.insertBefore(deluxeContainer, document.body.firstChild);
-  }
-
-  function stopDeluxeChristmas() {
-    if (deluxeContainer) {
-      deluxeContainer.remove();
-      deluxeContainer = null;
-    }
-  }
-
   function applyTheme(theme) {
     currentTheme = theme;
-
-    // Stop deluxe if switching away
-    if (theme !== "deluxe") {
-      stopDeluxeChristmas();
-    }
 
     if (theme === "dark") document.documentElement.setAttribute("data-theme", "dark");
     else if (theme === "light") document.documentElement.setAttribute("data-theme", "light");
     else if (theme === "christmas") document.documentElement.setAttribute("data-theme", "christmas");
-    else if (theme === "deluxe") document.documentElement.setAttribute("data-theme", "christmas");
     else document.documentElement.removeAttribute("data-theme");
 
     document.querySelectorAll(".theme-option").forEach(opt => {
       opt.classList.toggle("active", opt.dataset.theme === theme);
     });
 
-    if (theme === "christmas") {
-      startSnow();
-    } else if (theme === "deluxe") {
-      stopSnow();
-      startDeluxeChristmas();
-    } else {
-      stopSnow();
-    }
+    if (theme === "christmas") startSnow();
+    else stopSnow();
   }
 
   // ---------- 2026 tracker ----------
@@ -2213,9 +2082,59 @@ function addPlane(scene,uniforms,totalPoints){
     }
   }
 
-  // OLD checkDeviceConflict kept for backward compat with applyStateToLocal
+  // [OK] Dedicated function to check device conflicts (can be called independently)
+  // Check BOTH WebSocket AND database for conflicts
   function checkDeviceConflict(serverActiveDevices) {
-    // This is now a no-op - conflict detection happens in checkForActiveSession
+    if (!serverActiveDevices || typeof serverActiveDevices !== "object") {
+      return false;
+    }
+    
+    const user = loadUser()?.toLowerCase();
+    const myDeviceId = getDeviceId();
+    const now = Date.now();
+    
+    const inAnyGrace = now < loginGraceUntil || now < takeoverGraceUntil;
+    
+    if (!user) return false;
+    
+    // Check WebSocket presence FIRST (instant)
+    let hasWebSocketConflict = false;
+    if (livePresenceState && Object.keys(livePresenceState).length > 0) {
+      for (const [key, presences] of Object.entries(livePresenceState)) {
+        for (const p of presences) {
+          if (p.user === user && p.deviceId && p.deviceId !== myDeviceId) {
+            hasWebSocketConflict = true;
+            break;
+          }
+        }
+        if (hasWebSocketConflict) break;
+      }
+    }
+    
+    // Check database as backup
+    let hasDatabaseConflict = false;
+    if (serverActiveDevices[user]) {
+      const serverDevice = serverActiveDevices[user];
+      if (serverDevice.deviceId && serverDevice.deviceId !== myDeviceId) {
+        hasDatabaseConflict = true;
+      }
+    }
+    
+    const hasConflict = hasWebSocketConflict || hasDatabaseConflict;
+    
+    if (hasConflict && !inAnyGrace) {
+      if (!deviceLocked) {
+        deviceLocked = true;
+        showDeviceConflict(user);
+      }
+      return true;
+    } else if (!hasConflict) {
+      if (deviceLocked) {
+        deviceLocked = false;
+        hideDeviceConflict();
+      }
+    }
+    
     return false;
   }
 
@@ -2380,6 +2299,11 @@ await fetch("/.netlify/functions/room", {
     takeoverInProgress = true;
     console.log("[DEVICE] TAKEOVER starting");
     
+    // Set grace period FIRST
+    takeoverGraceUntil = Date.now() + 6000;
+    deviceLocked = false;
+    hideDeviceConflict();
+    
     try {
       const user = loadUser();
       if (!user) {
@@ -2387,22 +2311,20 @@ await fetch("/.netlify/functions/room", {
         return;
       }
       
-      // Claim device (this kicks the other device on their next poll)
+      // Re-init WebSocket presence
+      try { await stopLivePresence(); } catch(e) {}
+      initLivePresence();
+      
+      // Claim device in database
       await claimDevice(user);
       
-      // Hide conflict overlay
-      deviceLocked = false;
-      hideDeviceConflict();
+      // Push to database
+      await pushRemoteState();
       
       // Complete login flow
       $("closeWhoModal").classList.remove("hidden");
       closeWhoModal();
       updateUserDuoPills();
-      
-      // Sync and start monitoring
-      await pullRemoteState({ silent: false });
-      startDeviceMonitoring();
-      startPresence();
       
       console.log("[DEVICE] TAKEOVER complete");
       showToast("You are now the active device");
@@ -2415,16 +2337,23 @@ await fetch("/.netlify/functions/room", {
   window.switchToOtherUser = async function(otherUser) {
     console.log("[DEVICE] SWITCH starting to:", otherUser);
     
-    // Stop current monitoring
-    stopDeviceMonitoring();
-    stopPresence();
-    
-    // Release current device
-    await releaseDevice();
-    
-    // Hide conflict
+    // Set grace period
+    loginGraceUntil = Date.now() + 5000;
     deviceLocked = false;
     hideDeviceConflict();
+    
+    // Stop current presence
+    try {
+      if (presenceChannel) {
+        await presenceChannel.untrack();
+        await new Promise(r => setTimeout(r, 150));
+        await sbClient.removeChannel(presenceChannel);
+        presenceChannel = null;
+      }
+    } catch (e) {}
+    
+    // Release old device
+    await releaseDevice();
     
     // Switch to the other user
     saveUser(otherUser);
@@ -2432,14 +2361,16 @@ await fetch("/.netlify/functions/room", {
     // Claim new user
     await claimDevice(otherUser);
     
+    // Start WebSocket for new user
+    initLivePresence();
+    
     // Complete login flow
     $("closeWhoModal").classList.remove("hidden");
     closeWhoModal();
     updateUserDuoPills();
     
-    // Start monitoring and sync
-    startDeviceMonitoring();
-    startPresence();
+    // Sync state
+    await pushRemoteState();
     await pullRemoteState({ silent: false });
     
     console.log("[DEVICE] SWITCH complete to:", otherUser);
@@ -2679,7 +2610,10 @@ await fetch("/.netlify/functions/room", {
     }
   }
 
-  // [OK] Big calendar above message log
+  // [FIX] Big calendar with month/year header and arrow navigation
+  let calendarMonth = new Date().getMonth();
+  let calendarYear = new Date().getFullYear();
+
   function renderBigCalendar() {
     const cal = $("bigCalendar");
     if (!cal) return;
@@ -2699,59 +2633,89 @@ await fetch("/.netlify/functions/room", {
     );
     const eventDates = getEventDates();
 
-    // State from selects if already rendered
-    const selMonthEl = document.getElementById('calMonthSelect');
-    const selYearEl = document.getElementById('calYearSelect');
-    let selMonth = selMonthEl ? Number(selMonthEl.value) : currentMonth;
-    let selYear = selYearEl ? Number(selYearEl.value) : currentYear;
-
-    const months = ["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"];
-    const years = [currentYear - 1, currentYear, currentYear + 1];
+    const months = ["January","February","March","April","May","June","July","August","September","October","November","December"];
+    
     cal.innerHTML = `
-      <div class="calendar__opts">
-        <select id="calMonthSelect" name="calendar__month">
-          ${months.map((m,i)=>`<option value="${i}" ${i===selMonth?'selected':''}>${m}</option>`).join('')}
-        </select>
-        <select id="calYearSelect" name="calendar__year">
-          ${years.map(y=>`<option value="${y}" ${y===selYear?'selected':''}>${y}</option>`).join('')}
-        </select>
+      <div class="calendar__header">
+        <div class="calendar__nav">
+          <button class="cal-nav-btn" id="calPrevMonth"><i class="fas fa-chevron-left"></i></button>
+        </div>
+        <div class="calendar__title">
+          <span class="calendar__month-name">${months[calendarMonth]}</span>
+          <span class="calendar__year">${calendarYear}</span>
+        </div>
+        <div class="calendar__nav">
+          <button class="cal-nav-btn" id="calNextMonth"><i class="fas fa-chevron-right"></i></button>
+        </div>
       </div>
       <div class="calendar__body">
         <div class="calendar__days">
-          <div>Su</div><div>Mo</div><div>Tu</div><div>We</div><div>Th</div><div>Fr</div><div>Sa</div>
+          <div>M</div><div>T</div><div>W</div><div>T</div><div>F</div><div>S</div><div>S</div>
         </div>
         <div class="calendar__dates" id="calDates"></div>
       </div>
     `;
 
-    const firstDay = new Date(selYear, selMonth, 1);
-    const startDow = firstDay.getDay();
-    const daysInMonth = new Date(selYear, selMonth + 1, 0).getDate();
-    const prevMonthDays = new Date(selYear, selMonth, 0).getDate();
+    const firstDay = new Date(calendarYear, calendarMonth, 1);
+    // Adjust for Monday start (0=Mon, 6=Sun)
+    let startDow = firstDay.getDay() - 1;
+    if (startDow < 0) startDow = 6;
+    const daysInMonth = new Date(calendarYear, calendarMonth + 1, 0).getDate();
+    const prevMonthDays = new Date(calendarYear, calendarMonth, 0).getDate();
 
     const datesEl = document.getElementById('calDates');
     const cells = [];
+    
+    // Previous month days (greyed out)
     for (let i = 0; i < startDow; i++) {
       const d = prevMonthDays - startDow + 1 + i;
       cells.push({ text: d, grey: true });
     }
+    
+    // Current month days
     for (let d = 1; d <= daysInMonth; d++) {
-      const isToday = (selYear===currentYear && selMonth===currentMonth && d===currentDate);
-      const dateKey = `${selYear}-${String(selMonth+1).padStart(2,'0')}-${String(d).padStart(2,'0')}`;
+      const isToday = (calendarYear===currentYear && calendarMonth===currentMonth && d===currentDate);
+      const dateKey = `${calendarYear}-${String(calendarMonth+1).padStart(2,'0')}-${String(d).padStart(2,'0')}`;
       const evt = eventDates[dateKey];
       const hasEvent = !!evt;
-      cells.push({ text: d, today: isToday, hasEvent });
+      const isHoliday = evt?.isHoliday;
+      cells.push({ text: d, today: isToday, hasEvent, isHoliday, icon: evt?.icon });
     }
-    while (cells.length % 7 !== 0) cells.push({ text: '', grey: true });
+    
+    // Next month days to fill grid
+    let nextDay = 1;
+    while (cells.length % 7 !== 0) {
+      cells.push({ text: nextDay++, grey: true });
+    }
 
     datesEl.innerHTML = cells.map(c => {
-      const cls = ["calendar__date"]; if (c.grey) cls.push("calendar__date--grey"); if (c.today) cls.push("calendar__date--today");
-      const eventDot = c.hasEvent ? '<span class="cal-event-dot"></span>' : '';
-      return `<div class="${cls.join(' ')}"><span>${c.text}</span>${eventDot}</div>`;
+      const cls = ["calendar__date"];
+      if (c.grey) cls.push("calendar__date--grey");
+      if (c.today) cls.push("calendar__date--today");
+      if (c.isHoliday) cls.push("event-holiday");
+      else if (c.hasEvent) cls.push("has-event");
+      
+      let indicator = '';
+      if (c.isHoliday && c.icon) {
+        indicator = `<span class="cal-holiday-icon">${c.icon}</span>`;
+      } else if (c.hasEvent) {
+        indicator = '<span class="cal-event-dot"></span>';
+      }
+      
+      return `<div class="${cls.join(' ')}"><span>${c.text}</span>${indicator}</div>`;
     }).join('');
 
-    document.getElementById('calMonthSelect').addEventListener('change', renderBigCalendar);
-    document.getElementById('calYearSelect').addEventListener('change', renderBigCalendar);
+    // Add navigation listeners
+    document.getElementById('calPrevMonth').addEventListener('click', () => {
+      calendarMonth--;
+      if (calendarMonth < 0) { calendarMonth = 11; calendarYear--; }
+      renderBigCalendar();
+    });
+    document.getElementById('calNextMonth').addEventListener('click', () => {
+      calendarMonth++;
+      if (calendarMonth > 11) { calendarMonth = 0; calendarYear++; }
+      renderBigCalendar();
+    });
   }
 
   function closeWhoModal() {
@@ -2765,7 +2729,7 @@ await fetch("/.netlify/functions/room", {
     modal.setAttribute("aria-hidden", "true");
   }
 
-  // [FIX] NEW: Login with conflict check BEFORE proceeding
+  // [FIX] Login with spam protection and grace period
   async function setUserAndStart(name) {
     // Prevent spam clicking
     if (loginInProgress) {
@@ -2776,38 +2740,30 @@ await fetch("/.netlify/functions/room", {
     loginInProgress = true;
     console.log("[DEVICE] LOGIN starting for:", name);
     
+    // Set grace period FIRST (6 seconds for slow networks)
+    loginGraceUntil = Date.now() + 6000;
+    
     try {
-      // Step 1: Check for existing session BEFORE proceeding
-      const hasConflict = await checkForActiveSession(name);
-      
-      if (hasConflict) {
-        // Show conflict - DO NOT proceed with login
-        console.log("[DEVICE] Conflict detected - showing overlay");
-        saveUser(name); // Save temporarily for conflict UI
-        deviceLocked = true;
-        showDeviceConflict(name);
-        loginInProgress = false;
-        return; // STOP HERE - do not proceed
-      }
-      
-      // Step 2: Claim device
-      await claimDevice(name);
+      // Ensure prior presence channel is cleanly removed before switching
+      try { await stopLivePresence(); } catch {}
       saveUser(name);
       
-      // Step 3: Proceed with normal login
+      // Claim device in database
+      await claimDevice(name);
+      
+      // Proceed with normal login
       $("closeWhoModal").classList.remove("hidden");
       closeWhoModal();
       updateUserDuoPills();
       
-      // Step 4: Sync state
+      // Sync state
       setSyncStatus("pulling");
       showSyncingIndicator();
       await pullRemoteState({ silent: false });
       await pushRemoteState();
       hideSyncingIndicator();
       
-      // Step 5: Start monitoring (kick detection) and presence (online indicator)
-      startDeviceMonitoring();
+      // Start presence (WebSocket + polling)
       startPresence();
       
       console.log("[DEVICE] LOGIN complete for:", name);
