@@ -1296,12 +1296,12 @@ const DAILY_EMOTICONS = [
 
     const now = Date.now();
     
-    // [FIX] Find ALL presences for our user across ALL keys (no time filtering!)
+    // [FIX v1.4.4] Find ALL presences for our user across ALL keys
     let conflictingDevices = [];
     
     for (const [key, presences] of Object.entries(state)) {
       for (const p of presences) {
-        // Same user, different device = CONFLICT
+        // Same user, different device = another device owns my user
         if (p.user === currentUser && p.deviceId && p.deviceId !== myDeviceId) {
           conflictingDevices.push({ key, ...p });
         }
@@ -1322,16 +1322,15 @@ const DAILY_EMOTICONS = [
       inTakeoverGrace
     });
 
-    // [FIX] CONFLICT DETECTION - Show overlay on THIS device (newer session)
-    // The device with the conflict gets the overlay - this is the NEW device trying to login
+    // [FIX v1.4.4] If another device owns my user, I've been KICKED
+    // Don't show conflict choice - just kick to login screen
     if (conflictingDevices.length > 0) {
       if (inAnyGrace) {
         console.log("[PRESENCE] In grace period - ignoring conflict");
-        // Don't lock, don't show conflict
-      } else if (!deviceLocked) {
-        console.log("[PRESENCE] CONFLICT - showing overlay");
-        deviceLocked = true;
-        showDeviceConflict(currentUser);
+        // Don't kick during grace period
+      } else {
+        console.log("[PRESENCE] Another device owns my user - KICKING to login");
+        handleKicked();
       }
     } else {
       // [FIX] AUTO-RESOLVE: No conflicts
@@ -2184,16 +2183,36 @@ const DAILY_EMOTICONS = [
     return false;
   }
 
-  // [FIX] Handle being kicked
+  // [FIX v1.4.4] Handle being kicked - with guard to prevent multiple calls
+  let kickHandled = false;
+  
   function handleKicked() {
+    // Prevent multiple kicks
+    if (kickHandled) {
+      console.log("[DEVICE] Kick already handled, ignoring");
+      return;
+    }
+    kickHandled = true;
+    
     console.log("[DEVICE] Showing login screen after kick");
     stopDeviceMonitoring();
     clearUser();
     stopPresence();
     deviceLocked = false;
+    
+    // Hide any conflict overlays
+    hideDeviceConflict();
+    hideSwitchConflict();
+    
+    // Show login modal
     openWhoModal();
-    $("closeWhoModal").classList.add("hidden");
+    const closeBtn = $("closeWhoModal");
+    if (closeBtn) closeBtn.classList.add("hidden");
+    
     showToast("Session taken over by another device");
+    
+    // Reset kick guard after a delay
+    setTimeout(() => { kickHandled = false; }, 3000);
   }
 
   // [FIX] Claim device for user (during login or takeover)
@@ -2278,38 +2297,36 @@ const DAILY_EMOTICONS = [
     
     if (!user) return false;
     
-    // Check WebSocket presence FIRST (instant)
-    let hasWebSocketConflict = false;
-    if (livePresenceState && Object.keys(livePresenceState).length > 0) {
-      for (const [key, presences] of Object.entries(livePresenceState)) {
-        for (const p of presences) {
-          if (p.user === user && p.deviceId && p.deviceId !== myDeviceId) {
-            hasWebSocketConflict = true;
-            break;
-          }
-        }
-        if (hasWebSocketConflict) break;
-      }
-    }
-    
-    // Check database as backup
-    let hasDatabaseConflict = false;
+    // [FIX v1.4.4] Check if another device has claimed MY user
+    // This means I've been kicked (takeover happened)
+    let anotherDeviceOwnsMe = false;
     if (serverActiveDevices[user]) {
       const serverDevice = serverActiveDevices[user];
       if (serverDevice.deviceId && serverDevice.deviceId !== myDeviceId) {
-        hasDatabaseConflict = true;
+        anotherDeviceOwnsMe = true;
       }
     }
     
-    const hasConflict = hasWebSocketConflict || hasDatabaseConflict;
-    
-    if (hasConflict && !inAnyGrace) {
-      if (!deviceLocked) {
-        deviceLocked = true;
-        showDeviceConflict(user);
+    // Also check WebSocket presence
+    if (!anotherDeviceOwnsMe && livePresenceState && Object.keys(livePresenceState).length > 0) {
+      for (const [key, presences] of Object.entries(livePresenceState)) {
+        for (const p of presences) {
+          if (p.user === user && p.deviceId && p.deviceId !== myDeviceId) {
+            anotherDeviceOwnsMe = true;
+            break;
+          }
+        }
+        if (anotherDeviceOwnsMe) break;
       }
+    }
+    
+    // [FIX v1.4.4] If another device owns my user, I've been KICKED (not a conflict choice)
+    if (anotherDeviceOwnsMe && !inAnyGrace) {
+      console.log("[DEVICE] Another device owns my user - I've been kicked");
+      handleKicked();
       return true;
-    } else if (!hasConflict) {
+    } else if (!anotherDeviceOwnsMe) {
+      // No conflict - hide any overlay
       if (deviceLocked) {
         deviceLocked = false;
         hideDeviceConflict();
@@ -3311,6 +3328,14 @@ const DAILY_EMOTICONS = [
         modal.classList.remove("active");
         modal.setAttribute("aria-hidden", "true");
       }
+    });
+  }
+
+  // [FIX v1.4.4] Add click handler for Who modal close button
+  const closeWhoModalEl = $("closeWhoModal");
+  if (closeWhoModalEl) {
+    closeWhoModalEl.addEventListener("click", () => {
+      closeWhoModal();
     });
   }
 
