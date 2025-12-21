@@ -934,10 +934,10 @@ const DAILY_EMOTICONS = [
       const isMedal = clip.source === 'medal';
       const isUpload = clip.source === 'upload';
       
-      // Thumbnail: use Medal thumbnail or gradient for uploads
+      // Thumbnail: use actual thumbnail from Medal or uploaded clip
       const thumbStyle = clip.thumbnail 
-        ? `background-image: url('${escapeHtml(clip.thumbnail)}')`
-        : `background: linear-gradient(45deg, var(--accent), var(--accent-secondary))`;
+        ? `background-image: url('${escapeHtml(clip.thumbnail)}'); background-size: cover; background-position: center;`
+        : `background: linear-gradient(135deg, var(--accent) 0%, var(--accent-secondary) 100%)`;
       
       card.innerHTML = `
         <div class="medal-thumb" style="${thumbStyle}">

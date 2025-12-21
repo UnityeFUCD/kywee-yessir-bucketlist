@@ -2434,6 +2434,7 @@ input[type="date"]::-webkit-calendar-picker-indicator {
   background-size: cover;
   background-position: center;
   position: relative;
+  overflow: hidden;
 }
 
 .medal-play {

@@ -109,17 +109,14 @@ exports.handler = async (event) => {
       };
     }
     
-    // [FIX] Transform clips to include thumbnail URL and clean data
+    // [FIX] Transform clips - API returns contentThumbnail directly
     if (data.contentObjects && Array.isArray(data.contentObjects)) {
       data.contentObjects = data.contentObjects.map(clip => {
         // Extract contentId (remove 'cid' prefix if present)
         const contentId = (clip.contentId || '').replace(/^cid/, '');
         
-        // Construct thumbnail URL from contentId
-        // Medal thumbnail format: https://cdn.medal.tv/{contentId}/thumbnail1080.jpg
-        const thumbnail = contentId 
-          ? `https://cdn.medal.tv/${contentId}/thumbnail1080.jpg`
-          : null;
+        // API returns contentThumbnail directly: https://cdn.medal.tv/ugcc/content-thumbnail/xxxxx
+        const thumbnail = clip.contentThumbnail || null;
         
         return {
           ...clip,
