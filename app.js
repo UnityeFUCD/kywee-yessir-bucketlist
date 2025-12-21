@@ -1855,7 +1855,8 @@ const DAILY_EMOTICONS = [
     closeWhoModal();
   };
   
-  // [FIX] Update who modal buttons based on active users
+  // [FIX v1.4.4] Update who modal buttons - show ACTIVE badge but DON'T disable
+  // The session gate in setUserAndStart() will handle the conflict overlay
   function updateWhoModalButtons() {
     const activeUsers = getActiveUsersFromPresence();
     const currentUser = loadUser()?.toLowerCase();
@@ -1863,30 +1864,29 @@ const DAILY_EMOTICONS = [
     const btnYasir = $("btnWhoYasir");
     const btnKylee = $("btnWhoKylee");
     
-    // Reset both buttons first
+    // [FIX] Reset both buttons - keep them ENABLED so clicks work
     [btnYasir, btnKylee].forEach(btn => {
       if (btn) {
-        btn.disabled = false;
+        btn.disabled = false;  // Always enabled - session gate handles conflicts
         btn.classList.remove("user-active-elsewhere");
         btn.title = "";
       }
     });
     
-    // Check if Yasir is active elsewhere
+    // [FIX] Show visual indicator but DON'T disable - allow click to trigger session gate
     if (btnYasir && activeUsers.has("yasir") && currentUser !== "yasir") {
-      btnYasir.disabled = true;
+      // btn.disabled = false; // Keep enabled!
       btnYasir.classList.add("user-active-elsewhere");
-      btnYasir.title = "Yasir is active on another device";
+      btnYasir.title = "Yasir is active on another device - click to take over";
     }
     
-    // Check if Kylee is active elsewhere
     if (btnKylee && activeUsers.has("kylee") && currentUser !== "kylee") {
-      btnKylee.disabled = true;
+      // btn.disabled = false; // Keep enabled!
       btnKylee.classList.add("user-active-elsewhere");
-      btnKylee.title = "Kylee is active on another device";
+      btnKylee.title = "Kylee is active on another device - click to take over";
     }
     
-    // Add active indicators
+    // Add active indicators (visual only)
     if (btnYasir && activeUsers.has("yasir") && currentUser !== "yasir") {
       if (!btnYasir.querySelector(".active-badge")) {
         btnYasir.innerHTML = btnYasir.innerHTML + '<span class="active-badge">ACTIVE</span>';
