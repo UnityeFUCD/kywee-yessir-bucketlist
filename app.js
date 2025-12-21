@@ -3073,11 +3073,6 @@ const DAILY_EMOTICONS = [
       console.log("[DEVICE] LOGIN complete for:", name);
       showToast(`USER SET: ${String(name).toUpperCase()}`);
       
-      // [v1.4.5] Show gift experience for Kylee
-      if (shouldShowGift()) {
-        setTimeout(() => showGiftExperience(), 500);
-      }
-      
     } finally {
       loginInProgress = false;
     }
@@ -4301,67 +4296,15 @@ ${completed.map(i => `[X] ${i.title}  ${i.desc} (#${i.tag})`).join("\n")}
   const resetGiftBtn = $("resetGiftBtn");
   if (resetGiftBtn) {
     resetGiftBtn.addEventListener("click", () => {
-      localStorage.removeItem(GIFT_SHOWN_KEY);
+      // Use the function from gift.js
+      if (typeof window.resetGiftExperience === 'function') {
+        window.resetGiftExperience();
+      } else {
+        localStorage.removeItem("bucketlist_gift_shown_2025");
+      }
       showToast("Gift experience reset! Log in as Kylee to see it.");
       if (settingsModal) settingsModal.classList.remove("active");
     });
-  }
-
-  // ========== GIFT EXPERIENCE FOR KYLEE (v1.4.5) ==========
-  const GIFT_SHOWN_KEY = "bucketlist_gift_shown_2025";
-  
-  function showGiftExperience() {
-    const overlay = $("giftOverlay");
-    const giftBox = $("giftBox");
-    const giftCard = $("giftCard");
-    const cardContinue = $("cardContinue");
-    
-    if (!overlay || !giftBox || !giftCard) return;
-    
-    // Show the overlay
-    overlay.classList.add("active");
-    document.body.style.overflow = "hidden";
-    
-    // Click on gift box → open card
-    giftBox.addEventListener("click", () => {
-      overlay.classList.add("card-open");
-      
-      // After card appears, click to open it
-      setTimeout(() => {
-        const cardFront = giftCard.querySelector(".card-front");
-        if (cardFront) {
-          cardFront.addEventListener("click", () => {
-            giftCard.classList.add("opened");
-          }, { once: true });
-        }
-      }, 700);
-    }, { once: true });
-    
-    // Click continue → unwrap gift and reveal website
-    if (cardContinue) {
-      cardContinue.addEventListener("click", () => {
-        overlay.classList.remove("card-open");
-        overlay.classList.add("unwrapping");
-        
-        // Mark as shown
-        localStorage.setItem(GIFT_SHOWN_KEY, "true");
-        
-        // Remove overlay after animation
-        setTimeout(() => {
-          overlay.classList.remove("active", "unwrapping");
-          overlay.style.display = "none";
-          document.body.style.overflow = "";
-        }, 1500);
-      }, { once: true });
-    }
-  }
-  
-  function shouldShowGift() {
-    const user = loadUser()?.toLowerCase();
-    // Only show for Kylee and only once
-    if (user !== "kylee") return false;
-    if (localStorage.getItem(GIFT_SHOWN_KEY) === "true") return false;
-    return true;
   }
 
   // ---------- Init ----------
@@ -4445,10 +4388,5 @@ ${completed.map(i => `[X] ${i.title}  ${i.desc} (#${i.tag})`).join("\n")}
       startPresence();
       updateUserDuoPills();
       console.log("[DEVICE] Claimed device for", loadUser());
-      
-      // [v1.4.5] Show gift experience for Kylee on page load
-      if (shouldShowGift()) {
-        setTimeout(() => showGiftExperience(), 800);
-      }
     }
   })();

@@ -1,0 +1,654 @@
+/* ============================================
+   GIFT EXPERIENCE v1.5.0
+   A beautifully crafted Christmas gift reveal
+   - 3D Isometric Gift Box (blue/yellow theme)
+   - Scene tilt on hover
+   - Floating Domo character
+   - Retro terminal message card
+   ============================================ */
+
+@import url('https://fonts.googleapis.com/css2?family=VT323&display=swap');
+
+/* ===== GIFT OVERLAY - Full Screen ===== */
+.gift-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100vw;
+  height: 100vh;
+  z-index: 999999;
+  display: none;
+  overflow: hidden;
+  background: radial-gradient(circle at 100% 0%, #ffffff, cornflowerblue 100%);
+  background-repeat: no-repeat;
+  background-size: 100% 100vh;
+}
+
+.gift-overlay.active {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+/* ===== TILTABLE SCENE CONTAINER ===== */
+.gift-scene {
+  width: 100%;
+  height: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: transform 0.15s ease-out;
+  perspective: 1200px;
+}
+
+.gift-scene.tilt-transition {
+  transition: transform 0.5s ease-out;
+}
+
+/* ===== 3D FLOOR CONTAINER ===== */
+.gift-floor {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 20em;
+  width: 20em;
+  transform-origin: 50% 50%;
+  transform: rotateX(45deg) rotateZ(45deg);
+  transform-style: preserve-3d;
+  transition: opacity 0.5s ease;
+}
+
+/* ===== SHADOWS ===== */
+.gift-shadow {
+  position: absolute;
+  z-index: 1;
+  background: linear-gradient(rgba(68, 68, 102, 0.4), transparent);
+}
+
+.gift-shadow-1 {
+  top: 54%;
+  left: 57.3%;
+  height: 18em;
+  width: 7.9em;
+  border-radius: 25% 0 0 0;
+  transform: rotateZ(-20deg) translateZ(3em);
+}
+
+.gift-shadow-2 {
+  top: 50%;
+  left: 50%;
+  height: 20em;
+  width: 6em;
+  transform: translateZ(3em);
+}
+
+.gift-shadow-3 {
+  top: 45%;
+  left: 36.5%;
+  height: 22em;
+  width: 8em;
+  border-radius: 0 50% 0 0;
+  transform: rotateZ(13deg) translateZ(3em);
+}
+
+/* ===== THE 3D BOX ===== */
+.gift-box-3d {
+  position: relative;
+  z-index: 2;
+  transform: translateZ(6em);
+  transform-style: preserve-3d;
+}
+
+.gift-face {
+  height: 6em;
+  width: 6em;
+  position: absolute;
+  z-index: 1;
+  box-shadow: inset 0 0 0.5em 0.25em rgba(0,0,0,0.2);
+}
+
+/* Box colors - Blue with yellow ribbon */
+.gift-face.top {
+  background-color: #000;
+  background-image:
+    linear-gradient(-90deg, transparent 49%, rgb(50,110,160)),
+    linear-gradient(0deg, transparent 49%, rgb(50,110,160));
+  transform: translateZ(3em);
+  box-shadow: inset 0 0 0 0.4em rgba(50,150,200,1);
+}
+
+.gift-face.right {
+  background-image: linear-gradient(to top, transparent 33%, rgba(225,225,0,1) 34% 65%, transparent 66%);
+  background-color: rgb(20,130,170);
+  transform: rotateY(90deg) translateZ(3em);
+}
+
+.gift-face.left {
+  background-image: linear-gradient(to right, transparent 33%, rgba(200,200,0,1) 33% 66%, transparent 66%);
+  background-color: rgb(0,110,150);
+  transform: rotateX(-90deg) translateZ(3em);
+}
+
+/* ===== THE LID ===== */
+.gift-lid {
+  position: absolute;
+  height: 6.5em;
+  width: 6.5em;
+  transform-style: preserve-3d;
+  z-index: 3;
+  cursor: pointer;
+  animation: lidWiggle 1.5s infinite cubic-bezier(0.2, 1.2, 0.6, 1.1);
+}
+
+.gift-lid:hover {
+  animation-play-state: paused;
+}
+
+@keyframes lidWiggle {
+  0% { transform: translateZ(4em) rotateX(0deg) rotateY(0deg); }
+  11% { transform: translateZ(4em) rotateX(1deg) rotateY(-1deg); }
+  22% { transform: translateZ(4em) rotateX(1deg) rotateY(1deg); }
+  33% { transform: translateZ(4em) rotateX(1deg) rotateY(0deg); }
+  44% { transform: translateZ(4em) rotateX(-1deg) rotateY(-1deg); }
+  55% { transform: translateZ(4em) rotateX(1deg) rotateY(1deg); }
+  66% { transform: translateZ(4em) rotateX(-1deg) rotateY(0deg); }
+  100% { transform: translateZ(4em) rotateX(0deg); }
+}
+
+.gift-lid .lid-top {
+  height: 6.5em;
+  width: 6.5em;
+  background-color: rgb(50,150,200);
+  background-image: 
+    linear-gradient(to right, transparent 33%, rgba(225,225,0,1) 34% 65%, rgba(0,0,0,0.1) 66% 68%, transparent 69%),
+    linear-gradient(to top, transparent 33%, rgba(200,200,0,1) 34% 65%, transparent 66%);
+  box-shadow: inset 0 0 0.5em 0.25em rgba(0,0,0,0.1);
+}
+
+.gift-lid .lid-right {
+  position: absolute;
+  z-index: 2;
+  background-color: rgb(20,130,170);
+  width: 3em;
+  height: 6.5em;
+  transform: rotateY(90deg) translateX(1.5em) translateZ(5em);
+  background-image: linear-gradient(to top, transparent 33%, rgba(200,200,0,1) 34% 65%, transparent 66%);
+  box-shadow: inset 0 0 0.5em 0.25em rgba(0,0,0,0.2);
+}
+
+.gift-lid .lid-left {
+  position: absolute;
+  height: 3em;
+  width: 6.5em;
+  background-image: linear-gradient(to right, transparent 33%, rgba(225,225,0,1) 33% 66%, transparent 66%);
+  background-color: rgb(0,110,150);
+  transform: rotateX(-90deg) translateY(1.5em) translateZ(5em);
+  box-shadow: inset 0 0 0.5em 0.25em rgba(0,0,0,0.2);
+}
+
+/* Question mark on lid */
+.gift-qmark {
+  font-size: 3em;
+  font-weight: 700;
+  color: rgba(250,250,100,1);
+  text-shadow: 0 0 0.3em yellow, 0em -0.2em 0.1em gold;
+  position: absolute;
+  transform: translateZ(1em) translateX(0.8em) translateY(0.5em) rotateX(-90deg) rotateY(45deg);
+  font-family: sans-serif;
+  pointer-events: none;
+}
+
+/* ===== LID OPEN ANIMATION ===== */
+.gift-overlay.opening .gift-lid {
+  animation: lidOpen 1s ease-out forwards;
+}
+
+@keyframes lidOpen {
+  0% { transform: translateZ(4em) rotateX(0deg); }
+  100% { transform: translateZ(16em) rotateX(0deg); }
+}
+
+.gift-overlay.box-open .gift-lid {
+  transform: translateZ(16em);
+  animation: lidFloat 2s infinite linear;
+}
+
+@keyframes lidFloat {
+  0% { transform: translateZ(16em); }
+  50% { transform: translateZ(15.5em); }
+  100% { transform: translateZ(16em); }
+}
+
+/* ===== FLOATING DOMO ===== */
+.gift-domo {
+  position: absolute;
+  z-index: 10;
+  opacity: 0;
+  pointer-events: none;
+  transform: translateZ(2em) translateX(0.5em) translateY(0.5em) rotateX(-90deg) rotateY(45deg);
+}
+
+.gift-overlay.box-open .gift-domo {
+  opacity: 1;
+  animation: domoRotate 2.5s infinite linear, domoFadeIn 1.5s ease;
+}
+
+@keyframes domoFadeIn {
+  0% { opacity: 0; }
+  100% { opacity: 1; }
+}
+
+@keyframes domoRotate {
+  0% { transform: rotateZ(0deg) translateZ(2em) rotateX(-90deg) rotateY(45deg); }
+  50% { transform: rotateZ(180deg) translateZ(1.5em) rotateX(-90deg) rotateY(45deg); }
+  100% { transform: rotateZ(360deg) translateZ(2em) rotateX(-90deg) rotateY(45deg); }
+}
+
+/* Domo character styling */
+.domo-icon {
+  font-size: 3.5em;
+  filter: drop-shadow(0 0 0.5em rgba(139,69,19,0.9));
+}
+
+/* ===== GIFT TAG ===== */
+.gift-tag-3d {
+  position: absolute;
+  top: -8em;
+  right: -12em;
+  background: #fffef0;
+  padding: 1em 1.5em;
+  border-radius: 6px;
+  transform: rotateX(-45deg) rotateZ(-45deg) rotate(12deg);
+  box-shadow: 0 4px 15px rgba(0,0,0,0.3);
+  font-family: 'Georgia', serif;
+  z-index: 20;
+  animation: tagWave 3s ease-in-out infinite;
+}
+
+.gift-tag-3d::before {
+  content: '';
+  position: absolute;
+  top: 8px;
+  left: 8px;
+  width: 10px;
+  height: 10px;
+  border: 2px solid #d4a84b;
+  border-radius: 50%;
+}
+
+@keyframes tagWave {
+  0%, 100% { transform: rotateX(-45deg) rotateZ(-45deg) rotate(12deg) translateY(0); }
+  25% { transform: rotateX(-45deg) rotateZ(-45deg) rotate(18deg) translateY(-8px); }
+  50% { transform: rotateX(-45deg) rotateZ(-45deg) rotate(6deg) translateY(5px); }
+  75% { transform: rotateX(-45deg) rotateZ(-45deg) rotate(15deg) translateY(-4px); }
+}
+
+.tag-to, .tag-from {
+  display: block;
+  color: #2d2d2d;
+  font-size: 1em;
+  line-height: 1.8;
+}
+
+.tag-to {
+  font-weight: 600;
+  font-size: 1.1em;
+}
+
+.tag-from {
+  font-style: italic;
+  color: #666;
+}
+
+/* ===== CLICK HINT ===== */
+.gift-click-hint {
+  position: absolute;
+  bottom: -6em;
+  left: 50%;
+  transform: translateX(-50%) rotateX(-45deg) rotateZ(-45deg);
+  color: rgba(0,0,0,0.5);
+  font-size: 1.1em;
+  letter-spacing: 3px;
+  text-transform: lowercase;
+  font-family: 'Georgia', serif;
+  animation: hintPulse 2s ease-in-out infinite;
+  white-space: nowrap;
+}
+
+@keyframes hintPulse {
+  0%, 100% { opacity: 0.3; }
+  50% { opacity: 0.8; }
+}
+
+/* Hide box elements when terminal opens */
+.gift-overlay.terminal-open .gift-floor {
+  opacity: 0;
+  pointer-events: none;
+}
+
+/* ===== TERMINAL CARD (Retro/Fallout style) ===== */
+.gift-terminal {
+  position: fixed;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%) scale(0.8);
+  width: min(550px, 92vw);
+  background: #0a0a0a;
+  border: 3px solid #00dd00;
+  border-radius: 8px;
+  box-shadow: 
+    0 0 30px rgba(0,221,0,0.4),
+    0 0 80px rgba(0,221,0,0.15),
+    inset 0 0 150px rgba(0,221,0,0.03);
+  opacity: 0;
+  pointer-events: none;
+  transition: all 0.6s cubic-bezier(0.4, 0, 0.2, 1);
+  overflow: hidden;
+  font-family: 'VT323', 'Courier New', monospace;
+}
+
+.gift-overlay.terminal-open .gift-terminal {
+  opacity: 1;
+  transform: translate(-50%, -50%) scale(1);
+  pointer-events: auto;
+}
+
+/* CRT scanline overlay */
+.gift-terminal::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: linear-gradient(transparent 50%, rgba(0,0,0,0.1) 50%);
+  background-size: 100% 4px;
+  pointer-events: none;
+  z-index: 10;
+}
+
+/* CRT flicker */
+.gift-terminal::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0,221,0,0.03);
+  animation: terminalFlicker 0.1s infinite;
+  pointer-events: none;
+  z-index: 11;
+}
+
+@keyframes terminalFlicker {
+  0%, 100% { opacity: 0.02; }
+  50% { opacity: 0.05; }
+}
+
+/* Scanline animation */
+.terminal-scanline {
+  position: absolute;
+  left: 0;
+  right: 0;
+  height: 20px;
+  background: linear-gradient(to bottom, transparent, rgba(0,221,0,0.15), transparent);
+  opacity: 0.15;
+  z-index: 12;
+  animation: scanlineMove 6s linear infinite;
+  pointer-events: none;
+}
+
+@keyframes scanlineMove {
+  0% { top: -20px; }
+  100% { top: 100%; }
+}
+
+/* Terminal header */
+.terminal-header {
+  background: linear-gradient(to bottom, #151515, #0d0d0d);
+  padding: 12px 20px;
+  border-bottom: 1px solid #00dd00;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.terminal-title {
+  color: #00dd00;
+  font-size: 14px;
+  text-transform: uppercase;
+  letter-spacing: 2px;
+}
+
+.terminal-date {
+  color: #00aa00;
+  font-size: 13px;
+}
+
+/* Terminal content */
+.terminal-content {
+  padding: 35px 30px;
+  color: #00dd00;
+  min-height: 320px;
+  position: relative;
+}
+
+/* Floating code block */
+.floating-code {
+  position: absolute;
+  top: -50px;
+  left: 50%;
+  transform: translateX(-50%);
+  font-family: 'VT323', monospace;
+  font-size: 20px;
+  color: #00dd00;
+  text-shadow: 0 0 15px rgba(0,221,0,0.9);
+  animation: codeFloat 3s ease-in-out infinite;
+  white-space: nowrap;
+  opacity: 0;
+}
+
+.gift-overlay.terminal-open .floating-code {
+  animation: codeFloat 3s ease-in-out infinite, codeFadeIn 1s ease forwards;
+}
+
+@keyframes codeFadeIn {
+  0% { opacity: 0; transform: translateX(-50%) translateY(20px); }
+  100% { opacity: 1; transform: translateX(-50%) translateY(0); }
+}
+
+@keyframes codeFloat {
+  0%, 100% { transform: translateX(-50%) translateY(0) rotate(-2deg); }
+  50% { transform: translateX(-50%) translateY(-8px) rotate(2deg); }
+}
+
+.terminal-greeting {
+  font-size: 28px;
+  margin-bottom: 25px;
+  text-shadow: 0 0 15px rgba(0,221,0,0.6);
+  opacity: 0;
+  transition: opacity 0.3s ease;
+}
+
+.terminal-greeting.visible {
+  opacity: 1;
+}
+
+.terminal-greeting .highlight {
+  color: #ff69b4;
+  text-shadow: 0 0 15px rgba(255,105,180,0.6);
+}
+
+.terminal-message {
+  font-size: 20px;
+  line-height: 1.9;
+  margin-bottom: 18px;
+  opacity: 0;
+  transition: opacity 0.3s ease;
+}
+
+.terminal-message.visible {
+  opacity: 1;
+}
+
+.terminal-signature {
+  font-size: 22px;
+  margin-top: 35px;
+  text-align: right;
+  opacity: 0;
+  transition: opacity 0.3s ease;
+}
+
+.terminal-signature.visible {
+  opacity: 1;
+}
+
+.terminal-signature .name {
+  font-size: 38px;
+  color: #ff69b4;
+  text-shadow: 0 0 20px rgba(255,105,180,0.6);
+  display: block;
+  margin-top: 8px;
+  font-family: 'Brush Script MT', 'Segoe Script', cursive;
+}
+
+/* Blinking cursor */
+.terminal-cursor {
+  display: inline-block;
+  width: 14px;
+  height: 22px;
+  background: #00dd00;
+  margin-left: 5px;
+  animation: cursorBlink 1s step-end infinite;
+  vertical-align: middle;
+}
+
+@keyframes cursorBlink {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0; }
+}
+
+/* Terminal button */
+.terminal-btn {
+  display: block;
+  width: 100%;
+  margin-top: 35px;
+  padding: 16px 35px;
+  background: transparent;
+  border: 2px solid #00dd00;
+  color: #00dd00;
+  font-family: 'VT323', monospace;
+  font-size: 20px;
+  text-transform: uppercase;
+  letter-spacing: 4px;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  opacity: 0;
+  position: relative;
+  overflow: hidden;
+}
+
+.terminal-btn.visible {
+  opacity: 1;
+}
+
+.terminal-btn::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: -100%;
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(90deg, transparent, rgba(0,221,0,0.2), transparent);
+  transition: left 0.5s ease;
+}
+
+.terminal-btn:hover::before {
+  left: 100%;
+}
+
+.terminal-btn:hover {
+  background: #00dd00;
+  color: #0a0a0a;
+  box-shadow: 0 0 30px rgba(0,221,0,0.6);
+}
+
+/* ===== UNWRAP ANIMATION ===== */
+.gift-overlay.unwrapping {
+  animation: unwrapFade 1.5s ease-out forwards;
+}
+
+@keyframes unwrapFade {
+  0% { opacity: 1; }
+  100% { opacity: 0; pointer-events: none; }
+}
+
+/* ===== MOBILE RESPONSIVE ===== */
+@media (max-width: 600px) {
+  .gift-floor {
+    transform: rotateX(45deg) rotateZ(45deg) scale(0.7);
+  }
+  
+  .gift-terminal {
+    width: 95vw;
+  }
+  
+  .terminal-content {
+    padding: 25px 20px;
+  }
+  
+  .terminal-greeting {
+    font-size: 22px;
+  }
+  
+  .terminal-message {
+    font-size: 17px;
+  }
+  
+  .terminal-signature .name {
+    font-size: 30px;
+  }
+}
+
+/* ===== SETTINGS TOOLTIPS ===== */
+.settings-actions .btn {
+  position: relative;
+}
+
+.settings-actions .btn .tooltip {
+  position: absolute;
+  bottom: 100%;
+  left: 50%;
+  transform: translateX(-50%);
+  background: var(--card);
+  color: var(--text);
+  padding: 8px 12px;
+  border-radius: 6px;
+  font-size: 11px;
+  white-space: nowrap;
+  opacity: 0;
+  visibility: hidden;
+  transition: all 0.2s ease;
+  pointer-events: none;
+  margin-bottom: 8px;
+  box-shadow: 0 2px 10px rgba(0,0,0,0.2);
+  border: 1px solid var(--border);
+  z-index: 100;
+}
+
+.settings-actions .btn .tooltip::after {
+  content: '';
+  position: absolute;
+  top: 100%;
+  left: 50%;
+  transform: translateX(-50%);
+  border: 6px solid transparent;
+  border-top-color: var(--border);
+}
+
+.settings-actions .btn:hover .tooltip {
+  opacity: 1;
+  visibility: visible;
+}

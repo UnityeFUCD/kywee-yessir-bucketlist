@@ -460,15 +460,19 @@
         
         <div class="settings-actions">
           <button class="btn danger" id="clearChatBtn">
+            <span class="tooltip">Removes all messages from the chat log</span>
             <i class="fas fa-comments"></i> Clear All Chat Messages
           </button>
           <button class="btn danger" id="clearPhotosBtn">
+            <span class="tooltip">Deletes all uploaded photos and their groupings</span>
             <i class="fas fa-images"></i> Clear All Photos
           </button>
           <button class="btn danger" id="clearClipsBtn">
+            <span class="tooltip">Removes your uploaded clips (Medal clips stay)</span>
             <i class="fas fa-video"></i> Clear Uploaded Clips
           </button>
           <button class="btn danger" id="clearAllBtn">
+            <span class="tooltip">Wipes everything: messages, photos, and clips</span>
             <i class="fas fa-trash-alt"></i> Clear Everything
           </button>
         </div>
@@ -486,57 +490,75 @@
     </div>
   </div>
 
-  <!-- Gift Experience for Kylee -->
+  <!-- Gift Experience for Kylee - 3D Isometric Box -->
   <div class="gift-overlay" id="giftOverlay">
-    <!-- Wrapping paper background -->
-    <div class="gift-paper">
-      <div class="gift-pattern"></div>
-    </div>
-    
-    <!-- The gift box -->
-    <div class="gift-box" id="giftBox">
-      <div class="gift-ribbon-vertical"></div>
-      <div class="gift-ribbon-horizontal"></div>
-      <div class="gift-bow">
-        <div class="bow-loop left"></div>
-        <div class="bow-loop right"></div>
-        <div class="bow-knot"></div>
-        <div class="bow-tail left"></div>
-        <div class="bow-tail right"></div>
-      </div>
-      <div class="gift-tag">
-        <span class="tag-to">To: Kylee</span>
-        <span class="tag-from">From: Yasir</span>
-      </div>
-      <p class="gift-hint">tap to open</p>
-    </div>
-    
-    <!-- The card that appears -->
-    <div class="gift-card" id="giftCard">
-      <div class="card-outer">
-        <div class="card-front">
-          <div class="card-decoration">
-            <div class="snowflake sf1">❄</div>
-            <div class="snowflake sf2">❅</div>
-            <div class="snowflake sf3">❆</div>
+    <div class="gift-scene">
+      <div class="gift-floor">
+        <!-- Shadows -->
+        <div class="gift-shadow gift-shadow-1"></div>
+        <div class="gift-shadow gift-shadow-2"></div>
+        <div class="gift-shadow gift-shadow-3"></div>
+        
+        <!-- 3D Box -->
+        <div class="gift-box-3d">
+          <!-- Floating Domo (appears when opened) -->
+          <div class="gift-domo">
+            <span class="domo-icon">🍫</span>
           </div>
-          <h2>Merry Christmas</h2>
-          <p class="card-year">2025</p>
+          
+          <!-- The Lid -->
+          <div class="gift-lid">
+            <div class="gift-qmark">?</div>
+            <div class="gift-face lid-top"></div>
+            <div class="gift-face lid-left"></div>
+            <div class="gift-face lid-right"></div>
+          </div>
+          
+          <!-- Box faces -->
+          <div class="gift-face top"></div>
+          <div class="gift-face left"></div>
+          <div class="gift-face right"></div>
         </div>
+        
+        <!-- Gift Tag -->
+        <div class="gift-tag-3d">
+          <span class="tag-to">To: Kylee</span>
+          <span class="tag-from">From: Yasir</span>
+        </div>
+        
+        <!-- Click hint -->
+        <p class="gift-click-hint">tap to open</p>
       </div>
-      <div class="card-inner">
-        <div class="card-message">
-          <p class="card-greeting">My Dearest Kylee,</p>
-          <p class="card-body">Thank you for being my duo this year. Every moment with you has been an adventure worth saving.</p>
-          <p class="card-body">This is our story — our missions, our memories, our journey together.</p>
-          <p class="card-signature">With all my love,<br><span class="signature">Yasir</span></p>
+    </div>
+    
+    <!-- Terminal Card (Retro style) -->
+    <div class="gift-terminal">
+      <div class="terminal-scanline"></div>
+      <div class="terminal-header">
+        <span class="terminal-title">LOVE.exe</span>
+        <span class="terminal-date">12.25.2025</span>
+      </div>
+      <div class="terminal-content">
+        <div class="floating-code">&lt;3 { happiness: infinite; }</div>
+        
+        <p class="terminal-greeting">My Pwincess,<span class="terminal-cursor"></span></p>
+        
+        <p class="terminal-message">Happy Holidays!</p>
+        <p class="terminal-message">Wishing you joy, warmth, and all the best into the new year ahead.</p>
+        <p class="terminal-message">Here's to more adventures, more laughs, and more memories together.</p>
+        
+        <div class="terminal-signature">
+          With all my love,
+          <span class="name">Yasir</span>
         </div>
-        <button class="btn card-continue" id="cardContinue">Open Your Gift</button>
+        
+        <button class="terminal-btn" id="giftContinueBtn">[ Open Your Gift ]</button>
       </div>
     </div>
   </div>
 
-
+  <link rel="stylesheet" href="gift.css">
+  <script src="gift.js" defer></script>
   <script src="app.js" defer></script>
 </body>
 </html>
