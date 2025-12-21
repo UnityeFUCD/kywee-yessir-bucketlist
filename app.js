@@ -1178,8 +1178,11 @@ const DAILY_EMOTICONS = [
     const userIcon = $("userIcon");
     const duoIcon = $("duoIcon");
 
-    $("userText").textContent = user ? `USER: ${user.toUpperCase()}` : "USER: --";
-    $("duoText").textContent = duo ? `DUO: ${duo.toUpperCase()}` : "DUO: --";
+    // [FIX v1.4.4] Add null checks to prevent crash during init
+    const userTextEl = $("userText");
+    const duoTextEl = $("duoText");
+    if (userTextEl) userTextEl.textContent = user ? `USER: ${user.toUpperCase()}` : "USER: --";
+    if (duoTextEl) duoTextEl.textContent = duo ? `DUO: ${duo.toUpperCase()}` : "DUO: --";
 
     const userClass = getUserColorClass(user);
     const duoClass = getUserColorClass(duo);
@@ -4157,24 +4160,39 @@ ${completed.map(i => `[X] ${i.title}  ${i.desc} (#${i.tag})`).join("\n")}
 
   // ---------- Init ----------
   (async function init() {
-    ensureCustomTagsInSelect();
-
-    const theme = loadTheme();
-    applyTheme(theme);
-
-    renderSystemMessage(loadSystemMessage());
-    
-    // [OK] Set daily emoticon
-    const emoticonEl = $("dailyEmoticon");
-    if (emoticonEl) {
-      emoticonEl.textContent = getDailyEmoticon();
+    // [FIX v1.4.4] Critical: Open modal FIRST if no user, before anything else
+    // This ensures tests can proceed even if other init code fails
+    const userExists = hasUser();
+    if (!userExists) {
+      try { stopPresence(); } catch(e) { console.warn("stopPresence error:", e); }
+      openWhoModal();
+      const closeBtn = $("closeWhoModal");
+      if (closeBtn) closeBtn.classList.add("hidden");
     }
 
-    setSyncStatus("off");
-    updateUserDuoPills();
-    updateNotifications();
-    updateTracker();
-    setInterval(updateTracker, 1000);
+    // Now continue with rest of init (errors here won't block modal)
+    try {
+      ensureCustomTagsInSelect();
+
+      const theme = loadTheme();
+      applyTheme(theme);
+
+      renderSystemMessage(loadSystemMessage());
+      
+      // [OK] Set daily emoticon
+      const emoticonEl = $("dailyEmoticon");
+      if (emoticonEl) {
+        emoticonEl.textContent = getDailyEmoticon();
+      }
+
+      setSyncStatus("off");
+      updateUserDuoPills();
+      updateNotifications();
+      updateTracker();
+      setInterval(updateTracker, 1000);
+    } catch (e) {
+      console.error("Init setup error:", e);
+    }
 
     // [OK] Show sync overlay on initial load
     const overlay = document.createElement("div");
@@ -4210,13 +4228,10 @@ ${completed.map(i => `[X] ${i.title}  ${i.desc} (#${i.tag})`).join("\n")}
     // [OK] Render big calendar initially
     renderBigCalendar();
 
-    // [OK] IMPORTANT: remember user on refresh (no re-asking)
-    if (!hasUser()) {
-      stopPresence();
-      openWhoModal();
-      $("closeWhoModal").classList.add("hidden");
-    } else {
-      $("closeWhoModal").classList.remove("hidden");
+    // [OK] If user exists, set up presence (modal already handled above)
+    if (userExists) {
+      const closeBtn = $("closeWhoModal");
+      if (closeBtn) closeBtn.classList.remove("hidden");
       // [FIX] Set grace period on page load to prevent false conflicts
       loginGraceUntil = Date.now() + 3000;
       // Immediately claim device on page load for existing users
