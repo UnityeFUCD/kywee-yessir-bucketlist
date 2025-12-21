@@ -3,6 +3,7 @@ node_modules/
 # Local Netlify folder
 .netlify
 .playwright/
+.last-run.json
 
 node_modules/
 playwright-report/
