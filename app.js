@@ -3838,14 +3838,16 @@ const DAILY_EMOTICONS = [
           
           if (file.type.startsWith("video/")) {
             previewItem.innerHTML = `
-              <div class="staging-video-icon"><i class="fas fa-video"></i></div>
+              <div class="staging-thumb staging-video-icon"><i class="fas fa-video"></i></div>
+              <span class="staging-name">${escapeHtml(file.name.substring(0, 15))}...</span>
               <button class="staging-remove" data-idx="${stagedFiles.length - 1}"><i class="fas fa-times"></i></button>
             `;
           } else {
             const reader = new FileReader();
             reader.onload = (ev) => {
               previewItem.innerHTML = `
-                <img src="${ev.target.result}" alt="Preview">
+                <img class="staging-thumb" src="${ev.target.result}" alt="Preview">
+                <span class="staging-name">${escapeHtml(file.name.substring(0, 15))}...</span>
                 <button class="staging-remove" data-idx="${stagedFiles.length - 1}"><i class="fas fa-times"></i></button>
               `;
             };
@@ -3859,6 +3861,11 @@ const DAILY_EMOTICONS = [
       photoStagingArea.classList.remove("hidden");
       updateStagedCount();
       updateMissionCapacity();
+      
+      // [FIX v1.4.4] Update button text after photos are staged
+      if (stagedFiles.length > 0) {
+        photoSelectBtn.innerHTML = '<i class="fa-solid fa-plus"></i> Add More Photos';
+      }
       
       // Clear input so same files can be selected again
       photoInput.value = "";
@@ -3883,6 +3890,10 @@ const DAILY_EMOTICONS = [
         
         if (stagedFiles.length === 0) {
           photoStagingArea.classList.add("hidden");
+          // [FIX v1.4.4] Reset button text when staging empty
+          if (photoSelectBtn) {
+            photoSelectBtn.innerHTML = '<i class="fa-solid fa-upload"></i> Select Photos';
+          }
         }
       }
     });
@@ -3903,6 +3914,10 @@ const DAILY_EMOTICONS = [
       photoMissionSelect.value = "";
       updateStagedCount();
       updateMissionCapacity();
+      // [FIX v1.4.4] Reset button text
+      if (photoSelectBtn) {
+        photoSelectBtn.innerHTML = '<i class="fa-solid fa-upload"></i> Select Photos';
+      }
     });
   }
   
@@ -3914,11 +3929,8 @@ const DAILY_EMOTICONS = [
         return;
       }
       
-      const date = photoDateInput?.value;
-      if (!date) {
-        showToast("Please select a date!");
-        return;
-      }
+      // [FIX v1.4.4] Date is now optional
+      const date = photoDateInput?.value || '';
       
       const mission = photoMissionSelect?.value || "";
       
@@ -3974,6 +3986,11 @@ const DAILY_EMOTICONS = [
       photoMissionSelect.value = "";
       updateStagedCount();
       updateMissionCapacity();
+      
+      // [FIX v1.4.4] Reset button text after submit
+      if (photoSelectBtn) {
+        photoSelectBtn.innerHTML = '<i class="fa-solid fa-upload"></i> Select Photos';
+      }
       
       photoSubmitBtn.disabled = false;
       photoSubmitBtn.innerHTML = '<i class="fa-solid fa-check"></i> Submit Photos';

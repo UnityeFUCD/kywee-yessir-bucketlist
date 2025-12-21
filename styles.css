@@ -1719,6 +1719,15 @@ input[type="date"]::-webkit-calendar-picker-indicator {
   border: 2px solid var(--border);
 }
 
+.staging-thumb.staging-video-icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: linear-gradient(45deg, var(--accent), var(--accent-secondary));
+  font-size: 24px;
+  color: white;
+}
+
 .staging-name {
   font-size: 9px;
   color: var(--muted);
@@ -2419,7 +2428,8 @@ input[type="date"]::-webkit-calendar-picker-indicator {
   box-shadow: 0 4px 12px rgba(255,107,157,0.2);
 }
 
-.medal-thumbnail {
+.medal-thumbnail,
+.medal-thumb {
   aspect-ratio: 16/9;
   background-size: cover;
   background-position: center;
@@ -2444,7 +2454,8 @@ input[type="date"]::-webkit-calendar-picker-indicator {
   transition: all 0.15s ease;
 }
 
-.medal-clip:hover .medal-play {
+.medal-clip:hover .medal-play,
+.medal-card:hover .medal-play {
   background: var(--accent);
   border-color: var(--accent);
   transform: translate(-50%, -50%) scale(1.1);
