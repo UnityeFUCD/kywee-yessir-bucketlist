@@ -3,11 +3,11 @@
   "version": "1.0.0",
   "main": "app.js",
   "scripts": {
-  "test:e2e": "playwright test",
-  "test:e2e:ui": "playwright test --ui",
-  "test:e2e:report": "playwright show-report",
-  "test:ci": "playwright test"
-},
+    "test:e2e": "playwright test",
+    "test:e2e:ui": "playwright test --ui",
+    "test:e2e:report": "playwright show-report",
+    "test:ci": "playwright test"
+  },
   "keywords": [],
   "author": "",
   "license": "ISC",
@@ -17,6 +17,7 @@
   "homepage": "https://github.com/UnityeFUCD/kywee-yessir-bucketlist#readme",
   "description": "",
   "devDependencies": {
-    "@playwright/test": "^1.57.0"
+    "@playwright/test": "^1.57.0",
+    "netlify-cli": "^23.13.0"
   }
 }
