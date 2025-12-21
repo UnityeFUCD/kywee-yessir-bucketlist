@@ -4292,18 +4292,20 @@ ${completed.map(i => `[X] ${i.title}  ${i.desc} (#${i.tag})`).join("\n")}
     });
   }
   
-  // Reset gift experience (for testing)
+  // Reset gift experience (for testing) - shows gift immediately
   const resetGiftBtn = $("resetGiftBtn");
   if (resetGiftBtn) {
     resetGiftBtn.addEventListener("click", () => {
-      // Use the function from gift.js
-      if (typeof window.resetGiftExperience === 'function') {
-        window.resetGiftExperience();
-      } else {
-        localStorage.removeItem("bucketlist_gift_shown_2025");
-      }
-      showToast("Gift experience reset! Log in as Kylee to see it.");
+      // Close settings modal
       if (settingsModal) settingsModal.classList.remove("active");
+      
+      // Reset the flag and show gift immediately
+      localStorage.removeItem("bucketlist_gift_shown_2025");
+      
+      // Show the gift experience right now
+      if (typeof window.showGiftExperience === 'function') {
+        window.showGiftExperience();
+      }
     });
   }
 
