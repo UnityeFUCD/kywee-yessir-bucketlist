@@ -953,25 +953,9 @@ const DAILY_EMOTICONS = [
       
       // [FIX] Hover preview popup
       const thumb = card.querySelector(".medal-thumb");
-      let hoverTimeout;
-      let previewEl = null;
-      
-      thumb.addEventListener("mouseenter", (e) => {
-        hoverTimeout = setTimeout(() => {
-          if (clip.url) {
-            showClipPreview(clip, e.clientX, e.clientY);
-          }
-        }, 300);
-      });
-      
-      thumb.addEventListener("mouseleave", () => {
-        clearTimeout(hoverTimeout);
-        hideClipPreview();
-      });
       
       // [FIX] Click opens new tab for Medal, modal for uploads
       thumb.addEventListener("click", () => {
-        hideClipPreview();
         if (isMedal && clip.url) {
           // Medal clips open in new tab
           window.open(clip.url, '_blank');
@@ -1001,36 +985,6 @@ const DAILY_EMOTICONS = [
       container.appendChild(card);
     });
   }
-  
-  // [FIX] Hover preview popup for clips
-  let clipPreviewEl = null;
-  
-  function showClipPreview(clip, x, y) {
-    hideClipPreview();
-    
-    clipPreviewEl = document.createElement("div");
-    clipPreviewEl.className = "clip-preview-popup";
-    clipPreviewEl.innerHTML = `
-      <video autoplay muted loop playsinline style="width: 280px; max-height: 160px; border-radius: 8px;">
-        <source src="${escapeHtml(clip.url)}" type="video/mp4">
-      </video>
-      <div class="clip-preview-title">${escapeHtml(clip.title)}</div>
-    `;
-    
-    // Position near cursor
-    clipPreviewEl.style.left = Math.min(x + 10, window.innerWidth - 300) + 'px';
-    clipPreviewEl.style.top = Math.min(y + 10, window.innerHeight - 200) + 'px';
-    
-    document.body.appendChild(clipPreviewEl);
-  }
-  
-  function hideClipPreview() {
-    if (clipPreviewEl) {
-      clipPreviewEl.remove();
-      clipPreviewEl = null;
-    }
-  }
-  
   function openGameClipModal(clip) {
     const modal = $("medalModal");
     const content = $("medalModalContent");
@@ -1061,7 +1015,6 @@ const DAILY_EMOTICONS = [
     if (content) {
       content.innerHTML = ""; // Stop video
     }
-    hideClipPreview();
   }
   
   // Game clip upload handler
@@ -3120,6 +3073,11 @@ const DAILY_EMOTICONS = [
       console.log("[DEVICE] LOGIN complete for:", name);
       showToast(`USER SET: ${String(name).toUpperCase()}`);
       
+      // [v1.4.5] Show gift experience for Kylee
+      if (shouldShowGift()) {
+        setTimeout(() => showGiftExperience(), 500);
+      }
+      
     } finally {
       loginInProgress = false;
     }
@@ -4200,6 +4158,212 @@ ${completed.map(i => `[X] ${i.title}  ${i.desc} (#${i.tag})`).join("\n")}
     }
   });
 
+  // ========== SETTINGS MODAL (v1.4.5) ==========
+  const settingsBtn = $("settingsBtn");
+  const settingsModal = $("settingsModal");
+  const closeSettingsModal = $("closeSettingsModal");
+  
+  if (settingsBtn) {
+    settingsBtn.addEventListener("click", () => {
+      if (settingsModal) {
+        settingsModal.classList.add("active");
+        settingsModal.setAttribute("aria-hidden", "false");
+      }
+    });
+  }
+  
+  if (closeSettingsModal) {
+    closeSettingsModal.addEventListener("click", () => {
+      if (settingsModal) {
+        settingsModal.classList.remove("active");
+        settingsModal.setAttribute("aria-hidden", "true");
+      }
+    });
+  }
+  
+  // Clear chat messages
+  const clearChatBtn = $("clearChatBtn");
+  if (clearChatBtn) {
+    clearChatBtn.addEventListener("click", () => {
+      showConfirmModal("Delete ALL chat messages? This cannot be undone.", async () => {
+        localStorage.setItem(KEY_MESSAGES, JSON.stringify([]));
+        // Also clear from server
+        try {
+          const resp = await fetch(`/.netlify/functions/room?room=${ROOM_CODE}`);
+          const data = await resp.json();
+          const payload = data.payload || {};
+          payload.messages = [];
+          await fetch("/.netlify/functions/room", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ room: ROOM_CODE, payload })
+          });
+        } catch(e) { console.error("Clear chat server error:", e); }
+        renderMessages();
+        showToast("All messages cleared");
+        if (settingsModal) settingsModal.classList.remove("active");
+      });
+    });
+  }
+  
+  // Clear photos
+  const clearPhotosBtn = $("clearPhotosBtn");
+  if (clearPhotosBtn) {
+    clearPhotosBtn.addEventListener("click", () => {
+      showConfirmModal("Delete ALL photos? This cannot be undone.", async () => {
+        localStorage.setItem(KEY_PHOTOS, JSON.stringify([]));
+        try {
+          const resp = await fetch(`/.netlify/functions/room?room=${ROOM_CODE}`);
+          const data = await resp.json();
+          const payload = data.payload || {};
+          payload.photos = [];
+          await fetch("/.netlify/functions/room", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ room: ROOM_CODE, payload })
+          });
+        } catch(e) { console.error("Clear photos server error:", e); }
+        renderPhotoGallery();
+        showToast("All photos cleared");
+        if (settingsModal) settingsModal.classList.remove("active");
+      });
+    });
+  }
+  
+  // Clear uploaded clips
+  const clearClipsBtn = $("clearClipsBtn");
+  if (clearClipsBtn) {
+    clearClipsBtn.addEventListener("click", () => {
+      showConfirmModal("Delete all UPLOADED clips? (Medal clips won't be affected)", async () => {
+        localStorage.setItem(KEY_GAME_CLIPS, JSON.stringify([]));
+        try {
+          const resp = await fetch(`/.netlify/functions/room?room=${ROOM_CODE}`);
+          const data = await resp.json();
+          const payload = data.payload || {};
+          payload.gameClips = [];
+          await fetch("/.netlify/functions/room", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ room: ROOM_CODE, payload })
+          });
+        } catch(e) { console.error("Clear clips server error:", e); }
+        renderGameClips();
+        showToast("Uploaded clips cleared");
+        if (settingsModal) settingsModal.classList.remove("active");
+      });
+    });
+  }
+  
+  // Clear everything
+  const clearAllBtn = $("clearAllBtn");
+  if (clearAllBtn) {
+    clearAllBtn.addEventListener("click", () => {
+      showConfirmModal("Delete EVERYTHING? (Messages, photos, clips) This cannot be undone!", async () => {
+        localStorage.setItem(KEY_MESSAGES, JSON.stringify([]));
+        localStorage.setItem(KEY_PHOTOS, JSON.stringify([]));
+        localStorage.setItem(KEY_GAME_CLIPS, JSON.stringify([]));
+        try {
+          const resp = await fetch(`/.netlify/functions/room?room=${ROOM_CODE}`);
+          const data = await resp.json();
+          const payload = data.payload || {};
+          payload.messages = [];
+          payload.photos = [];
+          payload.gameClips = [];
+          await fetch("/.netlify/functions/room", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ room: ROOM_CODE, payload })
+          });
+        } catch(e) { console.error("Clear all server error:", e); }
+        renderMessages();
+        renderPhotoGallery();
+        renderGameClips();
+        showToast("Everything cleared");
+        if (settingsModal) settingsModal.classList.remove("active");
+      });
+    });
+  }
+  
+  // Logout from settings
+  const logoutSettingsBtn = $("logoutSettingsBtn");
+  if (logoutSettingsBtn) {
+    logoutSettingsBtn.addEventListener("click", () => {
+      if (settingsModal) settingsModal.classList.remove("active");
+      clearUser();
+      stopPresence();
+      openWhoModal();
+      const closeBtn = $("closeWhoModal");
+      if (closeBtn) closeBtn.classList.add("hidden");
+    });
+  }
+  
+  // Reset gift experience (for testing)
+  const resetGiftBtn = $("resetGiftBtn");
+  if (resetGiftBtn) {
+    resetGiftBtn.addEventListener("click", () => {
+      localStorage.removeItem(GIFT_SHOWN_KEY);
+      showToast("Gift experience reset! Log in as Kylee to see it.");
+      if (settingsModal) settingsModal.classList.remove("active");
+    });
+  }
+
+  // ========== GIFT EXPERIENCE FOR KYLEE (v1.4.5) ==========
+  const GIFT_SHOWN_KEY = "bucketlist_gift_shown_2025";
+  
+  function showGiftExperience() {
+    const overlay = $("giftOverlay");
+    const giftBox = $("giftBox");
+    const giftCard = $("giftCard");
+    const cardContinue = $("cardContinue");
+    
+    if (!overlay || !giftBox || !giftCard) return;
+    
+    // Show the overlay
+    overlay.classList.add("active");
+    document.body.style.overflow = "hidden";
+    
+    // Click on gift box → open card
+    giftBox.addEventListener("click", () => {
+      overlay.classList.add("card-open");
+      
+      // After card appears, click to open it
+      setTimeout(() => {
+        const cardFront = giftCard.querySelector(".card-front");
+        if (cardFront) {
+          cardFront.addEventListener("click", () => {
+            giftCard.classList.add("opened");
+          }, { once: true });
+        }
+      }, 700);
+    }, { once: true });
+    
+    // Click continue → unwrap gift and reveal website
+    if (cardContinue) {
+      cardContinue.addEventListener("click", () => {
+        overlay.classList.remove("card-open");
+        overlay.classList.add("unwrapping");
+        
+        // Mark as shown
+        localStorage.setItem(GIFT_SHOWN_KEY, "true");
+        
+        // Remove overlay after animation
+        setTimeout(() => {
+          overlay.classList.remove("active", "unwrapping");
+          overlay.style.display = "none";
+          document.body.style.overflow = "";
+        }, 1500);
+      }, { once: true });
+    }
+  }
+  
+  function shouldShowGift() {
+    const user = loadUser()?.toLowerCase();
+    // Only show for Kylee and only once
+    if (user !== "kylee") return false;
+    if (localStorage.getItem(GIFT_SHOWN_KEY) === "true") return false;
+    return true;
+  }
+
   // ---------- Init ----------
   (async function init() {
     // [FIX v1.4.4] Critical: Open modal FIRST if no user, before anything else
@@ -4281,5 +4445,10 @@ ${completed.map(i => `[X] ${i.title}  ${i.desc} (#${i.tag})`).join("\n")}
       startPresence();
       updateUserDuoPills();
       console.log("[DEVICE] Claimed device for", loadUser());
+      
+      // [v1.4.5] Show gift experience for Kylee on page load
+      if (shouldShowGift()) {
+        setTimeout(() => showGiftExperience(), 800);
+      }
     }
   })();

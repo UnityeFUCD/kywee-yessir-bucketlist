@@ -81,6 +81,8 @@
             <div class="theme-option" data-theme="christmas">Christmas</div>
           </div>
         </div>
+        
+        <button class="btn settings-btn" id="settingsBtn" title="Settings"><i class="fas fa-cog"></i></button>
       </div>
     </div>
 
@@ -320,11 +322,11 @@
       <!-- ✅ MEDAL CLIPS FEED -->
       <div class="card">
         <div class="cardHeader">
-          <h2>[▸] MEDAL_CLIPS</h2>
+          <h2>[▸] GAME_CLIPS</h2>
           <button class="btn" id="refreshMedal" title="Refresh clips"><i class="fa fa-refresh"></i></button>
         </div>
         <div class="cardBody">
-          <p class="note">// Clips on my Medal account :3</p>
+          <p class="note">// Our gaming highlights :3</p>
           
           <div id="medalClips" class="medal-grid">
             <div class="medal-empty">Loading clips...</div>
@@ -441,6 +443,95 @@
       <div class="actions">
         <button class="btn" id="btnSystemMessageCancel">Cancel</button>
         <button class="btn primary" id="btnSystemMessageSave">Save</button>
+      </div>
+    </div>
+  </div>
+
+
+  <!-- Settings Modal -->
+  <div class="modal" id="settingsModal" aria-hidden="true">
+    <div class="modal-inner settings-modal-inner">
+      <span class="modal-close" id="closeSettingsModal">✖</span>
+      <h3><i class="fas fa-cog"></i> Settings</h3>
+      
+      <div class="settings-section">
+        <h4>Clear Data</h4>
+        <p class="note">// Warning: These actions cannot be undone</p>
+        
+        <div class="settings-actions">
+          <button class="btn danger" id="clearChatBtn">
+            <i class="fas fa-comments"></i> Clear All Chat Messages
+          </button>
+          <button class="btn danger" id="clearPhotosBtn">
+            <i class="fas fa-images"></i> Clear All Photos
+          </button>
+          <button class="btn danger" id="clearClipsBtn">
+            <i class="fas fa-video"></i> Clear Uploaded Clips
+          </button>
+          <button class="btn danger" id="clearAllBtn">
+            <i class="fas fa-trash-alt"></i> Clear Everything
+          </button>
+        </div>
+      </div>
+      
+      <div class="settings-section">
+        <h4>Account</h4>
+        <button class="btn" id="logoutSettingsBtn">
+          <i class="fas fa-sign-out-alt"></i> Switch User
+        </button>
+        <button class="btn" id="resetGiftBtn" style="margin-top: 10px;">
+          <i class="fas fa-gift"></i> Reset Gift Experience
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Gift Experience for Kylee -->
+  <div class="gift-overlay" id="giftOverlay">
+    <!-- Wrapping paper background -->
+    <div class="gift-paper">
+      <div class="gift-pattern"></div>
+    </div>
+    
+    <!-- The gift box -->
+    <div class="gift-box" id="giftBox">
+      <div class="gift-ribbon-vertical"></div>
+      <div class="gift-ribbon-horizontal"></div>
+      <div class="gift-bow">
+        <div class="bow-loop left"></div>
+        <div class="bow-loop right"></div>
+        <div class="bow-knot"></div>
+        <div class="bow-tail left"></div>
+        <div class="bow-tail right"></div>
+      </div>
+      <div class="gift-tag">
+        <span class="tag-to">To: Kylee</span>
+        <span class="tag-from">From: Yasir</span>
+      </div>
+      <p class="gift-hint">tap to open</p>
+    </div>
+    
+    <!-- The card that appears -->
+    <div class="gift-card" id="giftCard">
+      <div class="card-outer">
+        <div class="card-front">
+          <div class="card-decoration">
+            <div class="snowflake sf1">❄</div>
+            <div class="snowflake sf2">❅</div>
+            <div class="snowflake sf3">❆</div>
+          </div>
+          <h2>Merry Christmas</h2>
+          <p class="card-year">2025</p>
+        </div>
+      </div>
+      <div class="card-inner">
+        <div class="card-message">
+          <p class="card-greeting">My Dearest Kylee,</p>
+          <p class="card-body">Thank you for being my duo this year. Every moment with you has been an adventure worth saving.</p>
+          <p class="card-body">This is our story — our missions, our memories, our journey together.</p>
+          <p class="card-signature">With all my love,<br><span class="signature">Yasir</span></p>
+        </div>
+        <button class="btn card-continue" id="cardContinue">Open Your Gift</button>
       </div>
     </div>
   </div>
