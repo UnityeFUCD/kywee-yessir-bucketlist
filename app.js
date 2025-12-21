@@ -17,9 +17,10 @@
     { version: "1.3.0", date: "2024-12-19", note: "Fixed: Instant device conflict detection (~3s auto-resolve)" },
     { version: "1.4.0", date: "2024-12-20", note: "New: Confetti on completion, delete saved missions" },
     { version: "1.4.1", date: "2024-12-20", note: "Fixed: User switching, undo confirmations, calendar dropdowns, game clips upload" },
-    { version: "1.4.2", date: "2024-12-20", note: "Fixed: Gallery dropdowns, preventive login, global notifications, clip hover preview" }
+    { version: "1.4.2", date: "2024-12-20", note: "Fixed: Gallery dropdowns, preventive login, global notifications, clip hover preview" },
+    { version: "1.4.3", date: "2024-12-20", note: "Fixed: Modal close, logout clears presence, game clips layout, photo staging" }
   ];
-  const CURRENT_VERSION = "1.4.2";
+  const CURRENT_VERSION = "1.4.3";
 
   // [OK] UPCOMING EVENTS with type for distinct styling
   const UPCOMING_EVENTS = [
@@ -1357,6 +1358,8 @@ const DAILY_EMOTICONS = [
       } catch (e) {}
       presenceChannel = null;
     }
+    // [FIX] Clear local presence state on stop
+    livePresenceState = {};
   }
 
   function startPresence() {
@@ -2993,35 +2996,60 @@ const DAILY_EMOTICONS = [
     }
   }
 
-  // [FIX] NEW: Logout with proper cleanup
+  // [FIX] NEW: Logout with proper cleanup - AGGRESSIVE
   async function logOffUser() {
     console.log("[DEVICE] LOGOUT starting");
     
-    // Stop monitoring first
+    const currentUser = loadUser();
+    const currentUserLower = currentUser?.toLowerCase();
+    
+    // [FIX] Stop WebSocket presence FIRST and clear local state
+    await stopLivePresence();
+    
+    // Stop polling
     stopDeviceMonitoring();
-    stopPresence();
+    if (presenceTimer) {
+      clearInterval(presenceTimer);
+      presenceTimer = null;
+    }
+    
+    // [FIX] Clear active devices locally BEFORE releasing
+    if (currentUserLower && activeDevices[currentUserLower]) {
+      delete activeDevices[currentUserLower];
+    }
     
     // Release device from server
     await releaseDevice();
     
-    // Also try to send offline signal for presence dots
-    const currentUser = loadUser();
+    // [FIX] Also clear from database presence
     if (currentUser) {
       try {
-        const offlinePayload = getLocalState();
-        offlinePayload.presence = offlinePayload.presence || {};
-        offlinePayload.presence[currentUser.toLowerCase()] = "1970-01-01T00:00:00.000Z";
+        const offlinePayload = {
+          activeDevices: { ...activeDevices }, // Already has user removed
+          presence: { [currentUserLower]: "1970-01-01T00:00:00.000Z" }
+        };
         await remoteSetState(offlinePayload);
-      } catch {
-        // Ignore
+        console.log("[DEVICE] Sent offline signal to server");
+      } catch (e) {
+        console.log("[DEVICE] Failed to send offline signal:", e);
       }
     }
     
+    // Clear local user state
     clearUser();
+    
+    // [FIX] Clear device locked state
+    deviceLocked = false;
+    hideDeviceConflict();
+    
+    // Update UI
     updateUserDuoPills();
+    updateWhoModalButtons(); // [FIX] Update who modal buttons after logout
     openWhoModal();
     $("closeWhoModal").classList.add("hidden");
     showToast("LOGGED OFF");
+    
+    console.log("[DEVICE] LOGOUT complete");
   }
 
   // [OK] Send offline signal on tab close / navigation away
@@ -3149,6 +3177,14 @@ const DAILY_EMOTICONS = [
   if (btnLogOffEl) {
     btnLogOffEl.addEventListener("click", async () => {
       await logOffUser();
+    });
+  }
+
+  // [FIX] Add click handler for who modal close button
+  const closeWhoModalEl = $("closeWhoModal");
+  if (closeWhoModalEl) {
+    closeWhoModalEl.addEventListener("click", () => {
+      closeWhoModal();
     });
   }
 
@@ -3678,22 +3714,30 @@ const DAILY_EMOTICONS = [
           if (file.type.startsWith("video/")) {
             previewItem.innerHTML = `
               <div class="staging-video-icon"><i class="fas fa-video"></i></div>
+              <span class="staging-name">${escapeHtml(file.name.substring(0, 15))}...</span>
               <button class="staging-remove" data-idx="${stagedFiles.length - 1}"><i class="fas fa-times"></i></button>
             `;
+            stagingPreview.appendChild(previewItem);
           } else {
+            // [FIX] Add staging-thumb class and show actual image
             const reader = new FileReader();
             reader.onload = (ev) => {
               previewItem.innerHTML = `
-                <img src="${ev.target.result}" alt="Preview">
+                <img src="${ev.target.result}" alt="Preview" class="staging-thumb">
+                <span class="staging-name">${escapeHtml(file.name.substring(0, 15))}...</span>
                 <button class="staging-remove" data-idx="${stagedFiles.length - 1}"><i class="fas fa-times"></i></button>
               `;
             };
             reader.readAsDataURL(file);
+            stagingPreview.appendChild(previewItem);
           }
-          
-          stagingPreview.appendChild(previewItem);
         }
       });
+      
+      // [FIX] Update button text after first selection
+      if (photoSelectBtn && stagedFiles.length > 0) {
+        photoSelectBtn.innerHTML = '<i class="fa-solid fa-plus"></i> Add More Photos';
+      }
       
       photoStagingArea.classList.remove("hidden");
       updateStagedCount();
@@ -3722,6 +3766,10 @@ const DAILY_EMOTICONS = [
         
         if (stagedFiles.length === 0) {
           photoStagingArea.classList.add("hidden");
+          // [FIX] Reset button text when last item removed
+          if (photoSelectBtn) {
+            photoSelectBtn.innerHTML = '<i class="fa-solid fa-upload"></i> Select Photos';
+          }
         }
       }
     });
@@ -3742,6 +3790,10 @@ const DAILY_EMOTICONS = [
       photoMissionSelect.value = "";
       updateStagedCount();
       updateMissionCapacity();
+      // [FIX] Reset button text
+      if (photoSelectBtn) {
+        photoSelectBtn.innerHTML = '<i class="fa-solid fa-upload"></i> Select Photos';
+      }
     });
   }
   
@@ -3813,6 +3865,11 @@ const DAILY_EMOTICONS = [
       photoMissionSelect.value = "";
       updateStagedCount();
       updateMissionCapacity();
+      
+      // [FIX] Reset button text after submit
+      if (photoSelectBtn) {
+        photoSelectBtn.innerHTML = '<i class="fa-solid fa-upload"></i> Select Photos';
+      }
       
       photoSubmitBtn.disabled = false;
       photoSubmitBtn.innerHTML = '<i class="fa-solid fa-check"></i> Submit Photos';
