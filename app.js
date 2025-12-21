@@ -18,9 +18,9 @@
     { version: "1.4.0", date: "2024-12-20", note: "New: Confetti on completion, delete saved missions" },
     { version: "1.4.1", date: "2024-12-20", note: "Fixed: User switching, undo confirmations, calendar dropdowns, game clips upload" },
     { version: "1.4.2", date: "2024-12-20", note: "Fixed: Gallery dropdowns, preventive login, global notifications, clip hover preview" },
-    { version: "1.4.3", date: "2024-12-20", note: "Fixed: Modal close, logout clears presence, game clips layout, photo staging" }
+    { version: "1.4.4", date: "2024-12-21", note: "Fixed: Session gate - conflict overlay shows on attempting device only" }
   ];
-  const CURRENT_VERSION = "1.4.3";
+  const CURRENT_VERSION = "1.4.4";
 
   // [OK] UPCOMING EVENTS with type for distinct styling
   const UPCOMING_EVENTS = [
@@ -1358,8 +1358,6 @@ const DAILY_EMOTICONS = [
       } catch (e) {}
       presenceChannel = null;
     }
-    // [FIX] Clear local presence state on stop
-    livePresenceState = {};
   }
 
   function startPresence() {
@@ -1746,6 +1744,113 @@ const DAILY_EMOTICONS = [
     
     return activeUsers;
   }
+  
+  // [FIX v1.4.4] SESSION GATE - Check if user can be assumed BEFORE switching
+  // Returns true if safe to switch, false if user is active elsewhere
+  async function canAssumeUser(targetUser) {
+    const targetLower = targetUser.toLowerCase();
+    const myDeviceId = getDeviceId();
+    
+    // Check 1: WebSocket presence (instant check)
+    const activeFromWS = getActiveUsersFromPresence();
+    if (activeFromWS.has(targetLower)) {
+      console.log("[SESSION-GATE] Blocked by WebSocket presence:", targetUser);
+      return false;
+    }
+    
+    // Check 2: Server state (more reliable, handles WebSocket not connected yet)
+    try {
+      const res = await fetch(`/.netlify/functions/room?room=${encodeURIComponent(ROOM_CODE)}`);
+      if (res.ok) {
+        const data = await res.json();
+        const serverActiveDevices = data.activeDevices || data.payload?.activeDevices || {};
+        
+        // Check if target user has an active device that isn't ours
+        const targetDevice = serverActiveDevices[targetLower];
+        if (targetDevice && targetDevice.deviceId && targetDevice.deviceId !== myDeviceId) {
+          // Check if it's stale (> 10 seconds old to match server TTL)
+          const lastActive = targetDevice.lastActive || 0;
+          const age = Date.now() - lastActive;
+          if (age < 10000) {
+            console.log("[SESSION-GATE] Blocked by server state:", targetUser, "age:", age);
+            return false;
+          }
+        }
+      }
+    } catch (e) {
+      console.log("[SESSION-GATE] Server check failed, using WebSocket only:", e);
+    }
+    
+    console.log("[SESSION-GATE] Clear to assume:", targetUser);
+    return true;
+  }
+  
+  // [FIX v1.4.4] Show conflict overlay when ATTEMPTING to switch to active user
+  // This appears on the ATTEMPTING device, not the already-active device
+  let pendingSwitchTarget = null;
+  
+  function showSwitchConflict(targetUser) {
+    const currentUser = loadUser() || "Guest";
+    pendingSwitchTarget = targetUser;
+    
+    let overlay = $("switchConflictOverlay");
+    if (!overlay) {
+      overlay = document.createElement("div");
+      overlay.id = "switchConflictOverlay";
+      overlay.className = "device-conflict-overlay";
+      overlay.setAttribute("data-testid", "device-conflict-overlay");
+      document.body.appendChild(overlay);
+    }
+    
+    overlay.innerHTML = `
+      <div class="device-conflict-content">
+        <i class="fas fa-user-lock conflict-icon"></i>
+        <h3>User Active Elsewhere</h3>
+        <p><strong>${targetUser.toUpperCase()}</strong> is currently active on another device.</p>
+        <p style="font-size: 11px; color: var(--muted); margin-top: 8px;">
+          <i class="fas fa-info-circle"></i> You can take over the session or stay as ${currentUser}.
+        </p>
+        <div class="device-conflict-buttons">
+          <button class="btn primary" data-testid="takeover-device" onclick="forceSwitchTakeover()">
+            <i class="fas fa-sign-in-alt"></i> Use Here Instead
+          </button>
+          <button class="btn" data-testid="switch-user" onclick="cancelSwitchConflict()">
+            <i class="fas fa-times"></i> Stay as ${currentUser}
+          </button>
+        </div>
+      </div>
+    `;
+    overlay.classList.add("active");
+  }
+  
+  function hideSwitchConflict() {
+    const overlay = $("switchConflictOverlay");
+    if (overlay) overlay.classList.remove("active");
+    pendingSwitchTarget = null;
+  }
+  
+  // Force takeover when user explicitly wants to take the session
+  window.forceSwitchTakeover = async function() {
+    const targetUser = pendingSwitchTarget;
+    if (!targetUser) return;
+    
+    console.log("[SESSION-GATE] Force takeover to:", targetUser);
+    hideSwitchConflict();
+    
+    // Set grace period to ignore conflicts during switch
+    takeoverGraceUntil = Date.now() + 6000;
+    loginGraceUntil = Date.now() + 6000;
+    
+    // Now do the actual switch (bypassing the gate)
+    await doUserSwitch(targetUser);
+  };
+  
+  // Cancel switch - stay as current user
+  window.cancelSwitchConflict = function() {
+    console.log("[SESSION-GATE] Switch cancelled, staying as:", loadUser());
+    hideSwitchConflict();
+    closeWhoModal();
+  };
   
   // [FIX] Update who modal buttons based on active users
   function updateWhoModalButtons() {
@@ -2345,6 +2450,7 @@ const DAILY_EMOTICONS = [
       overlay = document.createElement("div");
       overlay.id = "deviceConflictOverlay";
       overlay.className = "device-conflict-overlay";
+      overlay.setAttribute("data-testid", "device-conflict-overlay");
       document.body.appendChild(overlay);
     }
     
@@ -2357,10 +2463,10 @@ const DAILY_EMOTICONS = [
           <i class="fas fa-info-circle"></i> Auto-resolves in ~3 seconds when other session closes.
         </p>
         <div class="device-conflict-buttons">
-          <button class="btn primary" onclick="forceDeviceTakeover()">
+          <button class="btn primary" data-testid="takeover-device" onclick="forceDeviceTakeover()">
             <i class="fas fa-sign-in-alt"></i> Use Here Instead
           </button>
-          <button class="btn" onclick="switchToOtherUser('${otherUser}')">
+          <button class="btn" data-testid="switch-user" onclick="switchToOtherUser('${otherUser}')">
             <i class="fas fa-exchange-alt"></i> Switch to ${otherUser}
           </button>
         </div>
@@ -2509,10 +2615,26 @@ const DAILY_EMOTICONS = [
   }
 
   async function remotePatchPresence(userName) {
+    // [FIX v1.4.4] Also update activeDevices to keep session alive
+    const user = userName.toLowerCase();
+    const deviceId = getDeviceId();
+    
     const res = await fetch(`/.netlify/functions/room`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ room: ROOM_CODE, presence: { user: userName } })
+      body: JSON.stringify({ 
+        room: ROOM_CODE, 
+        presence: { user: userName },
+        // [FIX] Include activeDevices update to prevent TTL expiry
+        payload: {
+          activeDevices: {
+            [user]: {
+              deviceId: deviceId,
+              lastActive: Date.now()
+            }
+          }
+        }
+      })
     });
     if (!res.ok) throw new Error("Presence patch failed");
     const data = await res.json();
@@ -2943,22 +3065,8 @@ const DAILY_EMOTICONS = [
   }
 
   // [FIX] Login with spam protection and grace period
-  async function setUserAndStart(name) {
-    // Prevent spam clicking
-    if (loginInProgress) {
-      console.log("[DEVICE] Login already in progress");
-      return;
-    }
-    
-    // [FIX] Check if user is already active on another device BEFORE logging in
-    const activeUsers = getActiveUsersFromPresence();
-    const nameLower = name.toLowerCase();
-    if (activeUsers.has(nameLower)) {
-      showToast(`${name} is already active on another device`);
-      console.log("[DEVICE] Login blocked - user active elsewhere:", name);
-      return;
-    }
-    
+  // [FIX v1.4.4] Separated actual user switch logic (called after gate passes)
+  async function doUserSwitch(name) {
     loginInProgress = true;
     console.log("[DEVICE] LOGIN starting for:", name);
     
@@ -2974,7 +3082,8 @@ const DAILY_EMOTICONS = [
       await claimDevice(name);
       
       // Proceed with normal login
-      $("closeWhoModal").classList.remove("hidden");
+      const closeBtn = $("closeWhoModal");
+      if (closeBtn) closeBtn.classList.remove("hidden");
       closeWhoModal();
       updateUserDuoPills();
       
@@ -2996,60 +3105,56 @@ const DAILY_EMOTICONS = [
     }
   }
 
-  // [FIX] NEW: Logout with proper cleanup - AGGRESSIVE
+  // [FIX v1.4.4] Session-gated user switch with proper conflict handling
+  async function setUserAndStart(name) {
+    // Prevent spam clicking
+    if (loginInProgress) {
+      console.log("[DEVICE] Login already in progress");
+      return;
+    }
+    
+    // [FIX v1.4.4] SESSION GATE - Check BEFORE switching
+    const canSwitch = await canAssumeUser(name);
+    if (!canSwitch) {
+      // Show conflict overlay on THIS device (the attempting device)
+      showSwitchConflict(name);
+      console.log("[DEVICE] Login blocked - showing conflict overlay for:", name);
+      return;
+    }
+    
+    // Gate passed - do the actual switch
+    await doUserSwitch(name);
+  }
+
+  // [FIX] NEW: Logout with proper cleanup
   async function logOffUser() {
     console.log("[DEVICE] LOGOUT starting");
     
-    const currentUser = loadUser();
-    const currentUserLower = currentUser?.toLowerCase();
-    
-    // [FIX] Stop WebSocket presence FIRST and clear local state
-    await stopLivePresence();
-    
-    // Stop polling
+    // Stop monitoring first
     stopDeviceMonitoring();
-    if (presenceTimer) {
-      clearInterval(presenceTimer);
-      presenceTimer = null;
-    }
-    
-    // [FIX] Clear active devices locally BEFORE releasing
-    if (currentUserLower && activeDevices[currentUserLower]) {
-      delete activeDevices[currentUserLower];
-    }
+    stopPresence();
     
     // Release device from server
     await releaseDevice();
     
-    // [FIX] Also clear from database presence
+    // Also try to send offline signal for presence dots
+    const currentUser = loadUser();
     if (currentUser) {
       try {
-        const offlinePayload = {
-          activeDevices: { ...activeDevices }, // Already has user removed
-          presence: { [currentUserLower]: "1970-01-01T00:00:00.000Z" }
-        };
+        const offlinePayload = getLocalState();
+        offlinePayload.presence = offlinePayload.presence || {};
+        offlinePayload.presence[currentUser.toLowerCase()] = "1970-01-01T00:00:00.000Z";
         await remoteSetState(offlinePayload);
-        console.log("[DEVICE] Sent offline signal to server");
-      } catch (e) {
-        console.log("[DEVICE] Failed to send offline signal:", e);
+      } catch {
+        // Ignore
       }
     }
     
-    // Clear local user state
     clearUser();
-    
-    // [FIX] Clear device locked state
-    deviceLocked = false;
-    hideDeviceConflict();
-    
-    // Update UI
     updateUserDuoPills();
-    updateWhoModalButtons(); // [FIX] Update who modal buttons after logout
     openWhoModal();
     $("closeWhoModal").classList.add("hidden");
     showToast("LOGGED OFF");
-    
-    console.log("[DEVICE] LOGOUT complete");
   }
 
   // [OK] Send offline signal on tab close / navigation away
@@ -3177,14 +3282,6 @@ const DAILY_EMOTICONS = [
   if (btnLogOffEl) {
     btnLogOffEl.addEventListener("click", async () => {
       await logOffUser();
-    });
-  }
-
-  // [FIX] Add click handler for who modal close button
-  const closeWhoModalEl = $("closeWhoModal");
-  if (closeWhoModalEl) {
-    closeWhoModalEl.addEventListener("click", () => {
-      closeWhoModal();
     });
   }
 
@@ -3714,30 +3811,22 @@ const DAILY_EMOTICONS = [
           if (file.type.startsWith("video/")) {
             previewItem.innerHTML = `
               <div class="staging-video-icon"><i class="fas fa-video"></i></div>
-              <span class="staging-name">${escapeHtml(file.name.substring(0, 15))}...</span>
               <button class="staging-remove" data-idx="${stagedFiles.length - 1}"><i class="fas fa-times"></i></button>
             `;
-            stagingPreview.appendChild(previewItem);
           } else {
-            // [FIX] Add staging-thumb class and show actual image
             const reader = new FileReader();
             reader.onload = (ev) => {
               previewItem.innerHTML = `
-                <img src="${ev.target.result}" alt="Preview" class="staging-thumb">
-                <span class="staging-name">${escapeHtml(file.name.substring(0, 15))}...</span>
+                <img src="${ev.target.result}" alt="Preview">
                 <button class="staging-remove" data-idx="${stagedFiles.length - 1}"><i class="fas fa-times"></i></button>
               `;
             };
             reader.readAsDataURL(file);
-            stagingPreview.appendChild(previewItem);
           }
+          
+          stagingPreview.appendChild(previewItem);
         }
       });
-      
-      // [FIX] Update button text after first selection
-      if (photoSelectBtn && stagedFiles.length > 0) {
-        photoSelectBtn.innerHTML = '<i class="fa-solid fa-plus"></i> Add More Photos';
-      }
       
       photoStagingArea.classList.remove("hidden");
       updateStagedCount();
@@ -3766,10 +3855,6 @@ const DAILY_EMOTICONS = [
         
         if (stagedFiles.length === 0) {
           photoStagingArea.classList.add("hidden");
-          // [FIX] Reset button text when last item removed
-          if (photoSelectBtn) {
-            photoSelectBtn.innerHTML = '<i class="fa-solid fa-upload"></i> Select Photos';
-          }
         }
       }
     });
@@ -3790,10 +3875,6 @@ const DAILY_EMOTICONS = [
       photoMissionSelect.value = "";
       updateStagedCount();
       updateMissionCapacity();
-      // [FIX] Reset button text
-      if (photoSelectBtn) {
-        photoSelectBtn.innerHTML = '<i class="fa-solid fa-upload"></i> Select Photos';
-      }
     });
   }
   
@@ -3865,11 +3946,6 @@ const DAILY_EMOTICONS = [
       photoMissionSelect.value = "";
       updateStagedCount();
       updateMissionCapacity();
-      
-      // [FIX] Reset button text after submit
-      if (photoSelectBtn) {
-        photoSelectBtn.innerHTML = '<i class="fa-solid fa-upload"></i> Select Photos';
-      }
       
       photoSubmitBtn.disabled = false;
       photoSubmitBtn.innerHTML = '<i class="fa-solid fa-check"></i> Submit Photos';

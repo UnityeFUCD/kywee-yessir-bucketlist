@@ -55,10 +55,10 @@
           </div>
         </div>
 
-        <span class="pill clickable" id="userPill" title="Click to switch user">
+        <span class="pill clickable" id="userPill" data-testid="user-pill" title="Click to switch user">
           <i id="userIcon" class="fa-regular fa-user"></i>
           <span class="dot gray" id="userDot"></span>
-          <span id="userText">USER: --</span>
+          <span id="userText" data-testid="current-user">USER: --</span>
         </span>
 
         <span class="pill clickable" id="duoPill" title="Click to view letters from duo">
@@ -320,11 +320,11 @@
       <!-- ✅ MEDAL CLIPS FEED -->
       <div class="card">
         <div class="cardHeader">
-          <h2>[▸] GAME_CLIPS</h2>
+          <h2>[▸] MEDAL_CLIPS</h2>
           <button class="btn" id="refreshMedal" title="Refresh clips"><i class="fa fa-refresh"></i></button>
         </div>
         <div class="cardBody">
-          <p class="note">// Clips between me and you</p>
+          <p class="note">// Clips on my Medal account :3</p>
           
           <div id="medalClips" class="medal-grid">
             <div class="medal-empty">Loading clips...</div>
@@ -396,7 +396,7 @@
     </div>
   </div>
 
-  <div class="modal" id="whoModal" aria-hidden="true">
+  <div class="modal" id="whoModal" data-testid="who-modal" aria-hidden="true">
     <div class="modal-content">
       <div class="modal-header">
         <h3>WHO ARE YOU?</h3>
@@ -404,12 +404,12 @@
       </div>
 
       <div class="who-grid">
-        <button class="who-btn" id="btnWhoYasir">
+        <button class="who-btn" id="btnWhoYasir" data-testid="login-yasir">
           <span>YASIR</span>
           <span class="itag">USER</span>
         </button>
 
-        <button class="who-btn" id="btnWhoKylee">
+        <button class="who-btn" id="btnWhoKylee" data-testid="login-kylee">
           <span>KYLEE</span>
           <span class="itag">USER</span>
         </button>

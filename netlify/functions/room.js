@@ -2,7 +2,7 @@
 
 
 const TABLE = "bucket_rooms";
-const DEVICE_TTL_MS = 3000; // 3 seconds for fast auto-resolve
+const DEVICE_TTL_MS = 10000; // [FIX v1.4.4] 10 seconds TTL (was 3s, too aggressive)
 
 function json(statusCode, body) {
   return {
@@ -136,9 +136,21 @@ exports.handler = async (event) => {
       let presenceChanged = false;
 
       if (isPayloadWrite) {
-        merged = { ...merged, ...payloadIn };
-        if (payloadIn.activeDevices !== undefined) {
+        // [FIX v1.4.4] Deep merge activeDevices instead of overwriting
+        if (payloadIn.activeDevices && typeof payloadIn.activeDevices === "object") {
+          merged.activeDevices = merged.activeDevices || {};
+          for (const [user, deviceInfo] of Object.entries(payloadIn.activeDevices)) {
+            merged.activeDevices[user] = deviceInfo;
+          }
           presenceChanged = true;
+          // Remove activeDevices from payloadIn so it doesn't overwrite in shallow merge
+          const { activeDevices, ...restPayload } = payloadIn;
+          merged = { ...merged, ...restPayload };
+        } else {
+          merged = { ...merged, ...payloadIn };
+          if (payloadIn.activeDevices !== undefined) {
+            presenceChanged = true;
+          }
         }
       }
 
