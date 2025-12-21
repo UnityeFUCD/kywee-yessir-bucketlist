@@ -2,3 +2,11 @@ node_modules/
 
 # Local Netlify folder
 .netlify
+.playwright/
+
+node_modules/
+playwright-report/
+test-results/
+*.png
+*.webm
+*.zip
