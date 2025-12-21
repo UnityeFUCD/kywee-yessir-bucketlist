@@ -108,7 +108,7 @@
   box-shadow: inset 0 0 0.5em 0.25em rgba(0,0,0,0.2);
 }
 
-/* Box colors - Blue with yellow ribbon */
+/* Box colors - Blue with PURPLE ribbon */
 .gift-face.top {
   background-color: #000;
   background-image:
@@ -119,13 +119,13 @@
 }
 
 .gift-face.right {
-  background-image: linear-gradient(to top, transparent 33%, rgba(225,225,0,1) 34% 65%, transparent 66%);
+  background-image: linear-gradient(to top, transparent 33%, rgba(180,100,220,1) 34% 65%, transparent 66%);
   background-color: rgb(20,130,170);
   transform: rotateY(90deg) translateZ(3em);
 }
 
 .gift-face.left {
-  background-image: linear-gradient(to right, transparent 33%, rgba(200,200,0,1) 33% 66%, transparent 66%);
+  background-image: linear-gradient(to right, transparent 33%, rgba(160,80,200,1) 33% 66%, transparent 66%);
   background-color: rgb(0,110,150);
   transform: rotateX(-90deg) translateZ(3em);
 }
@@ -161,8 +161,8 @@
   width: 6.5em;
   background-color: rgb(50,150,200);
   background-image: 
-    linear-gradient(to right, transparent 33%, rgba(225,225,0,1) 34% 65%, rgba(0,0,0,0.1) 66% 68%, transparent 69%),
-    linear-gradient(to top, transparent 33%, rgba(200,200,0,1) 34% 65%, transparent 66%);
+    linear-gradient(to right, transparent 33%, rgba(180,100,220,1) 34% 65%, rgba(0,0,0,0.1) 66% 68%, transparent 69%),
+    linear-gradient(to top, transparent 33%, rgba(160,80,200,1) 34% 65%, transparent 66%);
   box-shadow: inset 0 0 0.5em 0.25em rgba(0,0,0,0.1);
 }
 
@@ -173,7 +173,7 @@
   width: 3em;
   height: 6.5em;
   transform: rotateY(90deg) translateX(1.5em) translateZ(5em);
-  background-image: linear-gradient(to top, transparent 33%, rgba(200,200,0,1) 34% 65%, transparent 66%);
+  background-image: linear-gradient(to top, transparent 33%, rgba(160,80,200,1) 34% 65%, transparent 66%);
   box-shadow: inset 0 0 0.5em 0.25em rgba(0,0,0,0.2);
 }
 
@@ -181,18 +181,18 @@
   position: absolute;
   height: 3em;
   width: 6.5em;
-  background-image: linear-gradient(to right, transparent 33%, rgba(225,225,0,1) 33% 66%, transparent 66%);
+  background-image: linear-gradient(to right, transparent 33%, rgba(180,100,220,1) 33% 66%, transparent 66%);
   background-color: rgb(0,110,150);
   transform: rotateX(-90deg) translateY(1.5em) translateZ(5em);
   box-shadow: inset 0 0 0.5em 0.25em rgba(0,0,0,0.2);
 }
 
-/* Question mark on lid */
+/* Question mark on lid - PURPLE */
 .gift-qmark {
   font-size: 3em;
   font-weight: 700;
-  color: rgba(250,250,100,1);
-  text-shadow: 0 0 0.3em yellow, 0em -0.2em 0.1em gold;
+  color: rgba(200,150,255,1);
+  text-shadow: 0 0 0.3em #b366ff, 0em -0.2em 0.1em #9933ff;
   position: absolute;
   transform: translateZ(1em) translateX(0.8em) translateY(0.5em) rotateX(-90deg) rotateY(45deg);
   font-family: sans-serif;
@@ -333,7 +333,8 @@
   top: 50%;
   left: 50%;
   transform: translate(-50%, -50%) scale(0.8);
-  width: min(550px, 92vw);
+  width: min(520px, 90vw);
+  max-height: 80vh;
   background: #0a0a0a;
   border: 3px solid #00dd00;
   border-radius: 8px;
@@ -429,25 +430,27 @@
 
 /* Terminal content */
 .terminal-content {
-  padding: 35px 30px;
+  padding: 30px 25px;
   color: #00dd00;
-  min-height: 320px;
+  min-height: 280px;
   position: relative;
+  z-index: 5;
 }
 
-/* Floating code block */
+/* Floating code block - positioned inside terminal */
 .floating-code {
   position: absolute;
-  top: -50px;
+  top: -35px;
   left: 50%;
   transform: translateX(-50%);
   font-family: 'VT323', monospace;
-  font-size: 20px;
+  font-size: 16px;
   color: #00dd00;
   text-shadow: 0 0 15px rgba(0,221,0,0.9);
   animation: codeFloat 3s ease-in-out infinite;
   white-space: nowrap;
   opacity: 0;
+  z-index: 20;
 }
 
 .gift-overlay.terminal-open .floating-code {
@@ -651,4 +654,166 @@
 .settings-actions .btn:hover .tooltip {
   opacity: 1;
   visibility: visible;
+}
+
+/* ===== CODE DISSIPATION EFFECT ===== */
+.terminal-content.dissipating .terminal-greeting,
+.terminal-content.dissipating .terminal-message,
+.terminal-content.dissipating .terminal-signature {
+  animation: textDissipate 1.5s ease-out forwards;
+}
+
+.terminal-content.dissipating .terminal-greeting { animation-delay: 0s; }
+.terminal-content.dissipating .terminal-message:nth-child(2) { animation-delay: 0.1s; }
+.terminal-content.dissipating .terminal-message:nth-child(3) { animation-delay: 0.2s; }
+.terminal-content.dissipating .terminal-signature { animation-delay: 0.3s; }
+
+@keyframes textDissipate {
+  0% {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+    filter: blur(0);
+  }
+  50% {
+    opacity: 0.5;
+    transform: translateY(-10px) scale(1.02);
+    filter: blur(2px);
+  }
+  100% {
+    opacity: 0;
+    transform: translateY(-30px) scale(0.95);
+    filter: blur(8px);
+  }
+}
+
+/* Scrolling code background - inspired by scanner effect */
+.code-rain {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  overflow: hidden;
+  opacity: 0;
+  transition: opacity 1.5s ease;
+  z-index: 1;
+  font-family: 'Courier New', monospace;
+  font-size: 11px;
+  line-height: 13px;
+  color: rgba(220, 210, 255, 0.5);
+  pointer-events: none;
+  background: rgba(0, 0, 0, 0.3);
+}
+
+.code-rain.active {
+  opacity: 1;
+}
+
+.code-column {
+  position: absolute;
+  top: -100%;
+  white-space: pre;
+  animation: codeScroll 10s linear infinite, codeGlitch 0.1s infinite linear alternate-reverse;
+  -webkit-mask-image: linear-gradient(
+    to bottom,
+    rgba(0, 0, 0, 0.2) 0%,
+    rgba(0, 0, 0, 0.8) 20%,
+    rgba(0, 0, 0, 1) 50%,
+    rgba(0, 0, 0, 0.8) 80%,
+    rgba(0, 0, 0, 0.2) 100%
+  );
+  mask-image: linear-gradient(
+    to bottom,
+    rgba(0, 0, 0, 0.2) 0%,
+    rgba(0, 0, 0, 0.8) 20%,
+    rgba(0, 0, 0, 1) 50%,
+    rgba(0, 0, 0, 0.8) 80%,
+    rgba(0, 0, 0, 0.2) 100%
+  );
+}
+
+@keyframes codeScroll {
+  0% { transform: translateY(0); }
+  100% { transform: translateY(200%); }
+}
+
+@keyframes codeGlitch {
+  0% { opacity: 1; }
+  15% { opacity: 0.85; }
+  16% { opacity: 1; }
+  49% { opacity: 0.9; }
+  50% { opacity: 1; }
+  99% { opacity: 0.95; }
+  100% { opacity: 1; }
+}
+
+/* ===== CHRISTMAS CONFETTI ===== */
+.confetti-container {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100vw;
+  height: 100vh;
+  pointer-events: none;
+  z-index: 9999999;
+  overflow: hidden;
+}
+
+.confetti {
+  position: absolute;
+  width: 10px;
+  height: 10px;
+  opacity: 0;
+  animation: confettiFall 4s ease-out forwards;
+}
+
+.confetti.circle { border-radius: 50%; }
+.confetti.square { border-radius: 2px; }
+.confetti.star {
+  clip-path: polygon(50% 0%, 61% 35%, 98% 35%, 68% 57%, 79% 91%, 50% 70%, 21% 91%, 32% 57%, 2% 35%, 39% 35%);
+}
+
+@keyframes confettiFall {
+  0% {
+    opacity: 1;
+    transform: translateY(-20px) rotate(0deg) scale(1);
+  }
+  10% {
+    opacity: 1;
+  }
+  90% {
+    opacity: 0.8;
+  }
+  100% {
+    opacity: 0;
+    transform: translateY(100vh) rotate(720deg) scale(0.5);
+  }
+}
+
+/* Confetti colors - Christmas theme */
+.confetti.red { background: #e74c3c; }
+.confetti.green { background: #27ae60; }
+.confetti.gold { background: #f39c12; }
+.confetti.white { background: #ecf0f1; }
+.confetti.silver { background: #bdc3c7; }
+
+/* ===== SMOOTH UNWRAP TRANSITION ===== */
+.gift-overlay.unwrapping {
+  animation: unwrapSmooth 1.8s ease-in-out forwards;
+}
+
+@keyframes unwrapSmooth {
+  0% { 
+    opacity: 1;
+    filter: blur(0);
+  }
+  50% {
+    opacity: 0.8;
+    filter: blur(2px);
+  }
+  100% { 
+    opacity: 0;
+    filter: blur(10px);
+    pointer-events: none;
+  }
 }

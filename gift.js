@@ -1,9 +1,11 @@
 /* ============================================
-   GIFT EXPERIENCE v1.5.0
+   GIFT EXPERIENCE v1.5.1
    Interactive gift unwrapping for Kylee
    - 3D scene tilt on mouse move
    - Box opening animation
    - Terminal typewriter effect
+   - Code dissipation effect
+   - Christmas confetti
    ============================================ */
 
 (function() {
@@ -26,21 +28,108 @@
   function shouldShowGift() {
     const user = localStorage.getItem("bucketlist_2026_user");
     if (!user) return false;
-    
-    // Only show for Kylee
     if (user.toLowerCase() !== "kylee") return false;
-    
-    // Only show once
     if (localStorage.getItem(GIFT_SHOWN_KEY) === "true") return false;
-    
     return true;
   }
   
   // ===== RESET GIFT (for testing) =====
   window.resetGiftExperience = function() {
     localStorage.removeItem(GIFT_SHOWN_KEY);
-    console.log("[GIFT] Experience reset! Refresh as Kylee to see it.");
+    console.log("[GIFT] Experience reset!");
   };
+  
+  // ===== CHRISTMAS CONFETTI =====
+  function createConfetti() {
+    const container = document.createElement('div');
+    container.className = 'confetti-container';
+    document.body.appendChild(container);
+    
+    const colors = ['red', 'green', 'gold', 'white', 'silver'];
+    const shapes = ['circle', 'square', 'star'];
+    const confettiCount = 150;
+    
+    for (let i = 0; i < confettiCount; i++) {
+      const confetti = document.createElement('div');
+      const color = colors[Math.floor(Math.random() * colors.length)];
+      const shape = shapes[Math.floor(Math.random() * shapes.length)];
+      
+      confetti.className = `confetti ${color} ${shape}`;
+      confetti.style.left = Math.random() * 100 + 'vw';
+      confetti.style.animationDuration = (Math.random() * 2 + 3) + 's';
+      confetti.style.animationDelay = Math.random() * 1.5 + 's';
+      confetti.style.transform = `rotate(${Math.random() * 360}deg)`;
+      
+      // Vary sizes
+      const size = Math.random() * 10 + 6;
+      confetti.style.width = size + 'px';
+      confetti.style.height = size + 'px';
+      
+      container.appendChild(confetti);
+    }
+    
+    // Remove after animation
+    setTimeout(() => {
+      container.remove();
+    }, 6000);
+  }
+  
+  // ===== CODE RAIN EFFECT - Enhanced with realistic code =====
+  function generateCodeBlock() {
+    const snippets = [
+      '// compiled preview • love.exe',
+      '/* generated with heart */',
+      'const LOVE = true;',
+      'const FOREVER = Infinity;',
+      'let happiness = 100;',
+      'function hug() { return warmth; }',
+      'class Heart extends Life {}',
+      'export default joy;',
+      'await nextAdventure();',
+      'promise.resolve(us);',
+      '// I love you <3',
+      'hearts.push(yours);',
+      'const us = you + me;',
+      'while(together) { smile(); }',
+      'import { love } from "heart";',
+      'if (you) { heart++; }',
+      'return happiness * Infinity;',
+      'const smile = () => true;',
+      'let forever = new Promise();',
+      'function cherish(moment) {}',
+      'const joy = feelings.max();',
+      'loop { createMemories(); }',
+      'state.happiness = MAX_INT;',
+      'const warmth = hugs + kisses;',
+    ];
+    
+    let code = '';
+    for (let i = 0; i < 40; i++) {
+      code += snippets[Math.floor(Math.random() * snippets.length)] + '\n';
+    }
+    return code;
+  }
+  
+  function createCodeRain() {
+    const codeRain = document.getElementById('codeRain');
+    if (!codeRain) return;
+    
+    codeRain.innerHTML = '';
+    const columns = 12;
+    
+    for (let i = 0; i < columns; i++) {
+      const column = document.createElement('div');
+      column.className = 'code-column';
+      column.style.left = (i * 8.5) + '%';
+      column.style.animationDelay = (Math.random() * 5) + 's';
+      column.style.animationDuration = (Math.random() * 6 + 8) + 's';
+      column.style.color = `rgba(${180 + Math.random() * 40}, ${200 + Math.random() * 55}, ${220 + Math.random() * 35}, ${0.3 + Math.random() * 0.4})`;
+      column.textContent = generateCodeBlock();
+      codeRain.appendChild(column);
+    }
+    
+    codeRain.classList.add('active');
+  }
   
   // ===== MAIN GIFT EXPERIENCE =====
   function initGiftExperience() {
@@ -55,6 +144,7 @@
     const lid = overlay.querySelector(".gift-lid");
     const qmark = overlay.querySelector(".gift-qmark");
     const terminal = overlay.querySelector(".gift-terminal");
+    const terminalContent = document.getElementById("terminalContent");
     const continueBtn = document.getElementById("giftContinueBtn");
     
     // Show the overlay
@@ -66,7 +156,6 @@
     // ===== 3D TILT EFFECT ON MOUSE MOVE =====
     if (scene) {
       scene.addEventListener("mousemove", (e) => {
-        // Don't tilt when terminal is open
         if (overlay.classList.contains("terminal-open")) return;
         
         const rect = scene.getBoundingClientRect();
@@ -76,7 +165,6 @@
         const xPercent = mouseX / rect.width;
         const yPercent = mouseY / rect.height;
         
-        // Calculate tilt angles
         const xDeg = rangify(12, yPercent);
         const yDeg = rangify(-12, xPercent);
         
@@ -98,21 +186,16 @@
       console.log("[GIFT] Opening box...");
       overlay.classList.add("opening");
       
-      // Change ? to !
       if (qmark) qmark.textContent = "!";
       
-      // After lid floats up, show domo and then terminal
       setTimeout(() => {
         overlay.classList.remove("opening");
         overlay.classList.add("box-open");
-        console.log("[GIFT] Box opened, showing domo...");
+        console.log("[GIFT] Box opened, showing heart...");
         
-        // After a moment with domo, show terminal
         setTimeout(() => {
           console.log("[GIFT] Opening terminal...");
           overlay.classList.add("terminal-open");
-          
-          // Start typewriter effect
           setTimeout(() => typeMessage(), 300);
         }, 2000);
       }, 1000);
@@ -122,33 +205,48 @@
       lid.addEventListener("click", openBox);
     }
     
-    // Also allow clicking the whole floor area
     if (floor) {
       floor.addEventListener("click", (e) => {
-        // Only if not clicking the lid directly
         if (!lid || !lid.contains(e.target)) {
           openBox();
         }
       });
     }
     
-    // ===== CONTINUE BUTTON - UNWRAP AND REVEAL =====
+    // ===== CONTINUE BUTTON - CONFETTI + DISSIPATION + UNWRAP =====
     if (continueBtn) {
       continueBtn.addEventListener("click", () => {
-        console.log("[GIFT] Unwrapping...");
-        overlay.classList.remove("terminal-open");
-        overlay.classList.add("unwrapping");
+        console.log("[GIFT] Opening gift with confetti...");
         
-        // Mark as shown
-        localStorage.setItem(GIFT_SHOWN_KEY, "true");
+        // 1. Trigger confetti
+        createConfetti();
         
-        // Remove overlay after animation
+        // 2. Start code dissipation effect
+        if (terminalContent) {
+          terminalContent.classList.add('dissipating');
+        }
+        
+        // 3. Show code rain after text dissipates
         setTimeout(() => {
-          overlay.classList.remove("active", "unwrapping", "box-open");
-          overlay.style.display = "none";
-          document.body.style.overflow = "";
-          console.log("[GIFT] Experience complete!");
-        }, 1500);
+          createCodeRain();
+        }, 800);
+        
+        // 4. Start unwrap after effects
+        setTimeout(() => {
+          overlay.classList.remove("terminal-open");
+          overlay.classList.add("unwrapping");
+          
+          // Mark as shown
+          localStorage.setItem(GIFT_SHOWN_KEY, "true");
+          
+          // Remove overlay after animation
+          setTimeout(() => {
+            overlay.classList.remove("active", "unwrapping", "box-open");
+            overlay.style.display = "none";
+            document.body.style.overflow = "";
+            console.log("[GIFT] Experience complete!");
+          }, 1800);
+        }, 2500);
       });
     }
   }
@@ -162,7 +260,6 @@
     
     let delay = 0;
     
-    // Show greeting first
     if (greeting) {
       setTimeout(() => {
         greeting.classList.add("visible");
@@ -170,7 +267,6 @@
       delay += 500;
     }
     
-    // Show each message line
     messages.forEach((msg, index) => {
       setTimeout(() => {
         msg.classList.add("visible");
@@ -178,7 +274,6 @@
       delay += 600;
     });
     
-    // Show signature
     if (signature) {
       setTimeout(() => {
         signature.classList.add("visible");
@@ -186,7 +281,6 @@
       delay += 500;
     }
     
-    // Show button
     if (btn) {
       setTimeout(() => {
         btn.classList.add("visible");
@@ -204,7 +298,6 @@
   }
   
   function checkAndShow() {
-    // Small delay to let main app initialize
     setTimeout(() => {
       if (shouldShowGift()) {
         initGiftExperience();
@@ -212,7 +305,7 @@
     }, 800);
   }
   
-  // Expose for manual triggering and testing
+  // Expose for manual triggering
   window.showGiftExperience = initGiftExperience;
   window.shouldShowGift = shouldShowGift;
   
