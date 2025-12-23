@@ -3116,7 +3116,7 @@ const DAILY_EMOTICONS = [
     // Get latest system message for display
     const messages = JSON.parse(localStorage.getItem(KEY_MESSAGES) || "[]");
     const lastMsg = messages.length > 0 ? messages[messages.length - 1] : null;
-    const systemMsgText = lastMsg ? lastMsg.text.substring(0, 30) + (lastMsg.text.length > 30 ? '...' : '') : 'No messages yet';
+    const systemMsgText = lastMsg ? lastMsg.text.substring(0, 30) + (lastMsg.text.length > 30 ? '...' : '') : 'Select a date to view events';
     
     calContainer.innerHTML = `
       <div class="calendar__header">
@@ -4850,7 +4850,7 @@ ${completed.map(i => `[X] ${i.title}  ${i.desc} (#${i.tag})`).join("\n")}
     
     if (ideas.length === 0) {
       html += '<div class="pb-empty-state">' +
-        '<div class="pb-empty-state-icon">📝</div>' +
+        '<div class="pb-empty-state-icon"><i class="fas fa-lightbulb"></i></div>' +
         '<div>No ideas yet for ' + monthName + '</div>' +
         '<div style="font-size: 12px; margin-top: 10px;">Click "Add Detailed Idea" to get started!</div>' +
         '</div>';
@@ -4861,8 +4861,8 @@ ${completed.map(i => `[X] ${i.title}  ${i.desc} (#${i.tag})`).join("\n")}
           '<div class="pb-idea-card-title">' + idea.title + '</div>' +
           (idea.desc ? '<div class="pb-idea-card-desc">' + idea.desc + '</div>' : '') +
           '<div class="pb-idea-card-meta">' +
-          (idea.location ? '<span class="pb-idea-card-location">📍 ' + idea.location + '</span>' : '') +
-          (idea.people && idea.people.length > 0 ? '<span class="pb-idea-card-people">👥 ' + idea.people.join(', ') + '</span>' : '') +
+          (idea.location ? '<span class="pb-idea-card-location"><i class="fas fa-map-marker-alt"></i> ' + idea.location + '</span>' : '') +
+          (idea.people && idea.people.length > 0 ? '<span class="pb-idea-card-people"><i class="fas fa-users"></i> ' + idea.people.join(', ') + '</span>' : '') +
           (idea.tag ? '<span class="pb-idea-card-tag">' + idea.tag + '</span>' : '') +
           '<span class="pb-idea-card-priority ' + idea.priority + '">' + idea.priority + '</span>' +
           '</div>' +
@@ -4972,7 +4972,7 @@ ${completed.map(i => `[X] ${i.title}  ${i.desc} (#${i.tag})`).join("\n")}
     if (idea.location) {
       contentHtml += '<div class="pb-expanded-detail">' +
         '<div class="pb-expanded-detail-label">Location</div>' +
-        '<div class="pb-expanded-detail-value">📍 ' + idea.location + '</div>' +
+        '<div class="pb-expanded-detail-value"><i class="fas fa-map-marker-alt"></i> ' + idea.location + '</div>' +
         '</div>';
     }
     
@@ -4986,7 +4986,7 @@ ${completed.map(i => `[X] ${i.title}  ${i.desc} (#${i.tag})`).join("\n")}
     if (idea.people && idea.people.length > 0) {
       contentHtml += '<div class="pb-expanded-detail">' +
         '<div class="pb-expanded-detail-label">People</div>' +
-        '<div class="pb-expanded-detail-value">👥 ' + idea.people.join(', ') + '</div>' +
+        '<div class="pb-expanded-detail-value"><i class="fas fa-users"></i> ' + idea.people.join(', ') + '</div>' +
         '</div>';
     }
     
@@ -5048,12 +5048,21 @@ ${completed.map(i => `[X] ${i.title}  ${i.desc} (#${i.tag})`).join("\n")}
     });
   }
   
-  // Close Planning Board
+  // Close Planning Board with cool effect
   function pbClose() {
-    if (!confirm('Close Planning Board and return to main app?')) return;
+    var closeEffect = $('pbCloseEffect');
+    var overlay = $('planningBoardOverlay');
     
-    const overlay = $('planningBoardOverlay');
-    if (overlay) {
+    if (closeEffect && overlay) {
+      // Show glitch effect
+      closeEffect.classList.remove('hidden');
+      
+      // After glitch animation, hide everything
+      setTimeout(function() {
+        overlay.classList.add('hidden');
+        closeEffect.classList.add('hidden');
+      }, 800);
+    } else if (overlay) {
       overlay.classList.add('hidden');
     }
   }
@@ -5071,8 +5080,8 @@ ${completed.map(i => `[X] ${i.title}  ${i.desc} (#${i.tag})`).join("\n")}
       title: title,
       desc: '',
       targetMonth: '',
-      priority: 'low',
-      tag: '',
+      priority: 'medium',
+      tag: 'fun',
       createdAt: new Date().toISOString(),
       updatedAt: new Date().toISOString()
     };
@@ -5118,7 +5127,7 @@ ${completed.map(i => `[X] ${i.title}  ${i.desc} (#${i.tag})`).join("\n")}
     
     container.innerHTML = pbPeopleList.map(function(person, i) {
       return '<span class="pb-people-tag">' +
-        '👤 ' + person +
+        '<i class="fas fa-user"></i> ' + person +
         '<span class="pb-people-tag-remove" data-index="' + i + '">✕</span>' +
         '</span>';
     }).join('');
@@ -5359,7 +5368,153 @@ ${completed.map(i => `[X] ${i.title}  ${i.desc} (#${i.tag})`).join("\n")}
         }
       });
     }
+    
+    // Custom tag handling
+    var tagSelect = $('pbFormTag');
+    var customTagField = $('pbCustomTagField');
+    if (tagSelect && customTagField) {
+      tagSelect.addEventListener('change', function() {
+        if (tagSelect.value === 'custom') {
+          customTagField.classList.remove('hidden');
+        } else {
+          customTagField.classList.add('hidden');
+        }
+      });
+    }
+    
+    // Bug report modal
+    var bugBtn = $('pbBugReport');
+    var bugModal = $('pbBugModal');
+    var bugModalClose = $('pbBugModalClose');
+    var bugCancel = $('pbBugCancel');
+    var bugForm = $('pbBugForm');
+    
+    if (bugBtn && bugModal) {
+      bugBtn.addEventListener('click', function() {
+        bugModal.classList.remove('hidden');
+        bugModal.classList.add('active');
+      });
+    }
+    
+    function closeBugModal() {
+      if (bugModal) {
+        bugModal.classList.add('hidden');
+        bugModal.classList.remove('active');
+      }
+      if (bugForm) bugForm.reset();
+    }
+    
+    if (bugModalClose) bugModalClose.addEventListener('click', closeBugModal);
+    if (bugCancel) bugCancel.addEventListener('click', closeBugModal);
+    if (bugModal) {
+      bugModal.addEventListener('click', function(e) {
+        if (e.target === bugModal) closeBugModal();
+      });
+    }
+    
+    if (bugForm) {
+      bugForm.addEventListener('submit', function(e) {
+        e.preventDefault();
+        // Store bug report in localStorage for now
+        var bugReports = JSON.parse(localStorage.getItem('bug_reports') || '[]');
+        bugReports.push({
+          id: 'bug-' + Date.now(),
+          title: $('pbBugTitle') ? $('pbBugTitle').value : '',
+          desc: $('pbBugDesc') ? $('pbBugDesc').value : '',
+          steps: $('pbBugSteps') ? $('pbBugSteps').value : '',
+          device: $('pbBugDevice') ? $('pbBugDevice').value : '',
+          theme: $('pbBugTheme') ? $('pbBugTheme').value : '',
+          createdAt: new Date().toISOString()
+        });
+        localStorage.setItem('bug_reports', JSON.stringify(bugReports));
+        closeBugModal();
+        alert('Bug report submitted! Thank you for your feedback.');
+      });
+    }
+    
+    // Import from Planning Board
+    var importBtn = document.getElementById('btnImportFromPB');
+    var importModal = $('importPBModal');
+    var importModalClose = $('importPBModalClose');
+    var importList = $('pbImportList');
+    var importEmpty = $('pbImportEmpty');
+    
+    if (importBtn && importModal) {
+      importBtn.addEventListener('click', function() {
+        // Load ideas from localStorage
+        var storedIdeas = JSON.parse(localStorage.getItem('planning_board_ideas') || '[]');
+        
+        if (storedIdeas.length === 0) {
+          if (importList) importList.classList.add('hidden');
+          if (importEmpty) importEmpty.classList.remove('hidden');
+        } else {
+          if (importList) {
+            importList.classList.remove('hidden');
+            importList.innerHTML = storedIdeas.map(function(idea) {
+              return '<div class="pb-import-item" data-idea-id="' + idea.id + '">' +
+                '<div class="pb-import-item-title">' + idea.title + '</div>' +
+                (idea.desc ? '<div class="pb-import-item-desc">' + idea.desc + '</div>' : '') +
+                '<div class="pb-import-item-meta">' +
+                  '<span>' + (idea.targetMonth || 'Unplanned') + '</span>' +
+                  '<span>' + idea.priority + '</span>' +
+                  (idea.tag ? '<span>' + idea.tag + '</span>' : '') +
+                '</div>' +
+              '</div>';
+            }).join('');
+          }
+          if (importEmpty) importEmpty.classList.add('hidden');
+        }
+        
+        importModal.classList.remove('hidden');
+        importModal.classList.add('active');
+      });
+    }
+    
+    function closeImportModal() {
+      if (importModal) {
+        importModal.classList.add('hidden');
+        importModal.classList.remove('active');
+      }
+    }
+    
+    if (importModalClose) importModalClose.addEventListener('click', closeImportModal);
+    if (importModal) {
+      importModal.addEventListener('click', function(e) {
+        if (e.target === importModal) closeImportModal();
+        
+        // Handle clicking on import item
+        var importItem = e.target.closest('.pb-import-item');
+        if (importItem && importItem.dataset.ideaId) {
+          var storedIdeas = JSON.parse(localStorage.getItem('planning_board_ideas') || '[]');
+          var idea = storedIdeas.find(function(i) { return i.id === importItem.dataset.ideaId; });
+          
+          if (idea) {
+            // Fill the mission form with idea data
+            var newTitle = document.getElementById('newTitle');
+            var newDesc = document.getElementById('newDesc');
+            var newTag = document.getElementById('newTag');
+            
+            if (newTitle) newTitle.value = idea.title;
+            if (newDesc) newDesc.value = idea.desc || '';
+            if (newTag && idea.tag) {
+              // Check if tag exists in dropdown
+              var tagExists = Array.from(newTag.options).some(function(opt) { return opt.value === idea.tag; });
+              if (tagExists) {
+                newTag.value = idea.tag;
+              }
+            }
+            
+            closeImportModal();
+          }
+        }
+      });
+    }
   }
+  
+  // Make pbLoadIdeas and pbIdeas accessible for import feature
+  window.pbGetIdeas = function() {
+    return JSON.parse(localStorage.getItem('planning_board_ideas') || '[]');
+  };
   
   // Initialize on DOM ready
   if (document.readyState === 'loading') {

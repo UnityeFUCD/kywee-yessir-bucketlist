@@ -4382,6 +4382,131 @@ html[data-theme="retro"] .settings-section h4::first-letter {
   letter-spacing: 1px;
 }
 
+.pb-beta {
+  color: var(--accent);
+  font-weight: bold;
+  opacity: 0.7;
+}
+
+/* Bug Report Button */
+.pb-bug-btn {
+  width: 40px;
+  height: 40px;
+  padding: 0;
+  background: transparent;
+  border: 1px solid var(--border);
+  color: var(--muted);
+  opacity: 0.5;
+  transition: all 0.2s ease;
+}
+
+.pb-bug-btn:hover {
+  opacity: 1;
+  border-color: var(--accent);
+  color: var(--accent);
+}
+
+.pb-bug-note {
+  font-size: 11px;
+  color: var(--muted);
+  text-align: center;
+  margin-top: 15px;
+}
+
+.pb-header-right {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+/* Close Effect */
+.pb-close-effect {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: var(--bg);
+  z-index: 100003;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  opacity: 1;
+  transition: opacity 0.3s ease;
+}
+
+.pb-close-effect.hidden {
+  opacity: 0;
+  pointer-events: none;
+}
+
+.pb-close-glitch {
+  font-size: clamp(24px, 5vw, 48px);
+  color: var(--accent);
+  text-transform: uppercase;
+  letter-spacing: 8px;
+  animation: pbGlitchText 0.3s ease-in-out infinite;
+}
+
+@keyframes pbGlitchText {
+  0% { transform: translate(0); opacity: 1; }
+  20% { transform: translate(-2px, 2px); opacity: 0.8; }
+  40% { transform: translate(2px, -2px); opacity: 0.6; }
+  60% { transform: translate(-2px, -2px); opacity: 0.4; }
+  80% { transform: translate(2px, 2px); opacity: 0.2; }
+  100% { transform: translate(0); opacity: 0; }
+}
+
+/* Import Modal */
+.pb-import-content {
+  max-height: 400px;
+  overflow-y: auto;
+}
+
+.pb-import-list {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.pb-import-item {
+  background: var(--bg);
+  border: 1px solid var(--border);
+  padding: 15px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.pb-import-item:hover {
+  border-color: var(--accent);
+  transform: translateX(5px);
+}
+
+.pb-import-item-title {
+  font-weight: 600;
+  color: var(--text);
+  margin-bottom: 5px;
+}
+
+.pb-import-item-desc {
+  font-size: 12px;
+  color: var(--muted);
+  margin-bottom: 8px;
+}
+
+.pb-import-item-meta {
+  display: flex;
+  gap: 10px;
+  font-size: 10px;
+  color: var(--muted);
+}
+
+.pb-import-empty {
+  text-align: center;
+  padding: 30px;
+  color: var(--muted);
+}
+
 /* Boot Screen */
 .pb-boot-screen {
   position: fixed;
@@ -4626,6 +4751,27 @@ html[data-theme="retro"] .settings-section h4::first-letter {
 .pb-add-detailed:hover {
   background: var(--accent-dim);
   border-color: var(--accent-dim);
+}
+
+/* Ensure button visibility in default/system theme */
+:root .pb-add-detailed,
+body:not([data-theme]) .pb-add-detailed {
+  background: #ff6b9d;
+  border-color: #ff6b9d;
+  color: #fff;
+}
+
+:root .pb-add-detailed:hover,
+body:not([data-theme]) .pb-add-detailed:hover {
+  background: #d4587e;
+  border-color: #d4587e;
+}
+
+/* Import button styling */
+#btnImportFromPB {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
 }
 
 /* Month Card Navigator */
@@ -4993,6 +5139,10 @@ html[data-theme="retro"] .settings-section h4::first-letter {
 }
 
 /* Add Modal Styles */
+.pb-modal {
+  z-index: 100002 !important;
+}
+
 .pb-modal-inner {
   max-width: 600px;
   width: 95%;
@@ -5305,6 +5455,46 @@ html[data-theme="light"] .planning-board-btn:hover {
   box-shadow: 0 4px 15px rgba(233, 30, 99, 0.2);
 }
 
+/* Fix light theme button visibility */
+html[data-theme="light"] .pb-add-detailed {
+  background: #e91e63 !important;
+  border-color: #e91e63 !important;
+  color: #fff !important;
+}
+
+html[data-theme="light"] .pb-add-detailed:hover {
+  background: #c2185b !important;
+  border-color: #c2185b !important;
+}
+
+html[data-theme="light"] .pb-add-simple {
+  background: #fff;
+  border-color: #e0e0e0;
+  color: #333;
+}
+
+html[data-theme="light"] .pb-add-simple:hover {
+  border-color: #e91e63;
+  color: #e91e63;
+}
+
+html[data-theme="light"] .pb-form-submit {
+  background: #e91e63 !important;
+  border-color: #e91e63 !important;
+  color: #fff !important;
+}
+
+html[data-theme="light"] .pb-close-btn {
+  background: #fff;
+  border-color: #e0e0e0;
+  color: #666;
+}
+
+html[data-theme="light"] .pb-close-btn:hover {
+  border-color: #f44336;
+  color: #f44336;
+}
+
 /* --- RETRO THEME --- */
 html[data-theme="retro"] .pb-boot-screen {
   background: #008081;
@@ -5544,20 +5734,65 @@ html[data-theme="christmas"] .pb-code-stream-column {
   text-shadow: 0 0 5px rgba(231, 76, 60, 0.3);
 }
 
+/* Fix Christmas theme button visibility */
+html[data-theme="christmas"] .pb-add-detailed {
+  background: #e74c3c !important;
+  border-color: #e74c3c !important;
+  color: #fff !important;
+}
+
+html[data-theme="christmas"] .pb-add-detailed:hover {
+  background: #c0392b !important;
+  border-color: #c0392b !important;
+}
+
+html[data-theme="christmas"] .pb-form-submit {
+  background: #27ae60 !important;
+  border-color: #27ae60 !important;
+  color: #fff !important;
+}
+
 /* Responsive */
 @media (max-width: 768px) {
   .pb-month-navigator {
     flex-direction: column;
     min-height: auto;
+    gap: 10px;
   }
   
   .pb-nav-arrow {
     width: 100%;
-    height: 40px;
+    height: 50px;
+    order: 0;
+  }
+  
+  .pb-nav-prev {
+    order: 1;
   }
   
   .pb-card-container {
-    height: 500px;
+    order: 2;
+    height: auto;
+    min-height: 350px;
+    position: relative;
+  }
+  
+  .pb-nav-next {
+    order: 3;
+  }
+  
+  .pb-month-card {
+    position: relative;
+    height: auto;
+    min-height: 300px;
+  }
+  
+  .pb-month-card.prev,
+  .pb-month-card.next {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
   }
   
   .pb-form-grid {
@@ -5569,9 +5804,22 @@ html[data-theme="christmas"] .pb-code-stream-column {
     align-items: stretch;
   }
   
-  .pb-close-btn {
+  .pb-header-right {
     width: 100%;
+    justify-content: space-between;
+  }
+  
+  .pb-close-btn {
+    flex: 1;
     justify-content: center;
+  }
+  
+  .pb-ideas-grid {
+    grid-template-columns: 1fr;
+  }
+  
+  .pb-stats {
+    grid-template-columns: repeat(2, 1fr);
   }
 }
 

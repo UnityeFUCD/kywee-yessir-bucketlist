@@ -168,7 +168,7 @@
           <span class="pb-icon">▸</span>
           <span class="pb-text">PLANNING_BOARD_2026.EXE</span>
         </button>
-        <p class="pb-entry-hint">// Click to open year planning system</p>
+        <p class="pb-entry-hint">// Click to open year planning system <span class="pb-beta">*BETA</span></p>
       </div>
 
       <div class="card">
@@ -272,6 +272,9 @@
           </div>
           <div class="actions">
             <button class="btn primary" id="btnAdd">+ ADD MISSION</button>
+            <button class="btn" id="btnImportFromPB" title="Import idea from Planning Board">
+              <i class="fas fa-download"></i> IMPORT FROM BOARD
+            </button>
             <button class="btn" id="btnClearFields">CLEAR FIELDS</button>
           </div>
 
@@ -550,9 +553,21 @@
           <h1 class="pb-title">[▸] PLANNING_BOARD_2026.EXE</h1>
           <p class="pb-subtitle">// Interactive Year Planning System - Ideas → Plan → Missions</p>
         </div>
-        <button class="btn pb-close-btn" id="closePlanningBoard">
-          <span>✕</span> CLOSE APPLICATION
-        </button>
+        <div class="pb-header-right">
+          <button class="btn pb-bug-btn" id="pbBugReport" title="Report a bug">
+            <i class="fas fa-bug"></i>
+          </button>
+          <button class="btn pb-close-btn" id="closePlanningBoard">
+            <span>✕</span> CLOSE APPLICATION
+          </button>
+        </div>
+      </div>
+      
+      <!-- Close Effect Overlay -->
+      <div class="pb-close-effect hidden" id="pbCloseEffect">
+        <div class="pb-close-effect-content">
+          <div class="pb-close-glitch" id="pbCloseGlitch">TERMINATING...</div>
+        </div>
       </div>
 
       <!-- Stats Bar -->
@@ -620,18 +635,18 @@
       
       <form id="pbAddForm" class="pb-form">
         <div class="pb-form-row">
-          <label>Title *</label>
+          <label><i class="fas fa-lightbulb"></i> TITLE *</label>
           <input type="text" id="pbFormTitle" required placeholder="What's the idea?">
         </div>
         
         <div class="pb-form-row">
-          <label>Description</label>
+          <label><i class="fas fa-align-left"></i> DESCRIPTION</label>
           <textarea id="pbFormDesc" rows="3" placeholder="Add more details..."></textarea>
         </div>
         
         <div class="pb-form-row pb-form-grid">
           <div>
-            <label>Target Month</label>
+            <label><i class="fas fa-calendar-alt"></i> TARGET MONTH</label>
             <select id="pbFormMonth">
               <option value="">Unplanned</option>
               <option value="Jan">January</option>
@@ -649,10 +664,10 @@
             </select>
           </div>
           <div>
-            <label>Priority</label>
+            <label><i class="fas fa-exclamation-circle"></i> PRIORITY</label>
             <select id="pbFormPriority">
               <option value="low">Low</option>
-              <option value="medium">Medium</option>
+              <option value="medium" selected>Medium</option>
               <option value="high">High</option>
             </select>
           </div>
@@ -660,31 +675,42 @@
         
         <div class="pb-form-row pb-form-grid">
           <div>
-            <label>Location</label>
+            <label><i class="fas fa-map-marker-alt"></i> LOCATION</label>
             <input type="text" id="pbFormLocation" placeholder="Where?">
           </div>
           <div>
-            <label>Date & Time</label>
+            <label><i class="fas fa-clock"></i> DATE & TIME</label>
             <input type="datetime-local" id="pbFormDatetime">
           </div>
         </div>
         
         <div class="pb-form-row">
-          <label>Tag</label>
+          <label><i class="fas fa-tag"></i> TAG</label>
           <select id="pbFormTag">
             <option value="">None</option>
-            <option value="date">🌹 Date</option>
-            <option value="travel">✈️ Travel</option>
-            <option value="food">🍽️ Food</option>
-            <option value="cozy">🏠 Cozy</option>
-            <option value="romantic">💕 Romantic</option>
-            <option value="fun">🎮 Fun</option>
-            <option value="culture">🎭 Culture</option>
+            <option value="date">date</option>
+            <option value="travel">travel</option>
+            <option value="food">food</option>
+            <option value="cozy">cozy</option>
+            <option value="romantic">romantic</option>
+            <option value="fun">fun</option>
+            <option value="culture">culture</option>
+            <option value="home">home</option>
+            <option value="tradition">tradition</option>
+            <option value="music">music</option>
+            <option value="new">new</option>
+            <option value="heart">heart</option>
+            <option value="custom">Custom...</option>
           </select>
         </div>
         
+        <div class="pb-form-row hidden" id="pbCustomTagField">
+          <label>CUSTOM TAG</label>
+          <input type="text" id="pbCustomTagInput" placeholder="Enter custom tag">
+        </div>
+        
         <div class="pb-form-row">
-          <label>People to Invite</label>
+          <label><i class="fas fa-users"></i> PEOPLE TO INVITE</label>
           <div class="pb-people-input-container">
             <input type="text" id="pbFormPeopleInput" placeholder="Type name and press Enter">
             <div class="pb-people-tags" id="pbPeopleTags"></div>
@@ -692,10 +718,10 @@
         </div>
         
         <div class="pb-form-row">
-          <label>Photos / Attachments</label>
+          <label><i class="fas fa-camera"></i> PHOTOS / ATTACHMENTS</label>
           <div class="pb-photo-upload" id="pbPhotoUpload">
             <div class="pb-photo-dropzone" id="pbPhotoDropzone">
-              <span>📷 Click or drag photos here</span>
+              <span><i class="fas fa-cloud-upload-alt"></i> Click or drag photos here</span>
               <input type="file" id="pbPhotoInput" multiple accept="image/*" hidden>
             </div>
             <div class="pb-photo-previews" id="pbPhotoPreviews"></div>
@@ -707,6 +733,80 @@
           <button type="submit" class="btn pb-form-submit">Save Idea</button>
         </div>
       </form>
+    </div>
+  </div>
+
+  <!-- Bug Report Modal -->
+  <div class="modal pb-modal hidden" id="pbBugModal">
+    <div class="modal-inner pb-modal-inner pb-bug-modal-inner">
+      <div class="pb-modal-header">
+        <h3><i class="fas fa-bug"></i> REPORT A BUG</h3>
+        <button class="modal-close" id="pbBugModalClose">✕</button>
+      </div>
+      
+      <form id="pbBugForm" class="pb-form">
+        <div class="pb-form-row">
+          <label><i class="fas fa-heading"></i> ISSUE TITLE *</label>
+          <input type="text" id="pbBugTitle" required placeholder="Brief description of the bug">
+        </div>
+        
+        <div class="pb-form-row">
+          <label><i class="fas fa-align-left"></i> DESCRIPTION *</label>
+          <textarea id="pbBugDesc" rows="4" required placeholder="What happened? What did you expect to happen?"></textarea>
+        </div>
+        
+        <div class="pb-form-row">
+          <label><i class="fas fa-list-ol"></i> STEPS TO REPRODUCE</label>
+          <textarea id="pbBugSteps" rows="3" placeholder="1. Go to...&#10;2. Click on...&#10;3. See error..."></textarea>
+        </div>
+        
+        <div class="pb-form-row pb-form-grid">
+          <div>
+            <label><i class="fas fa-mobile-alt"></i> DEVICE</label>
+            <select id="pbBugDevice">
+              <option value="desktop">Desktop</option>
+              <option value="mobile">Mobile</option>
+              <option value="tablet">Tablet</option>
+            </select>
+          </div>
+          <div>
+            <label><i class="fas fa-palette"></i> THEME</label>
+            <select id="pbBugTheme">
+              <option value="system">System</option>
+              <option value="light">Light</option>
+              <option value="dark">Dark</option>
+              <option value="retro">Retro</option>
+              <option value="christmas">Christmas</option>
+              <option value="liquid-gradient">Liquid Gradient</option>
+            </select>
+          </div>
+        </div>
+        
+        <div class="pb-form-actions">
+          <button type="button" class="btn" id="pbBugCancel">Cancel</button>
+          <button type="submit" class="btn pb-form-submit">Submit Report</button>
+        </div>
+      </form>
+      
+      <p class="pb-bug-note">// Bug reports help us improve the app!</p>
+    </div>
+  </div>
+
+  <!-- Import from Planning Board Modal -->
+  <div class="modal hidden" id="importPBModal">
+    <div class="modal-inner pb-modal-inner">
+      <div class="pb-modal-header">
+        <h3><i class="fas fa-download"></i> IMPORT FROM PLANNING BOARD</h3>
+        <button class="modal-close" id="importPBModalClose">✕</button>
+      </div>
+      
+      <div class="pb-import-content">
+        <p class="note">// Select an idea to import as a mission</p>
+        <div class="pb-import-list" id="pbImportList">
+          <!-- Ideas will be rendered here -->
+        </div>
+        <p class="pb-import-empty hidden" id="pbImportEmpty">No ideas in Planning Board yet. Open the Planning Board to add some!</p>
+      </div>
     </div>
   </div>
 
