@@ -2036,6 +2036,7 @@ const DAILY_EMOTICONS = [
     else if (theme === "light") document.documentElement.setAttribute("data-theme", "light");
     else if (theme === "christmas") document.documentElement.setAttribute("data-theme", "christmas");
     else if (theme === "liquid-gradient") document.documentElement.setAttribute("data-theme", "liquid-gradient");
+    else if (theme === "marathon") document.documentElement.setAttribute("data-theme", "marathon");
     else document.documentElement.removeAttribute("data-theme");
 
     document.querySelectorAll(".theme-option").forEach(opt => {
@@ -2044,6 +2045,27 @@ const DAILY_EMOTICONS = [
 
     if (theme === "christmas") startSnow();
     else stopSnow();
+    
+    // [Marathon] Show boot screen when switching to marathon theme
+    const bootScreen = document.getElementById("bootScreen");
+    if (bootScreen && theme === "marathon") {
+      const hasSeenBoot = sessionStorage.getItem("marathon_boot_seen");
+      if (!hasSeenBoot) {
+        bootScreen.classList.remove("hidden");
+        const bootItems = bootScreen.querySelectorAll(".boot-item");
+        bootItems.forEach((item, index) => {
+          item.classList.remove("visible");
+          const delay = parseInt(item.dataset.delay) || index * 400;
+          setTimeout(() => item.classList.add("visible"), delay);
+        });
+        setTimeout(() => {
+          bootScreen.classList.add("hidden");
+          sessionStorage.setItem("marathon_boot_seen", "1");
+        }, 2800);
+      }
+    } else if (bootScreen) {
+      bootScreen.classList.add("hidden");
+    }
   }
 
   // ---------- 2026 tracker ----------
@@ -2912,6 +2934,7 @@ const DAILY_EMOTICONS = [
   // [OK] Big Calendar with arrow navigation AND dropdown selectors
   let calendarYear = new Date().getFullYear();
   let calendarMonth = new Date().getMonth();
+  let selectedCalDate = null; // Track selected date
 
   function renderBigCalendar() {
     const calContainer = $("bigCalendar");
@@ -2921,8 +2944,6 @@ const DAILY_EMOTICONS = [
     const currentMonth = new Date().getMonth();
     const currentDate = new Date().getDate();
     
-    const monthNames = ["January", "February", "March", "April", "May", "June", 
-                        "July", "August", "September", "October", "November", "December"];
     const monthShort = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
     
     // Generate year options (current year -1 to +5)
@@ -2938,20 +2959,44 @@ const DAILY_EMOTICONS = [
     
     const eventDates = getEventDates();
     
+    // Get latest system message for display
+    const messages = JSON.parse(localStorage.getItem(KEY_MESSAGES) || "[]");
+    const lastMsg = messages.length > 0 ? messages[messages.length - 1] : null;
+    const systemMsgText = lastMsg ? lastMsg.text.substring(0, 30) + (lastMsg.text.length > 30 ? '...' : '') : 'No messages yet';
+    
     calContainer.innerHTML = `
       <div class="calendar__header">
-        <button class="calendar__nav" id="calPrevMonth"><i class="fas fa-chevron-left"></i></button>
-        <div class="calendar__selectors">
-          <select class="calendar__select" id="calMonthSelect">${monthOptions}</select>
-          <select class="calendar__select" id="calYearSelect">${yearOptions.join('')}</select>
+        <div class="calendar__header-left">
+          <span>[-]</span>
+          <span>MESSAGE_LOG</span>
         </div>
-        <button class="calendar__nav" id="calNextMonth"><i class="fas fa-chevron-right"></i></button>
+        <button class="calendar__duo-btn" id="calDuoBtn">
+          <i class="fas fa-envelope"></i>
+          <span>DUO</span>
+        </button>
+      </div>
+      <div class="calendar__system-msg">
+        <span>// SYSTEM MESSAGE: ${systemMsgText}</span>
       </div>
       <div class="calendar__body">
+        <div class="calendar__controls">
+          <button class="calendar__nav" id="calPrevMonth"><i class="fas fa-chevron-left"></i></button>
+          <div class="calendar__selectors">
+            <select class="calendar__select" id="calMonthSelect">${monthOptions}</select>
+            <select class="calendar__select" id="calYearSelect">${yearOptions.join('')}</select>
+          </div>
+          <button class="calendar__nav" id="calNextMonth"><i class="fas fa-chevron-right"></i></button>
+        </div>
         <div class="calendar__days">
           <div>M</div><div>T</div><div>W</div><div>T</div><div>F</div><div>S</div><div>S</div>
         </div>
         <div class="calendar__dates" id="calDates"></div>
+      </div>
+      <div class="calendar__footer">
+        <div class="calendar__footer-text">
+          <span class="marker">[*]</span>
+          <span>SYSTEM.LOG: Calendar interface operational. Date selection enabled for mission planning. <span class="highlight">UESC</span> protocol active.</span>
+        </div>
       </div>
     `;
 
@@ -2978,31 +3023,44 @@ const DAILY_EMOTICONS = [
       const evt = eventDates[dateKey];
       const hasEvent = !!evt;
       const isHoliday = evt?.isHoliday;
-      cells.push({ text: d, today: isToday, hasEvent, isHoliday, icon: evt?.icon });
+      const isSelected = (selectedCalDate && selectedCalDate.year === calendarYear && 
+                         selectedCalDate.month === calendarMonth && selectedCalDate.day === d);
+      cells.push({ text: d, today: isToday, hasEvent, isHoliday, icon: evt?.icon, isSelected, day: d });
     }
     
-    // Next month days to fill grid
+    // Next month days to fill grid (always fill to 42 cells for 6 rows)
+    const totalCells = cells.length <= 35 ? 35 : 42;
     let nextDay = 1;
-    while (cells.length % 7 !== 0) {
+    while (cells.length < totalCells) {
       cells.push({ text: nextDay++, grey: true });
     }
 
     datesEl.innerHTML = cells.map(c => {
       const cls = ["calendar__date"];
       if (c.grey) cls.push("calendar__date--grey");
-      if (c.today) cls.push("calendar__date--today");
+      if (c.today && !c.isSelected) cls.push("calendar__date--today");
+      if (c.isSelected) cls.push("calendar__date--selected");
       if (c.isHoliday) cls.push("calendar__date--holiday");
-      else if (c.hasEvent) cls.push("has-event");
       
       let indicator = '';
-      if (c.isHoliday && c.icon) {
+      if (c.hasEvent && !c.isHoliday) {
+        indicator = '<span class="cal-event-dot">*</span>';
+      } else if (c.isHoliday && c.icon) {
         indicator = `<span class="cal-holiday-icon">${c.icon}</span>`;
-      } else if (c.hasEvent) {
-        indicator = '<span class="cal-event-dot"></span>';
       }
       
-      return `<div class="${cls.join(' ')}"><span>${c.text}</span>${indicator}</div>`;
+      const dataDay = c.grey ? '' : `data-day="${c.day}"`;
+      return `<div class="${cls.join(' ')}" ${dataDay}><span>${c.text}</span>${indicator}</div>`;
     }).join('');
+
+    // Add click handlers for date selection
+    datesEl.querySelectorAll('.calendar__date:not(.calendar__date--grey)').forEach(el => {
+      el.addEventListener('click', () => {
+        const day = parseInt(el.dataset.day);
+        selectedCalDate = { year: calendarYear, month: calendarMonth, day };
+        renderBigCalendar();
+      });
+    });
 
     // Add navigation listeners
     document.getElementById('calPrevMonth').addEventListener('click', () => {
@@ -3024,6 +3082,14 @@ const DAILY_EMOTICONS = [
     document.getElementById('calYearSelect').addEventListener('change', (e) => {
       calendarYear = parseInt(e.target.value);
       renderBigCalendar();
+    });
+    
+    // DUO button scrolls to message section
+    document.getElementById('calDuoBtn').addEventListener('click', () => {
+      const msgSection = document.getElementById('messageSection');
+      if (msgSection) {
+        msgSection.scrollIntoView({ behavior: 'smooth' });
+      }
     });
   }
 

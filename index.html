@@ -23,6 +23,22 @@
 </head>
 
 <body>
+  <!-- Marathon Boot Loading Screen -->
+  <div class="boot-screen" id="bootScreen">
+    <div class="boot-content">
+      <div class="boot-title">MARATHON <span class="boot-version">v1.0</span></div>
+      <div class="boot-line"></div>
+      <div class="boot-sequence">
+        <div class="boot-item" data-delay="0">[▸] INITIALIZING SYSTEM...</div>
+        <div class="boot-item" data-delay="400">[▸] ESTABLISHING SYNC PROTOCOL...</div>
+        <div class="boot-item" data-delay="800">[▸] CHECKING UESC CREDENTIALS...</div>
+        <div class="boot-item" data-delay="1200">[▸] MOUNTING FILE SYSTEMS...</div>
+        <div class="boot-item boot-success" data-delay="1600">[*] ALL SYSTEMS OPERATIONAL</div>
+        <div class="boot-item boot-ready" data-delay="2000">[*] READY</div>
+      </div>
+    </div>
+  </div>
+
   <div class="wrap">
     <div class="topbar">
       <div class="brand">
@@ -80,6 +96,7 @@
             <div class="theme-option" data-theme="dark">Dark</div>
             <div class="theme-option" data-theme="christmas">Christmas</div>
             <div class="theme-option" data-theme="liquid-gradient">Liquid Gradient</div>
+            <div class="theme-option" data-theme="marathon">Marathon</div>
           </div>
         </div>
         
