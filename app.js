@@ -2176,6 +2176,7 @@ const DAILY_EMOTICONS = [
     // Dark theme now uses Marathon styling
     if (theme === "dark") document.documentElement.setAttribute("data-theme", "marathon");
     else if (theme === "light") document.documentElement.setAttribute("data-theme", "light");
+    else if (theme === "retro") document.documentElement.setAttribute("data-theme", "retro");
     else if (theme === "christmas") document.documentElement.setAttribute("data-theme", "christmas");
     else if (theme === "liquid-gradient") document.documentElement.setAttribute("data-theme", "liquid-gradient");
     else if (theme === "marathon") document.documentElement.setAttribute("data-theme", "marathon");
