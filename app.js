@@ -2035,6 +2035,7 @@ const DAILY_EMOTICONS = [
     if (theme === "dark") document.documentElement.setAttribute("data-theme", "dark");
     else if (theme === "light") document.documentElement.setAttribute("data-theme", "light");
     else if (theme === "christmas") document.documentElement.setAttribute("data-theme", "christmas");
+    else if (theme === "liquid-glass") document.documentElement.setAttribute("data-theme", "liquid-glass");
     else document.documentElement.removeAttribute("data-theme");
 
     document.querySelectorAll(".theme-option").forEach(opt => {

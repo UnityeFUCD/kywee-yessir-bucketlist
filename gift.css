@@ -187,12 +187,12 @@
   box-shadow: inset 0 0 0.5em 0.25em rgba(0,0,0,0.2);
 }
 
-/* Question mark on lid - PURPLE */
+/* Question mark on lid - PURPLE, clean like original */
 .gift-qmark {
   font-size: 3em;
   font-weight: 700;
-  color: rgba(200,150,255,1);
-  text-shadow: 0 0 0.3em #b366ff, 0em -0.2em 0.1em #9933ff;
+  color: #b366e0;
+  text-shadow: none;
   position: absolute;
   transform: translateZ(1em) translateX(0.8em) translateY(0.5em) rotateX(-90deg) rotateY(45deg);
   font-family: sans-serif;
@@ -245,10 +245,9 @@
   100% { transform: rotateZ(360deg) translateZ(2em) rotateX(-90deg) rotateY(45deg); }
 }
 
-/* Domo character styling */
+/* Domo/Heart character styling - plain like original */
 .domo-icon {
-  font-size: 3.5em;
-  filter: drop-shadow(0 0 0.5em rgba(139,69,19,0.9));
+  font-size: 3em;
 }
 
 /* ===== GIFT TAG ===== */

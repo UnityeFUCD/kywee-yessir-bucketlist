@@ -1,11 +1,11 @@
 /* ============================================
-   GIFT EXPERIENCE v1.5.1
+   GIFT EXPERIENCE v1.5.2
    Interactive gift unwrapping for Kylee
    - 3D scene tilt on mouse move
    - Box opening animation
    - Terminal typewriter effect
    - Code dissipation effect
-   - Christmas confetti
+   - Canvas confetti storm
    ============================================ */
 
 (function() {
@@ -38,41 +38,6 @@
     localStorage.removeItem(GIFT_SHOWN_KEY);
     console.log("[GIFT] Experience reset!");
   };
-  
-  // ===== CHRISTMAS CONFETTI =====
-  function createConfetti() {
-    const container = document.createElement('div');
-    container.className = 'confetti-container';
-    document.body.appendChild(container);
-    
-    const colors = ['red', 'green', 'gold', 'white', 'silver'];
-    const shapes = ['circle', 'square', 'star'];
-    const confettiCount = 150;
-    
-    for (let i = 0; i < confettiCount; i++) {
-      const confetti = document.createElement('div');
-      const color = colors[Math.floor(Math.random() * colors.length)];
-      const shape = shapes[Math.floor(Math.random() * shapes.length)];
-      
-      confetti.className = `confetti ${color} ${shape}`;
-      confetti.style.left = Math.random() * 100 + 'vw';
-      confetti.style.animationDuration = (Math.random() * 2 + 3) + 's';
-      confetti.style.animationDelay = Math.random() * 1.5 + 's';
-      confetti.style.transform = `rotate(${Math.random() * 360}deg)`;
-      
-      // Vary sizes
-      const size = Math.random() * 10 + 6;
-      confetti.style.width = size + 'px';
-      confetti.style.height = size + 'px';
-      
-      container.appendChild(confetti);
-    }
-    
-    // Remove after animation
-    setTimeout(() => {
-      container.remove();
-    }, 6000);
-  }
   
   // ===== CODE RAIN EFFECT - Enhanced with realistic code =====
   function generateCodeBlock() {
@@ -131,6 +96,39 @@
     codeRain.classList.add('active');
   }
   
+  // ===== RESET GIFT STATE (for preview button) =====
+  function resetGiftState() {
+    const overlay = document.getElementById("giftOverlay");
+    if (!overlay) return;
+    
+    // Remove all state classes
+    overlay.classList.remove("active", "opening", "box-open", "terminal-open", "unwrapping");
+    overlay.style.display = "";
+    
+    // Reset question mark
+    const qmark = overlay.querySelector(".gift-qmark");
+    if (qmark) qmark.textContent = "?";
+    
+    // Reset terminal content
+    const terminalContent = document.getElementById("terminalContent");
+    if (terminalContent) {
+      terminalContent.classList.remove("dissipating");
+      const elements = terminalContent.querySelectorAll(".visible");
+      elements.forEach(el => el.classList.remove("visible"));
+    }
+    
+    // Reset code rain
+    const codeRain = document.getElementById("codeRain");
+    if (codeRain) {
+      codeRain.classList.remove("active");
+      codeRain.innerHTML = "";
+    }
+    
+    // Reset button
+    const btn = document.getElementById("giftContinueBtn");
+    if (btn) btn.classList.remove("visible");
+  }
+  
   // ===== MAIN GIFT EXPERIENCE =====
   function initGiftExperience() {
     const overlay = document.getElementById("giftOverlay");
@@ -138,6 +136,9 @@
       console.error("[GIFT] Overlay not found!");
       return;
     }
+    
+    // Reset state first (important for Preview button)
+    resetGiftState();
     
     const scene = overlay.querySelector(".gift-scene");
     const floor = overlay.querySelector(".gift-floor");
@@ -154,29 +155,32 @@
     console.log("[GIFT] Experience started!");
     
     // ===== 3D TILT EFFECT ON MOUSE MOVE =====
-    if (scene) {
-      scene.addEventListener("mousemove", (e) => {
-        if (overlay.classList.contains("terminal-open")) return;
-        
-        const rect = scene.getBoundingClientRect();
-        const mouseX = e.clientX - rect.left;
-        const mouseY = e.clientY - rect.top;
-        
-        const xPercent = mouseX / rect.width;
-        const yPercent = mouseY / rect.height;
-        
-        const xDeg = rangify(12, yPercent);
-        const yDeg = rangify(-12, xPercent);
-        
-        scene.style.transform = `perspective(1200px) rotateX(${xDeg}deg) rotateY(${yDeg}deg)`;
-      });
+    function handleMouseMove(e) {
+      if (overlay.classList.contains("terminal-open")) return;
       
-      scene.addEventListener("mouseleave", () => {
-        if (overlay.classList.contains("terminal-open")) return;
-        scene.classList.add("tilt-transition");
-        scene.style.transform = "perspective(1200px) rotateX(0deg) rotateY(0deg)";
-        setTimeout(() => scene.classList.remove("tilt-transition"), 500);
-      });
+      const rect = scene.getBoundingClientRect();
+      const mouseX = e.clientX - rect.left;
+      const mouseY = e.clientY - rect.top;
+      
+      const xPercent = mouseX / rect.width;
+      const yPercent = mouseY / rect.height;
+      
+      const xDeg = rangify(12, yPercent);
+      const yDeg = rangify(-12, xPercent);
+      
+      scene.style.transform = `perspective(1200px) rotateX(${xDeg}deg) rotateY(${yDeg}deg)`;
+    }
+    
+    function handleMouseLeave() {
+      if (overlay.classList.contains("terminal-open")) return;
+      scene.classList.add("tilt-transition");
+      scene.style.transform = "perspective(1200px) rotateX(0deg) rotateY(0deg)";
+      setTimeout(() => scene.classList.remove("tilt-transition"), 500);
+    }
+    
+    if (scene) {
+      scene.addEventListener("mousemove", handleMouseMove);
+      scene.addEventListener("mouseleave", handleMouseLeave);
     }
     
     // ===== CLICK ON LID/BOX TO OPEN =====
@@ -201,53 +205,78 @@
       }, 1000);
     }
     
+    function handleLidClick(e) {
+      e.stopPropagation();
+      openBox();
+    }
+    
+    function handleFloorClick(e) {
+      if (!lid || !lid.contains(e.target)) {
+        openBox();
+      }
+    }
+    
     if (lid) {
-      lid.addEventListener("click", openBox);
+      lid.addEventListener("click", handleLidClick);
     }
     
     if (floor) {
-      floor.addEventListener("click", (e) => {
-        if (!lid || !lid.contains(e.target)) {
-          openBox();
-        }
-      });
+      floor.addEventListener("click", handleFloorClick);
     }
     
     // ===== CONTINUE BUTTON - CONFETTI + DISSIPATION + UNWRAP =====
+    function handleContinue() {
+      console.log("[GIFT] Opening gift with confetti storm...");
+      
+      // 1. Trigger confetti storm
+      if (window.ConfettiStorm) {
+        window.ConfettiStorm.start(7000);
+      }
+      
+      // 2. Start code dissipation effect
+      if (terminalContent) {
+        terminalContent.classList.add('dissipating');
+      }
+      
+      // 3. Show code rain after text dissipates
+      setTimeout(() => {
+        createCodeRain();
+      }, 800);
+      
+      // 4. Start unwrap after effects
+      setTimeout(() => {
+        overlay.classList.remove("terminal-open");
+        overlay.classList.add("unwrapping");
+        
+        // Mark as shown
+        localStorage.setItem(GIFT_SHOWN_KEY, "true");
+        
+        // Remove overlay after animation
+        setTimeout(() => {
+          // Clean up event listeners
+          if (scene) {
+            scene.removeEventListener("mousemove", handleMouseMove);
+            scene.removeEventListener("mouseleave", handleMouseLeave);
+          }
+          if (lid) lid.removeEventListener("click", handleLidClick);
+          if (floor) floor.removeEventListener("click", handleFloorClick);
+          if (continueBtn) continueBtn.removeEventListener("click", handleContinue);
+          
+          overlay.classList.remove("active", "unwrapping", "box-open");
+          overlay.style.display = "none";
+          document.body.style.overflow = "";
+          console.log("[GIFT] Experience complete!");
+        }, 1800);
+      }, 2500);
+    }
+    
     if (continueBtn) {
-      continueBtn.addEventListener("click", () => {
-        console.log("[GIFT] Opening gift with confetti...");
-        
-        // 1. Trigger confetti
-        createConfetti();
-        
-        // 2. Start code dissipation effect
-        if (terminalContent) {
-          terminalContent.classList.add('dissipating');
-        }
-        
-        // 3. Show code rain after text dissipates
-        setTimeout(() => {
-          createCodeRain();
-        }, 800);
-        
-        // 4. Start unwrap after effects
-        setTimeout(() => {
-          overlay.classList.remove("terminal-open");
-          overlay.classList.add("unwrapping");
-          
-          // Mark as shown
-          localStorage.setItem(GIFT_SHOWN_KEY, "true");
-          
-          // Remove overlay after animation
-          setTimeout(() => {
-            overlay.classList.remove("active", "unwrapping", "box-open");
-            overlay.style.display = "none";
-            document.body.style.overflow = "";
-            console.log("[GIFT] Experience complete!");
-          }, 1800);
-        }, 2500);
-      });
+      // Remove any existing listeners first
+      continueBtn.replaceWith(continueBtn.cloneNode(true));
+      const newBtn = document.getElementById("giftContinueBtn");
+      if (newBtn) {
+        newBtn.addEventListener("click", handleContinue);
+      }
     }
   }
   
@@ -305,8 +334,12 @@
     }, 800);
   }
   
-  // Expose for manual triggering
-  window.showGiftExperience = initGiftExperience;
+  // Expose for manual triggering (Preview button)
+  window.showGiftExperience = function() {
+    // Clear the flag so it can show
+    localStorage.removeItem(GIFT_SHOWN_KEY);
+    initGiftExperience();
+  };
   window.shouldShowGift = shouldShowGift;
   
   // Auto-init
