@@ -79,7 +79,7 @@
             <div class="theme-option" data-theme="light">Light</div>
             <div class="theme-option" data-theme="dark">Dark</div>
             <div class="theme-option" data-theme="christmas">Christmas</div>
-            <div class="theme-option" data-theme="liquid-glass">Liquid Glass</div>
+            <div class="theme-option" data-theme="liquid-gradient">Liquid Gradient</div>
           </div>
         </div>
         
@@ -461,19 +461,15 @@
         
         <div class="settings-actions">
           <button class="btn danger" id="clearChatBtn">
-            <span class="tooltip">Removes all messages from the chat log</span>
             <i class="fas fa-comments"></i> Clear All Chat Messages
           </button>
           <button class="btn danger" id="clearPhotosBtn">
-            <span class="tooltip">Deletes all uploaded photos and their groupings</span>
             <i class="fas fa-images"></i> Clear All Photos
           </button>
           <button class="btn danger" id="clearClipsBtn">
-            <span class="tooltip">Removes your uploaded clips (Medal clips stay)</span>
             <i class="fas fa-video"></i> Clear Uploaded Clips
           </button>
           <button class="btn danger" id="clearAllBtn">
-            <span class="tooltip">Wipes everything: messages, photos, and clips</span>
             <i class="fas fa-trash-alt"></i> Clear Everything
           </button>
         </div>
@@ -559,15 +555,8 @@
 
   <link rel="stylesheet" href="gift.css">
   
-  <!-- SVG Filters for Liquid Glass theme -->
-  <svg xmlns="http://www.w3.org/2000/svg" style="display: none;">
-    <filter id="lensFilter" x="0%" y="0%" width="100%" height="100%" filterUnits="objectBoundingBox">
-      <feGaussianBlur in="SourceAlpha" stdDeviation="30" result="blur" />
-      <feDisplacementMap in="SourceGraphic" in2="blur" scale="25" xChannelSelector="A" yChannelSelector="A" />
-    </filter>
-  </svg>
-  
   <script src="confetti.js"></script>
+  <script src="liquid-gradient.js"></script>
   <script src="gift.js" defer></script>
   <script src="app.js" defer></script>
 </body>

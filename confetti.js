@@ -234,10 +234,10 @@
     start: function(duration = 7000) {
       if (isRunning) return;
       
-      // Create canvas
+      // Create canvas with initial opacity 0 for fade-in
       canvas = document.createElement('canvas');
       canvas.id = 'confettiCanvas';
-      canvas.style.cssText = 'position:fixed;inset:0;pointer-events:none;z-index:9999999;';
+      canvas.style.cssText = 'position:fixed;inset:0;pointer-events:none;z-index:9999999;opacity:0;transition:opacity 0.8s ease-in-out;';
       document.body.appendChild(canvas);
       
       ctx = canvas.getContext('2d', { alpha: true });
@@ -253,7 +253,12 @@
       last = performance.now();
       animationId = requestAnimationFrame(loop);
       
-      // Auto stop after duration
+      // Fade in after a brief moment
+      requestAnimationFrame(() => {
+        canvas.style.opacity = '1';
+      });
+      
+      // Auto stop after duration (with fade out)
       if (duration > 0) {
         setTimeout(() => {
           this.stop();
@@ -262,20 +267,30 @@
     },
     
     stop: function() {
-      isRunning = false;
-      if (animationId) {
-        cancelAnimationFrame(animationId);
-        animationId = null;
+      if (!isRunning) return;
+      
+      // Fade out first
+      if (canvas) {
+        canvas.style.opacity = '0';
+        
+        // Wait for fade transition before cleanup
+        setTimeout(() => {
+          isRunning = false;
+          if (animationId) {
+            cancelAnimationFrame(animationId);
+            animationId = null;
+          }
+          window.removeEventListener('resize', resize);
+          window.removeEventListener('pointermove', handlePointerMove);
+          if (canvas && canvas.parentNode) {
+            canvas.parentNode.removeChild(canvas);
+            canvas = null;
+            ctx = null;
+          }
+          pieces = [];
+          spriteCache.clear();
+        }, 800); // Match transition duration
       }
-      window.removeEventListener('resize', resize);
-      window.removeEventListener('pointermove', handlePointerMove);
-      if (canvas && canvas.parentNode) {
-        canvas.parentNode.removeChild(canvas);
-        canvas = null;
-        ctx = null;
-      }
-      pieces = [];
-      spriteCache.clear();
     }
   };
   
