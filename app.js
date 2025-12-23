@@ -22,6 +22,124 @@
   ];
   const CURRENT_VERSION = "1.4.4";
 
+  // ============================================
+  // MARATHON SOUND SYSTEM (v1.6.0)
+  // Subtle audio feedback for interactive elements
+  // ============================================
+  
+  // Sound enabled state (respects user preference)
+  let marathonSoundEnabled = localStorage.getItem('marathon_sound_enabled') !== 'false';
+  
+  // Web Audio API context (created on first interaction)
+  let audioCtx = null;
+  
+  function initAudioContext() {
+    if (audioCtx) return;
+    try {
+      const AudioContext = window.AudioContext || window.webkitAudioContext;
+      audioCtx = new AudioContext();
+    } catch (e) {
+      console.warn('[Sound] Web Audio API not supported');
+    }
+  }
+  
+  // Sound generator functions using Web Audio API
+  function playMarathonSound(type) {
+    // Only play sounds in marathon theme
+    if (document.documentElement.getAttribute('data-theme') !== 'marathon') return;
+    if (!marathonSoundEnabled) return;
+    
+    initAudioContext();
+    if (!audioCtx) return;
+    
+    // Resume audio context if suspended (browser autoplay policy)
+    if (audioCtx.state === 'suspended') {
+      audioCtx.resume().catch(() => {});
+    }
+    
+    try {
+      const oscillator = audioCtx.createOscillator();
+      const gainNode = audioCtx.createGain();
+      oscillator.connect(gainNode);
+      gainNode.connect(audioCtx.destination);
+      
+      const now = audioCtx.currentTime;
+      
+      switch(type) {
+        case 'hover':
+          // Soft high-pitched blip
+          oscillator.frequency.setValueAtTime(1200, now);
+          oscillator.frequency.exponentialRampToValueAtTime(800, now + 0.05);
+          oscillator.type = 'sine';
+          gainNode.gain.setValueAtTime(0.08, now);
+          gainNode.gain.exponentialRampToValueAtTime(0.001, now + 0.05);
+          oscillator.start(now);
+          oscillator.stop(now + 0.05);
+          break;
+          
+        case 'click':
+          // Sharp click sound
+          oscillator.frequency.setValueAtTime(600, now);
+          oscillator.frequency.exponentialRampToValueAtTime(200, now + 0.08);
+          oscillator.type = 'square';
+          gainNode.gain.setValueAtTime(0.12, now);
+          gainNode.gain.exponentialRampToValueAtTime(0.001, now + 0.08);
+          oscillator.start(now);
+          oscillator.stop(now + 0.08);
+          break;
+          
+        case 'success':
+          // Rising tone for success
+          oscillator.frequency.setValueAtTime(400, now);
+          oscillator.frequency.exponentialRampToValueAtTime(800, now + 0.15);
+          oscillator.type = 'triangle';
+          gainNode.gain.setValueAtTime(0.1, now);
+          gainNode.gain.exponentialRampToValueAtTime(0.001, now + 0.15);
+          oscillator.start(now);
+          oscillator.stop(now + 0.15);
+          break;
+          
+        case 'error':
+          // Descending tone for error
+          oscillator.frequency.setValueAtTime(400, now);
+          oscillator.frequency.exponentialRampToValueAtTime(150, now + 0.2);
+          oscillator.type = 'sawtooth';
+          gainNode.gain.setValueAtTime(0.1, now);
+          gainNode.gain.exponentialRampToValueAtTime(0.001, now + 0.2);
+          oscillator.start(now);
+          oscillator.stop(now + 0.2);
+          break;
+      }
+    } catch (e) {
+      // Silently fail - sound is non-critical
+    }
+  }
+  
+  // Attach sound effects to interactive elements
+  function initMarathonSounds() {
+    // Initialize audio context on first user interaction
+    document.addEventListener('click', initAudioContext, { once: true });
+    document.addEventListener('touchstart', initAudioContext, { once: true });
+    
+    // Use event delegation for efficiency
+    document.addEventListener('mouseenter', (e) => {
+      const target = e.target;
+      if (target.matches('button, .btn, .pill.clickable, .item, .theme-option, .notification-item, .who-btn, .envelope-container')) {
+        playMarathonSound('hover');
+      }
+    }, true);
+    
+    document.addEventListener('click', (e) => {
+      const target = e.target;
+      if (target.matches('button, .btn, .pill.clickable')) {
+        playMarathonSound('click');
+      }
+    }, true);
+  }
+  
+  // Call on page load
+  initMarathonSounds();
+
   // [OK] UPCOMING EVENTS with type for distinct styling
   const UPCOMING_EVENTS = [
     { date: "2025-01-01", title: "New Year's Day", type: "holiday", icon: "🎆" },
@@ -2806,6 +2924,7 @@ const DAILY_EMOTICONS = [
 
           // [NEW] Trigger confetti on mission completion!
           triggerConfetti();
+          playMarathonSound('success'); // Marathon sound effect
           showToast("Mission completed! 🎉");
 
           renderActive();

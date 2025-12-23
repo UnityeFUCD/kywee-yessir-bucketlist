@@ -4166,6 +4166,117 @@ html[data-theme="marathon"] .device-conflict-content .conflict-icon {
 html[data-theme="marathon"] .settings-modal-inner {
   background: #0c0d11;
   border: 2px solid #cde47a;
+  position: relative;
+  box-shadow: 0 0 30px rgba(205, 228, 122, 0.2);
+}
+
+html[data-theme="marathon"] .settings-modal-inner::before {
+  content: "";
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 2px;
+  background: #cde47a;
+  box-shadow: 0 0 10px rgba(205, 228, 122, 0.3);
+}
+
+html[data-theme="marathon"] .settings-modal-inner h3 {
+  color: #cde47a;
+  text-transform: uppercase;
+  letter-spacing: 2px;
+  font-size: 16px;
+  margin-bottom: 20px;
+  padding-top: 10px;
+}
+
+html[data-theme="marathon"] .settings-modal-inner h3::before {
+  content: "[-] ";
+  color: #cde47a;
+}
+
+html[data-theme="marathon"] .settings-modal-inner h3 i {
+  color: #cde47a;
+}
+
+html[data-theme="marathon"] .settings-section {
+  border-bottom-color: #323644;
+}
+
+html[data-theme="marathon"] .settings-section h4 {
+  color: #cde47a;
+}
+
+html[data-theme="marathon"] .settings-section h4::before {
+  content: "[▸] ";
+  color: #cde47a;
+}
+
+/* Fix the warning note - remove weird border */
+html[data-theme="marathon"] .settings-modal-inner .note {
+  border: none !important;
+  border-left: none !important;
+  padding-left: 0;
+  color: #de5226;
+  font-size: 11px;
+  margin-bottom: 12px;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+}
+
+html[data-theme="marathon"] .settings-modal-inner .note::before {
+  content: "[!] " !important;
+  color: #de5226;
+}
+
+/* Danger buttons */
+html[data-theme="marathon"] .settings-modal-inner .btn.danger {
+  background: transparent;
+  border: 2px solid #de5226;
+  color: #de5226;
+}
+
+html[data-theme="marathon"] .settings-modal-inner .btn.danger:hover {
+  background: #de5226;
+  color: #07080c;
+  box-shadow: 0 0 10px rgba(222, 83, 38, 0.3);
+}
+
+/* Regular buttons in settings */
+html[data-theme="marathon"] .settings-modal-inner .btn:not(.danger) {
+  background: #07080c;
+  border: 2px solid #323644;
+  color: #cde47a;
+}
+
+html[data-theme="marathon"] .settings-modal-inner .btn:not(.danger):hover {
+  border-color: #cde47a;
+  background: rgba(205, 228, 122, 0.1);
+  box-shadow: 0 0 10px rgba(205, 228, 122, 0.3);
+}
+
+/* Close button in settings modal */
+html[data-theme="marathon"] .settings-modal-inner .modal-close {
+  position: absolute;
+  top: 15px;
+  right: 15px;
+  border: 1px solid #323644;
+  background: #07080c;
+  color: #76915f;
+  width: 28px;
+  height: 28px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 14px;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+html[data-theme="marathon"] .settings-modal-inner .modal-close:hover {
+  border-color: #cde47a;
+  color: #cde47a;
+  background: rgba(205, 228, 122, 0.1);
 }
 
 html[data-theme="marathon"] .settings-section h4 {
@@ -4624,6 +4735,18 @@ html[data-theme="marathon"] .confirm-modal-inner {
   background: #0c0d11;
   border: 2px solid #de5226;
   box-shadow: 0 0 30px rgba(222, 83, 38, 0.2);
+  position: relative;
+}
+
+html[data-theme="marathon"] .confirm-modal-inner::before {
+  content: "";
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 2px;
+  background: #de5226;
+  box-shadow: 0 0 10px rgba(222, 83, 38, 0.3);
 }
 
 html[data-theme="marathon"] .confirm-modal-inner h3 {
@@ -4633,6 +4756,25 @@ html[data-theme="marathon"] .confirm-modal-inner h3 {
 html[data-theme="marathon"] .confirm-modal-inner h3::before {
   content: "[!] ";
   color: #de5226;
+}
+
+html[data-theme="marathon"] .confirm-modal-message {
+  color: #76915f;
+}
+
+html[data-theme="marathon"] .confirm-modal-buttons .btn {
+  min-width: 100px;
+}
+
+html[data-theme="marathon"] .confirm-modal-buttons .btn.danger {
+  background: #de5226;
+  border-color: #de5226;
+  color: #07080c;
+}
+
+html[data-theme="marathon"] .confirm-modal-buttons .btn.danger:hover {
+  background: #c0392b;
+  border-color: #c0392b;
 }
 
 /* Marathon Envelope Container */
@@ -4993,6 +5135,97 @@ html[data-theme="marathon"] *:focus-visible {
   }
 }
 
+/* ============================================
+   MARATHON HOVER SHAKE EFFECT
+   Subtle glitch shake on interactive elements
+   ============================================ */
+
+/* Shake animation keyframes */
+@keyframes marathonHoverShake {
+  0%, 100% { transform: translate(0, 0) rotate(0deg); }
+  10% { transform: translate(-1px, 0.5px) rotate(-0.3deg); }
+  20% { transform: translate(1px, -0.5px) rotate(0.3deg); }
+  30% { transform: translate(-0.5px, 1px) rotate(-0.2deg); }
+  40% { transform: translate(0.5px, -1px) rotate(0.2deg); }
+  50% { transform: translate(-1px, -0.5px) rotate(-0.25deg); }
+  60% { transform: translate(1px, 0.5px) rotate(0.25deg); }
+  70% { transform: translate(-0.5px, -1px) rotate(-0.15deg); }
+  80% { transform: translate(0.5px, 1px) rotate(0.15deg); }
+  90% { transform: translate(-0.5px, 0.5px) rotate(-0.1deg); }
+}
+
+/* Apply shake to interactive elements on hover - Marathon theme only */
+html[data-theme="marathon"] .btn:hover,
+html[data-theme="marathon"] .pill.clickable:hover,
+html[data-theme="marathon"] .item:hover,
+html[data-theme="marathon"] .card:hover,
+html[data-theme="marathon"] .saved-mission-card:hover,
+html[data-theme="marathon"] .message-log-item:hover,
+html[data-theme="marathon"] .notification-item:hover,
+html[data-theme="marathon"] .theme-option:hover,
+html[data-theme="marathon"] .who-btn:hover,
+html[data-theme="marathon"] .envelope-container:hover,
+html[data-theme="marathon"] .photo-card:hover,
+html[data-theme="marathon"] .medal-card:hover {
+  animation: marathonHoverShake 0.25s ease-in-out;
+}
+
+/* Scanline interference effect on hover */
+html[data-theme="marathon"] .btn:hover::after,
+html[data-theme="marathon"] .item:hover::after {
+  content: "";
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: repeating-linear-gradient(
+    0deg,
+    transparent,
+    transparent 2px,
+    rgba(205, 228, 122, 0.03) 2px,
+    rgba(205, 228, 122, 0.03) 4px
+  );
+  pointer-events: none;
+  opacity: 0;
+  animation: scanlineInterference 0.15s ease-in-out forwards;
+}
+
+@keyframes scanlineInterference {
+  0% { opacity: 0; }
+  50% { opacity: 1; }
+  100% { opacity: 0; }
+}
+
+/* Glitch text effect on hover for headers */
+html[data-theme="marathon"] .cardHeader h2:hover,
+html[data-theme="marathon"] .modal-header h3:hover {
+  animation: textGlitch 0.3s ease-in-out;
+}
+
+@keyframes textGlitch {
+  0%, 100% { 
+    text-shadow: 0 0 20px rgba(205, 228, 122, 0.3);
+    transform: translateX(0);
+  }
+  20% { 
+    text-shadow: -2px 0 #de5226, 2px 0 #cde47a;
+    transform: translateX(-1px);
+  }
+  40% { 
+    text-shadow: 2px 0 #de5226, -2px 0 #cde47a;
+    transform: translateX(1px);
+  }
+  60% { 
+    text-shadow: -1px 0 #de5226, 1px 0 #cde47a;
+    transform: translateX(-0.5px);
+  }
+  80% { 
+    text-shadow: 1px 0 #de5226, -1px 0 #cde47a;
+    transform: translateX(0.5px);
+  }
+}
+
 /* Reduced Motion Support */
 @media (prefers-reduced-motion: reduce) {
   html[data-theme="marathon"] .boot-item,
@@ -5002,8 +5235,13 @@ html[data-theme="marathon"] *:focus-visible {
   html[data-theme="marathon"] .cursor,
   html[data-theme="marathon"] .pulse-dot,
   html[data-theme="marathon"] .dot.pulse,
-  html[data-theme="marathon"] .marathonPulseDot {
-    animation: none;
+  html[data-theme="marathon"] .marathonPulseDot,
+  html[data-theme="marathon"] .btn:hover,
+  html[data-theme="marathon"] .item:hover,
+  html[data-theme="marathon"] .card:hover,
+  html[data-theme="marathon"] .cardHeader h2:hover,
+  html[data-theme="marathon"] .modal-header h3:hover {
+    animation: none !important;
   }
   
   html[data-theme="marathon"] .boot-item {
