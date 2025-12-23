@@ -135,6 +135,29 @@
         playMarathonSound('click');
       }
     }, true);
+    
+    // Sound toggle checkbox listener
+    document.addEventListener('DOMContentLoaded', () => {
+      const soundToggle = document.getElementById('soundToggleCheckbox');
+      if (soundToggle) {
+        // Load saved preference
+        const savedPref = localStorage.getItem('marathon_sound_enabled');
+        if (savedPref !== null) {
+          marathonSoundEnabled = savedPref === 'true';
+          soundToggle.checked = marathonSoundEnabled;
+        }
+        
+        // Update on change
+        soundToggle.addEventListener('change', () => {
+          marathonSoundEnabled = soundToggle.checked;
+          localStorage.setItem('marathon_sound_enabled', marathonSoundEnabled);
+          // Play a click sound as feedback if enabled
+          if (marathonSoundEnabled) {
+            playMarathonSound('click');
+          }
+        });
+      }
+    });
   }
   
   // Call on page load
@@ -2150,7 +2173,8 @@ const DAILY_EMOTICONS = [
   function applyTheme(theme) {
     currentTheme = theme;
 
-    if (theme === "dark") document.documentElement.setAttribute("data-theme", "dark");
+    // Dark theme now uses Marathon styling
+    if (theme === "dark") document.documentElement.setAttribute("data-theme", "marathon");
     else if (theme === "light") document.documentElement.setAttribute("data-theme", "light");
     else if (theme === "christmas") document.documentElement.setAttribute("data-theme", "christmas");
     else if (theme === "liquid-gradient") document.documentElement.setAttribute("data-theme", "liquid-gradient");
@@ -2164,23 +2188,33 @@ const DAILY_EMOTICONS = [
     if (theme === "christmas") startSnow();
     else stopSnow();
     
-    // [Marathon] Show boot screen when switching to marathon theme
+    // Show/hide sound settings based on theme (only for dark/marathon)
+    const soundSection = document.getElementById("soundSettingsSection");
+    if (soundSection) {
+      const isMarathonTheme = (theme === "dark" || theme === "marathon");
+      soundSection.style.display = isMarathonTheme ? "block" : "none";
+    }
+    
+    // [Marathon] Show boot screen when switching to dark/marathon theme
     const bootScreen = document.getElementById("bootScreen");
-    if (bootScreen && theme === "marathon") {
-      const hasSeenBoot = sessionStorage.getItem("marathon_boot_seen");
-      if (!hasSeenBoot) {
-        bootScreen.classList.remove("hidden");
-        const bootItems = bootScreen.querySelectorAll(".boot-item");
-        bootItems.forEach((item, index) => {
-          item.classList.remove("visible");
-          const delay = parseInt(item.dataset.delay) || index * 400;
-          setTimeout(() => item.classList.add("visible"), delay);
-        });
-        setTimeout(() => {
-          bootScreen.classList.add("hidden");
-          sessionStorage.setItem("marathon_boot_seen", "1");
-        }, 2800);
-      }
+    const isMarathonTheme = (theme === "dark" || theme === "marathon");
+    
+    if (bootScreen && isMarathonTheme) {
+      // Always show boot animation when switching to this theme
+      bootScreen.classList.remove("hidden");
+      const bootItems = bootScreen.querySelectorAll(".boot-item");
+      bootItems.forEach((item) => {
+        item.classList.remove("visible");
+      });
+      // Animate boot items with delays
+      bootItems.forEach((item) => {
+        const delay = parseInt(item.dataset.delay) || 0;
+        setTimeout(() => item.classList.add("visible"), delay);
+      });
+      // Hide boot screen after animation
+      setTimeout(() => {
+        bootScreen.classList.add("hidden");
+      }, 2800);
     } else if (bootScreen) {
       bootScreen.classList.add("hidden");
     }

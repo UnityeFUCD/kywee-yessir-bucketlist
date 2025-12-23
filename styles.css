@@ -3200,6 +3200,17 @@ input[type="date"]::-webkit-calendar-picker-indicator {
    SETTINGS MODAL (v1.4.5)
    ============================================ */
 
+/* Base modal-inner styling */
+.modal-inner {
+  background: var(--bg-card);
+  border: 2px solid var(--border-bright);
+  box-shadow: var(--shadow);
+  padding: 24px;
+  position: relative;
+  max-height: 85vh;
+  overflow-y: auto;
+}
+
 .settings-btn {
   padding: 8px 12px;
   min-width: auto;
@@ -3208,6 +3219,10 @@ input[type="date"]::-webkit-calendar-picker-indicator {
 .settings-modal-inner {
   max-width: 450px;
   width: 90%;
+  background: var(--bg-card);
+  border: 2px solid var(--border-bright);
+  box-shadow: var(--shadow);
+  padding: 24px;
 }
 
 .settings-modal-inner h3 {
@@ -3298,12 +3313,36 @@ html[data-theme="liquid-gradient"] body::after {
 
 /* Cards - NO backdrop-filter for performance */
 html[data-theme="liquid-gradient"] .card,
-html[data-theme="liquid-gradient"] .modal-inner,
-html[data-theme="liquid-gradient"] .settings-modal-inner,
 html[data-theme="liquid-gradient"] .pill {
   background: rgba(255, 255, 255, 0.15) !important;
   border: 1px solid rgba(255, 255, 255, 0.25) !important;
   box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1) !important;
+}
+
+/* Settings modal - more opaque for readability */
+html[data-theme="liquid-gradient"] .modal-inner,
+html[data-theme="liquid-gradient"] .settings-modal-inner {
+  background: rgba(40, 40, 80, 0.97) !important;
+  border: 2px solid rgba(255, 255, 255, 0.35) !important;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4) !important;
+  padding: 24px !important;
+}
+
+html[data-theme="liquid-gradient"] .settings-modal-inner h3 {
+  color: #ffffff !important;
+}
+
+html[data-theme="liquid-gradient"] .settings-section h4 {
+  color: rgba(255, 255, 255, 0.9) !important;
+}
+
+html[data-theme="liquid-gradient"] .settings-section {
+  border-bottom-color: rgba(255, 255, 255, 0.2) !important;
+}
+
+html[data-theme="liquid-gradient"] .note {
+  color: rgba(255, 255, 255, 0.7) !important;
+  border-left-color: rgba(255, 255, 255, 0.4) !important;
 }
 
 /* Buttons - simple, no blur */
@@ -4168,6 +4207,7 @@ html[data-theme="marathon"] .settings-modal-inner {
   border: 2px solid #cde47a;
   position: relative;
   box-shadow: 0 0 30px rgba(205, 228, 122, 0.2);
+  padding: 24px;
 }
 
 html[data-theme="marathon"] .settings-modal-inner::before {
@@ -4279,8 +4319,52 @@ html[data-theme="marathon"] .settings-modal-inner .modal-close:hover {
   background: rgba(205, 228, 122, 0.1);
 }
 
-html[data-theme="marathon"] .settings-section h4 {
+/* Sound Toggle Styling */
+.sound-toggle-label {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  cursor: pointer;
+  padding: 12px 16px;
+  border: 2px solid var(--border);
+  background: var(--bg);
+  transition: all 0.15s ease;
+}
+
+.sound-toggle-label:hover {
+  border-color: var(--accent);
+}
+
+.sound-toggle-label input[type="checkbox"] {
+  width: 18px;
+  height: 18px;
+  accent-color: var(--accent);
+  cursor: pointer;
+}
+
+.sound-toggle-text {
+  font-size: 12px;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+/* Marathon Sound Toggle */
+html[data-theme="marathon"] .sound-toggle-label {
+  border: 2px solid #323644;
+  background: #07080c;
   color: #cde47a;
+}
+
+html[data-theme="marathon"] .sound-toggle-label:hover {
+  border-color: #cde47a;
+  box-shadow: 0 0 10px rgba(205, 228, 122, 0.3);
+}
+
+html[data-theme="marathon"] .sound-toggle-label input[type="checkbox"] {
+  accent-color: #cde47a;
 }
 
 /* Marathon Footer */
