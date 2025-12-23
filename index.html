@@ -162,6 +162,15 @@
         </div>
       </div>
 
+      <!-- Planning Board Entry Button -->
+      <div class="planning-board-entry">
+        <button class="btn planning-board-btn" id="openPlanningBoard">
+          <span class="pb-icon">▸</span>
+          <span class="pb-text">PLANNING_BOARD_2026.EXE</span>
+        </button>
+        <p class="pb-entry-hint">// Click to open year planning system</p>
+      </div>
+
       <div class="card">
         <div class="cardHeader">
           <h2>[▸] MISSION_LIST.LOG</h2>
@@ -512,6 +521,192 @@
           <i class="fas fa-gift"></i> Preview Gift Experience
         </button>
       </div>
+    </div>
+  </div>
+
+  <!-- =============================================
+       PLANNING BOARD SYSTEM
+       ============================================= -->
+  
+  <!-- Planning Board Boot Screen -->
+  <div class="pb-boot-screen hidden" id="pbBootScreen">
+    <div class="pb-boot-content">
+      <div class="pb-boot-title">PLANNING_BOARD_2026.EXE</div>
+      <div class="pb-boot-line"></div>
+      <div class="pb-boot-log" id="pbBootLog"></div>
+      <div class="pb-boot-progress">
+        <div class="pb-boot-progress-bar" id="pbBootProgressBar"></div>
+      </div>
+      <div class="pb-boot-status" id="pbBootStatus">Initializing...</div>
+    </div>
+  </div>
+
+  <!-- Planning Board Main Interface -->
+  <div class="planning-board-overlay hidden" id="planningBoardOverlay">
+    <div class="planning-board">
+      <!-- Header -->
+      <div class="pb-header">
+        <div class="pb-header-left">
+          <h1 class="pb-title">[▸] PLANNING_BOARD_2026.EXE</h1>
+          <p class="pb-subtitle">// Interactive Year Planning System - Ideas → Plan → Missions</p>
+        </div>
+        <button class="btn pb-close-btn" id="closePlanningBoard">
+          <span>✕</span> CLOSE APPLICATION
+        </button>
+      </div>
+
+      <!-- Stats Bar -->
+      <div class="pb-stats">
+        <div class="pb-stat-card">
+          <div class="pb-stat-value" id="pbStatTotal">0</div>
+          <div class="pb-stat-label">Total Ideas</div>
+        </div>
+        <div class="pb-stat-card">
+          <div class="pb-stat-value" id="pbStatThisMonth">0</div>
+          <div class="pb-stat-label">This Month</div>
+        </div>
+        <div class="pb-stat-card">
+          <div class="pb-stat-value" id="pbStatHighPriority">0</div>
+          <div class="pb-stat-label">High Priority</div>
+        </div>
+        <div class="pb-stat-card">
+          <div class="pb-stat-value" id="pbStatUnplanned">0</div>
+          <div class="pb-stat-label">Unplanned</div>
+        </div>
+      </div>
+
+      <!-- Quick Add Section -->
+      <div class="pb-quick-add">
+        <input type="text" class="pb-quick-input" id="pbQuickInput" placeholder="Type your idea and press Enter...">
+        <div class="pb-quick-buttons">
+          <button class="btn pb-add-simple" id="pbAddSimple">+ Add Simple Idea</button>
+          <button class="btn pb-add-detailed" id="pbAddDetailed">✎ Add Detailed Idea</button>
+        </div>
+      </div>
+
+      <!-- Month Card Navigator -->
+      <div class="pb-month-navigator">
+        <button class="pb-nav-arrow pb-nav-prev" id="pbNavPrev" disabled>
+          <span>◀</span>
+        </button>
+        
+        <div class="pb-card-container" id="pbCardContainer">
+          <!-- Cards rendered by JS -->
+        </div>
+        
+        <button class="pb-nav-arrow pb-nav-next" id="pbNavNext">
+          <span>▶</span>
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Expanded Idea View (Code Streaming) -->
+  <div class="pb-idea-expanded hidden" id="pbIdeaExpanded">
+    <div class="pb-idea-expanded-inner">
+      <div class="pb-code-stream" id="pbCodeStream"></div>
+      <div class="pb-expanded-content" id="pbExpandedContent"></div>
+      <button class="pb-expanded-close" id="pbExpandedClose">✕ CLOSE</button>
+    </div>
+  </div>
+
+  <!-- Add Detailed Idea Modal -->
+  <div class="modal pb-modal hidden" id="pbAddModal">
+    <div class="modal-inner pb-modal-inner">
+      <div class="pb-modal-header">
+        <h3>[+] ADD NEW IDEA</h3>
+        <button class="modal-close" id="pbModalClose">✕</button>
+      </div>
+      
+      <form id="pbAddForm" class="pb-form">
+        <div class="pb-form-row">
+          <label>Title *</label>
+          <input type="text" id="pbFormTitle" required placeholder="What's the idea?">
+        </div>
+        
+        <div class="pb-form-row">
+          <label>Description</label>
+          <textarea id="pbFormDesc" rows="3" placeholder="Add more details..."></textarea>
+        </div>
+        
+        <div class="pb-form-row pb-form-grid">
+          <div>
+            <label>Target Month</label>
+            <select id="pbFormMonth">
+              <option value="">Unplanned</option>
+              <option value="Jan">January</option>
+              <option value="Feb">February</option>
+              <option value="Mar">March</option>
+              <option value="Apr">April</option>
+              <option value="May">May</option>
+              <option value="Jun">June</option>
+              <option value="Jul">July</option>
+              <option value="Aug">August</option>
+              <option value="Sep">September</option>
+              <option value="Oct">October</option>
+              <option value="Nov">November</option>
+              <option value="Dec">December</option>
+            </select>
+          </div>
+          <div>
+            <label>Priority</label>
+            <select id="pbFormPriority">
+              <option value="low">Low</option>
+              <option value="medium">Medium</option>
+              <option value="high">High</option>
+            </select>
+          </div>
+        </div>
+        
+        <div class="pb-form-row pb-form-grid">
+          <div>
+            <label>Location</label>
+            <input type="text" id="pbFormLocation" placeholder="Where?">
+          </div>
+          <div>
+            <label>Date & Time</label>
+            <input type="datetime-local" id="pbFormDatetime">
+          </div>
+        </div>
+        
+        <div class="pb-form-row">
+          <label>Tag</label>
+          <select id="pbFormTag">
+            <option value="">None</option>
+            <option value="date">🌹 Date</option>
+            <option value="travel">✈️ Travel</option>
+            <option value="food">🍽️ Food</option>
+            <option value="cozy">🏠 Cozy</option>
+            <option value="romantic">💕 Romantic</option>
+            <option value="fun">🎮 Fun</option>
+            <option value="culture">🎭 Culture</option>
+          </select>
+        </div>
+        
+        <div class="pb-form-row">
+          <label>People to Invite</label>
+          <div class="pb-people-input-container">
+            <input type="text" id="pbFormPeopleInput" placeholder="Type name and press Enter">
+            <div class="pb-people-tags" id="pbPeopleTags"></div>
+          </div>
+        </div>
+        
+        <div class="pb-form-row">
+          <label>Photos / Attachments</label>
+          <div class="pb-photo-upload" id="pbPhotoUpload">
+            <div class="pb-photo-dropzone" id="pbPhotoDropzone">
+              <span>📷 Click or drag photos here</span>
+              <input type="file" id="pbPhotoInput" multiple accept="image/*" hidden>
+            </div>
+            <div class="pb-photo-previews" id="pbPhotoPreviews"></div>
+          </div>
+        </div>
+        
+        <div class="pb-form-actions">
+          <button type="button" class="btn" id="pbFormCancel">Cancel</button>
+          <button type="submit" class="btn pb-form-submit">Save Idea</button>
+        </div>
+      </form>
     </div>
   </div>
 

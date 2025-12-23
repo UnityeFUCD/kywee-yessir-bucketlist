@@ -4613,3 +4613,761 @@ ${completed.map(i => `[X] ${i.title}  ${i.desc} (#${i.tag})`).join("\n")}
       console.log("[DEVICE] Claimed device for", loadUser());
     }
   })();
+
+// ============================================
+// PLANNING BOARD SYSTEM
+// ============================================
+
+(function initPlanningBoard() {
+  "use strict";
+  
+  // State
+  let pbIdeas = [];
+  let pbCurrentMonthIndex = 0;
+  const PB_MONTHS = ['', 'Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+  const PB_MONTH_NAMES = ['Unplanned', 'January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
+  let pbPeopleList = [];
+  let pbPhotosList = [];
+  
+  // Example ideas (DON'T count in stats)
+  const PB_EXAMPLES = [
+    {
+      id: 'example-1',
+      title: 'Game Night Ideas',
+      desc: 'Example: Board games, snacks, and friends!',
+      targetMonth: '',
+      priority: 'low',
+      tag: 'fun',
+      location: 'Home',
+      people: ['Alex', 'Sam'],
+      isExample: true,
+      createdAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString()
+    },
+    {
+      id: 'example-2',
+      title: 'Anniversary Dinner',
+      desc: 'Example: Special restaurant reservation',
+      targetMonth: 'Feb',
+      priority: 'high',
+      tag: 'romantic',
+      location: 'Downtown',
+      datetime: '2026-02-14T19:00',
+      people: ['Partner'],
+      isExample: true,
+      createdAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString()
+    },
+    {
+      id: 'example-3',
+      title: 'Visit Art Museum',
+      desc: 'Example: Check out the new exhibit',
+      targetMonth: 'Mar',
+      priority: 'medium',
+      tag: 'culture',
+      location: 'City Art Museum',
+      isExample: true,
+      createdAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString()
+    }
+  ];
+  
+  // Code snippets for streaming effect
+  const PB_CODE_SNIPPETS = [
+    '// loading idea data...',
+    'const idea = await fetch();',
+    'if (idea.priority === "high")',
+    'render(idea.details);',
+    'function displayIdea() {',
+    '  return <IdeaCard />;',
+    '}',
+    'export default idea;',
+    'import { love } from "heart";',
+    '// compiled with ❤️',
+    'const memories = [];',
+    'memories.push(moment);',
+    'await createMemory();',
+    'promise.resolve(joy);',
+    'const plan = new Plan();',
+    'plan.execute(dreams);',
+    '// optimizing happiness...',
+    'while(together) { smile(); }',
+    'return Infinity;',
+  ];
+  
+  // Helper: Get element by ID
+  function $(id) {
+    return document.getElementById(id);
+  }
+  
+  // Load ideas from localStorage
+  function pbLoadIdeas() {
+    const stored = localStorage.getItem('planning_board_ideas');
+    pbIdeas = stored ? JSON.parse(stored) : [];
+  }
+  
+  // Save ideas to localStorage
+  function pbSaveIdeas() {
+    localStorage.setItem('planning_board_ideas', JSON.stringify(pbIdeas));
+  }
+  
+  // Get all ideas including examples for display
+  function pbGetAllIdeasForDisplay() {
+    return [...PB_EXAMPLES, ...pbIdeas];
+  }
+  
+  // Get ideas for a specific month (examples + real)
+  function pbGetIdeasForMonth(monthKey) {
+    const allIdeas = pbGetAllIdeasForDisplay();
+    return allIdeas.filter(function(idea) { return idea.targetMonth === monthKey; });
+  }
+  
+  // Update stats (ONLY count real ideas, NOT examples)
+  function pbUpdateStats() {
+    const total = pbIdeas.length;
+    const currentMonth = new Date().toLocaleString('en-US', { month: 'short' });
+    const thisMonth = pbIdeas.filter(function(i) { return i.targetMonth === currentMonth; }).length;
+    const highPriority = pbIdeas.filter(function(i) { return i.priority === 'high'; }).length;
+    const unplanned = pbIdeas.filter(function(i) { return !i.targetMonth || i.targetMonth === ''; }).length;
+    
+    const elTotal = $('pbStatTotal');
+    const elThisMonth = $('pbStatThisMonth');
+    const elHighPriority = $('pbStatHighPriority');
+    const elUnplanned = $('pbStatUnplanned');
+    
+    if (elTotal) elTotal.textContent = total;
+    if (elThisMonth) elThisMonth.textContent = thisMonth;
+    if (elHighPriority) elHighPriority.textContent = highPriority;
+    if (elUnplanned) elUnplanned.textContent = unplanned;
+  }
+  
+  // Boot Screen Animation
+  function pbShowBootScreen() {
+    return new Promise(function(resolve) {
+      const elBoot = $('pbBootScreen');
+      const elLog = $('pbBootLog');
+      const elProgress = $('pbBootProgressBar');
+      const elStatus = $('pbBootStatus');
+      
+      if (!elBoot || !elLog || !elProgress || !elStatus) {
+        resolve();
+        return;
+      }
+      
+      elBoot.classList.remove('hidden');
+      elLog.innerHTML = '';
+      elProgress.style.width = '0%';
+      
+      const bootMessages = [
+        { text: '[OK] Initializing Planning Board...', delay: 200 },
+        { text: '[OK] Loading year calendar...', delay: 400 },
+        { text: '[OK] Syncing idea database...', delay: 600 },
+        { text: '[OK] Preparing card navigator...', delay: 800 },
+        { text: '[OK] Loading theme assets...', delay: 1000 },
+        { text: '[OK] All systems ready', delay: 1200, success: true },
+      ];
+      
+      let progress = 0;
+      const progressInterval = setInterval(function() {
+        progress += 2;
+        if (progress <= 100) {
+          elProgress.style.width = progress + '%';
+        }
+      }, 25);
+      
+      bootMessages.forEach(function(msg) {
+        setTimeout(function() {
+          const elItem = document.createElement('div');
+          elItem.className = 'pb-boot-log-item' + (msg.success ? ' success' : '');
+          elItem.textContent = msg.text;
+          elLog.appendChild(elItem);
+          elStatus.textContent = msg.text.replace('[OK] ', '');
+        }, msg.delay);
+      });
+      
+      setTimeout(function() {
+        clearInterval(progressInterval);
+        elProgress.style.width = '100%';
+        elStatus.textContent = 'Launching...';
+        
+        setTimeout(function() {
+          elBoot.classList.add('hidden');
+          resolve();
+        }, 500);
+      }, 1800);
+    });
+  }
+  
+  // Generate code block for streaming effect
+  function pbGenerateCodeBlock() {
+    let code = '';
+    for (let i = 0; i < 30; i++) {
+      code += PB_CODE_SNIPPETS[Math.floor(Math.random() * PB_CODE_SNIPPETS.length)] + '\n';
+    }
+    return code;
+  }
+  
+  // Create code stream effect (performant version)
+  function pbCreateCodeStream(container) {
+    container.innerHTML = '';
+    const columns = 8;
+    const fragment = document.createDocumentFragment();
+    
+    for (let i = 0; i < columns; i++) {
+      const col = document.createElement('div');
+      col.className = 'pb-code-stream-column';
+      col.style.left = (i * 12.5) + '%';
+      col.style.animationDuration = (1 + Math.random() * 0.5) + 's';
+      col.style.animationDelay = (Math.random() * 0.3) + 's';
+      col.textContent = pbGenerateCodeBlock();
+      fragment.appendChild(col);
+    }
+    
+    container.appendChild(fragment);
+    container.classList.add('active');
+  }
+  
+  // Stop code stream
+  function pbStopCodeStream(container) {
+    container.classList.remove('active');
+    // Clean up after animation
+    setTimeout(function() {
+      container.innerHTML = '';
+    }, 500);
+  }
+  
+  // Render month card content
+  function pbRenderMonthCard(monthIndex) {
+    const monthKey = PB_MONTHS[monthIndex];
+    const monthName = PB_MONTH_NAMES[monthIndex];
+    const ideas = pbGetIdeasForMonth(monthKey);
+    const realIdeasCount = ideas.filter(function(i) { return !i.isExample; }).length;
+    
+    let html = '<div class="pb-month-card-header">' +
+      '<div class="pb-month-card-title">' + monthName + '</div>' +
+      '<div class="pb-month-card-count">' + realIdeasCount + ' idea' + (realIdeasCount !== 1 ? 's' : '') + '</div>' +
+      '</div>';
+    
+    if (ideas.length === 0) {
+      html += '<div class="pb-empty-state">' +
+        '<div class="pb-empty-state-icon">📝</div>' +
+        '<div>No ideas yet for ' + monthName + '</div>' +
+        '<div style="font-size: 12px; margin-top: 10px;">Click "Add Detailed Idea" to get started!</div>' +
+        '</div>';
+    } else {
+      html += '<div class="pb-ideas-grid">';
+      ideas.forEach(function(idea) {
+        html += '<div class="pb-idea-card ' + (idea.isExample ? 'is-example' : '') + '" data-idea-id="' + idea.id + '">' +
+          '<div class="pb-idea-card-title">' + idea.title + '</div>' +
+          (idea.desc ? '<div class="pb-idea-card-desc">' + idea.desc + '</div>' : '') +
+          '<div class="pb-idea-card-meta">' +
+          (idea.location ? '<span class="pb-idea-card-location">📍 ' + idea.location + '</span>' : '') +
+          (idea.people && idea.people.length > 0 ? '<span class="pb-idea-card-people">👥 ' + idea.people.join(', ') + '</span>' : '') +
+          (idea.tag ? '<span class="pb-idea-card-tag">' + idea.tag + '</span>' : '') +
+          '<span class="pb-idea-card-priority ' + idea.priority + '">' + idea.priority + '</span>' +
+          '</div>' +
+          '</div>';
+      });
+      html += '</div>';
+    }
+    
+    return html;
+  }
+  
+  // Navigate months with card animation
+  function pbNavigateMonth(direction) {
+    const container = $('pbCardContainer');
+    const prevBtn = $('pbNavPrev');
+    const nextBtn = $('pbNavNext');
+    
+    if (!container) return;
+    
+    const newIndex = pbCurrentMonthIndex + direction;
+    if (newIndex < 0 || newIndex > 12) return;
+    
+    // Get current card
+    const currentCard = container.querySelector('.pb-month-card.active');
+    
+    // Create new card
+    const newCard = document.createElement('div');
+    newCard.className = 'pb-month-card ' + (direction > 0 ? 'next' : 'prev');
+    newCard.innerHTML = pbRenderMonthCard(newIndex);
+    container.appendChild(newCard);
+    
+    // Force reflow
+    void newCard.offsetHeight;
+    
+    // Animate
+    requestAnimationFrame(function() {
+      if (currentCard) {
+        currentCard.classList.remove('active');
+        currentCard.classList.add(direction > 0 ? 'prev' : 'next');
+      }
+      newCard.classList.remove('prev', 'next');
+      newCard.classList.add('active');
+    });
+    
+    // Clean up old card
+    setTimeout(function() {
+      if (currentCard) currentCard.remove();
+    }, 600);
+    
+    pbCurrentMonthIndex = newIndex;
+    
+    // Update button states
+    if (prevBtn) prevBtn.disabled = pbCurrentMonthIndex === 0;
+    if (nextBtn) nextBtn.disabled = pbCurrentMonthIndex === 12;
+  }
+  
+  // Render initial card
+  function pbRenderInitialCard() {
+    const container = $('pbCardContainer');
+    if (!container) return;
+    
+    container.innerHTML = '';
+    const card = document.createElement('div');
+    card.className = 'pb-month-card active';
+    card.innerHTML = pbRenderMonthCard(pbCurrentMonthIndex);
+    container.appendChild(card);
+    
+    // Update nav buttons
+    const prevBtn = $('pbNavPrev');
+    const nextBtn = $('pbNavNext');
+    if (prevBtn) prevBtn.disabled = pbCurrentMonthIndex === 0;
+    if (nextBtn) nextBtn.disabled = pbCurrentMonthIndex === 12;
+  }
+  
+  // Show expanded idea with code stream
+  function pbShowExpandedIdea(ideaId) {
+    const allIdeas = pbGetAllIdeasForDisplay();
+    const idea = allIdeas.find(function(i) { return i.id === ideaId; });
+    if (!idea) return;
+    
+    const expanded = $('pbIdeaExpanded');
+    const codeStream = $('pbCodeStream');
+    const content = $('pbExpandedContent');
+    
+    if (!expanded || !codeStream || !content) return;
+    
+    // Build content HTML
+    let contentHtml = '<h2 class="pb-expanded-title">' + idea.title + '</h2>' +
+      (idea.desc ? '<p class="pb-expanded-desc">' + idea.desc + '</p>' : '') +
+      '<div class="pb-expanded-details">' +
+      '<div class="pb-expanded-detail">' +
+        '<div class="pb-expanded-detail-label">Month</div>' +
+        '<div class="pb-expanded-detail-value">' + (idea.targetMonth || 'Unplanned') + '</div>' +
+      '</div>' +
+      '<div class="pb-expanded-detail">' +
+        '<div class="pb-expanded-detail-label">Priority</div>' +
+        '<div class="pb-expanded-detail-value" style="text-transform: capitalize;">' + idea.priority + '</div>' +
+      '</div>';
+    
+    if (idea.tag) {
+      contentHtml += '<div class="pb-expanded-detail">' +
+        '<div class="pb-expanded-detail-label">Tag</div>' +
+        '<div class="pb-expanded-detail-value" style="text-transform: capitalize;">' + idea.tag + '</div>' +
+        '</div>';
+    }
+    
+    if (idea.location) {
+      contentHtml += '<div class="pb-expanded-detail">' +
+        '<div class="pb-expanded-detail-label">Location</div>' +
+        '<div class="pb-expanded-detail-value">📍 ' + idea.location + '</div>' +
+        '</div>';
+    }
+    
+    if (idea.datetime) {
+      contentHtml += '<div class="pb-expanded-detail">' +
+        '<div class="pb-expanded-detail-label">Date & Time</div>' +
+        '<div class="pb-expanded-detail-value">' + new Date(idea.datetime).toLocaleString() + '</div>' +
+        '</div>';
+    }
+    
+    if (idea.people && idea.people.length > 0) {
+      contentHtml += '<div class="pb-expanded-detail">' +
+        '<div class="pb-expanded-detail-label">People</div>' +
+        '<div class="pb-expanded-detail-value">👥 ' + idea.people.join(', ') + '</div>' +
+        '</div>';
+    }
+    
+    contentHtml += '</div>';
+    
+    if (idea.photos && idea.photos.length > 0) {
+      contentHtml += '<div class="pb-expanded-photos">';
+      idea.photos.forEach(function(p) {
+        contentHtml += '<img src="' + p + '" class="pb-expanded-photo" alt="Idea photo">';
+      });
+      contentHtml += '</div>';
+    }
+    
+    content.innerHTML = contentHtml;
+    
+    // Show overlay
+    expanded.classList.remove('hidden');
+    
+    // Start code stream
+    pbCreateCodeStream(codeStream);
+    
+    // Show content after code stream
+    setTimeout(function() {
+      expanded.classList.add('content-visible');
+    }, 400);
+  }
+  
+  // Close expanded idea
+  function pbCloseExpandedIdea() {
+    const expanded = $('pbIdeaExpanded');
+    const codeStream = $('pbCodeStream');
+    
+    if (!expanded || !codeStream) return;
+    
+    // Remove content visibility first
+    expanded.classList.remove('content-visible');
+    
+    // Start exit code stream
+    pbCreateCodeStream(codeStream);
+    
+    // Then hide
+    setTimeout(function() {
+      pbStopCodeStream(codeStream);
+      expanded.classList.add('hidden');
+    }, 600);
+  }
+  
+  // Open Planning Board
+  function pbOpen() {
+    pbShowBootScreen().then(function() {
+      const overlay = $('planningBoardOverlay');
+      if (overlay) {
+        overlay.classList.remove('hidden');
+        pbLoadIdeas();
+        pbUpdateStats();
+        pbCurrentMonthIndex = 0;
+        pbRenderInitialCard();
+      }
+    });
+  }
+  
+  // Close Planning Board
+  function pbClose() {
+    if (!confirm('Close Planning Board and return to main app?')) return;
+    
+    const overlay = $('planningBoardOverlay');
+    if (overlay) {
+      overlay.classList.add('hidden');
+    }
+  }
+  
+  // Add simple idea
+  function pbAddSimpleIdea() {
+    const input = $('pbQuickInput');
+    if (!input) return;
+    
+    const title = input.value.trim();
+    if (!title) return;
+    
+    const newIdea = {
+      id: 'idea-' + Date.now(),
+      title: title,
+      desc: '',
+      targetMonth: '',
+      priority: 'low',
+      tag: '',
+      createdAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString()
+    };
+    
+    pbIdeas.push(newIdea);
+    pbSaveIdeas();
+    pbUpdateStats();
+    pbRenderInitialCard();
+    
+    input.value = '';
+  }
+  
+  // Open add modal
+  function pbOpenAddModal() {
+    const modal = $('pbAddModal');
+    if (modal) {
+      modal.classList.remove('hidden');
+      modal.classList.add('active');
+      pbPeopleList = [];
+      pbPhotosList = [];
+      pbRenderPeopleTags();
+      pbRenderPhotoPreviews();
+    }
+  }
+  
+  // Close add modal
+  function pbCloseAddModal() {
+    const modal = $('pbAddModal');
+    const form = $('pbAddForm');
+    if (modal) {
+      modal.classList.add('hidden');
+      modal.classList.remove('active');
+    }
+    if (form) form.reset();
+    pbPeopleList = [];
+    pbPhotosList = [];
+  }
+  
+  // Render people tags
+  function pbRenderPeopleTags() {
+    const container = $('pbPeopleTags');
+    if (!container) return;
+    
+    container.innerHTML = pbPeopleList.map(function(person, i) {
+      return '<span class="pb-people-tag">' +
+        '👤 ' + person +
+        '<span class="pb-people-tag-remove" data-index="' + i + '">✕</span>' +
+        '</span>';
+    }).join('');
+  }
+  
+  // Render photo previews
+  function pbRenderPhotoPreviews() {
+    const container = $('pbPhotoPreviews');
+    if (!container) return;
+    
+    container.innerHTML = pbPhotosList.map(function(photo, i) {
+      return '<div class="pb-photo-preview">' +
+        '<img src="' + photo + '" alt="Preview ' + (i + 1) + '">' +
+        '<button type="button" class="pb-photo-preview-remove" data-index="' + i + '">✕</button>' +
+        '</div>';
+    }).join('');
+  }
+  
+  // Handle form submit
+  function pbHandleFormSubmit(e) {
+    e.preventDefault();
+    
+    const titleEl = $('pbFormTitle');
+    const title = titleEl ? titleEl.value.trim() : '';
+    if (!title) return;
+    
+    const descEl = $('pbFormDesc');
+    const monthEl = $('pbFormMonth');
+    const priorityEl = $('pbFormPriority');
+    const tagEl = $('pbFormTag');
+    const locationEl = $('pbFormLocation');
+    const datetimeEl = $('pbFormDatetime');
+    
+    const newIdea = {
+      id: 'idea-' + Date.now(),
+      title: title,
+      desc: descEl ? descEl.value.trim() : '',
+      targetMonth: monthEl ? monthEl.value : '',
+      priority: priorityEl ? priorityEl.value : 'low',
+      tag: tagEl ? tagEl.value : '',
+      location: locationEl ? locationEl.value.trim() : '',
+      datetime: datetimeEl ? datetimeEl.value : '',
+      people: pbPeopleList.slice(),
+      photos: pbPhotosList.slice(),
+      createdAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString()
+    };
+    
+    pbIdeas.push(newIdea);
+    pbSaveIdeas();
+    pbUpdateStats();
+    pbRenderInitialCard();
+    pbCloseAddModal();
+  }
+  
+  // Event Listeners
+  function pbInitEventListeners() {
+    // Open Planning Board
+    var openBtn = $('openPlanningBoard');
+    if (openBtn) {
+      openBtn.addEventListener('click', pbOpen);
+    }
+    
+    // Close Planning Board
+    var closeBtn = $('closePlanningBoard');
+    if (closeBtn) {
+      closeBtn.addEventListener('click', pbClose);
+    }
+    
+    // Navigation arrows
+    var prevBtn = $('pbNavPrev');
+    var nextBtn = $('pbNavNext');
+    if (prevBtn) {
+      prevBtn.addEventListener('click', function() { pbNavigateMonth(-1); });
+    }
+    if (nextBtn) {
+      nextBtn.addEventListener('click', function() { pbNavigateMonth(1); });
+    }
+    
+    // Quick add
+    var quickInput = $('pbQuickInput');
+    if (quickInput) {
+      quickInput.addEventListener('keypress', function(e) {
+        if (e.key === 'Enter') {
+          pbAddSimpleIdea();
+        }
+      });
+    }
+    
+    var addSimpleBtn = $('pbAddSimple');
+    if (addSimpleBtn) {
+      addSimpleBtn.addEventListener('click', pbAddSimpleIdea);
+    }
+    
+    // Open detailed modal
+    var addDetailedBtn = $('pbAddDetailed');
+    if (addDetailedBtn) {
+      addDetailedBtn.addEventListener('click', pbOpenAddModal);
+    }
+    
+    // Close modal
+    var modalClose = $('pbModalClose');
+    var formCancel = $('pbFormCancel');
+    if (modalClose) {
+      modalClose.addEventListener('click', pbCloseAddModal);
+    }
+    if (formCancel) {
+      formCancel.addEventListener('click', pbCloseAddModal);
+    }
+    
+    // Form submit
+    var form = $('pbAddForm');
+    if (form) {
+      form.addEventListener('submit', pbHandleFormSubmit);
+    }
+    
+    // People input
+    var peopleInput = $('pbFormPeopleInput');
+    if (peopleInput) {
+      peopleInput.addEventListener('keypress', function(e) {
+        if (e.key === 'Enter') {
+          e.preventDefault();
+          var name = peopleInput.value.trim();
+          if (name && pbPeopleList.indexOf(name) === -1) {
+            pbPeopleList.push(name);
+            pbRenderPeopleTags();
+            peopleInput.value = '';
+          }
+        }
+      });
+    }
+    
+    // Remove person tag (event delegation)
+    var peopleTags = $('pbPeopleTags');
+    if (peopleTags) {
+      peopleTags.addEventListener('click', function(e) {
+        var removeEl = e.target.closest('.pb-people-tag-remove');
+        if (removeEl) {
+          var index = parseInt(removeEl.dataset.index, 10);
+          pbPeopleList.splice(index, 1);
+          pbRenderPeopleTags();
+        }
+      });
+    }
+    
+    // Photo upload
+    var dropzone = $('pbPhotoDropzone');
+    var photoInput = $('pbPhotoInput');
+    if (dropzone && photoInput) {
+      dropzone.addEventListener('click', function() { photoInput.click(); });
+      
+      photoInput.addEventListener('change', function(e) {
+        var files = e.target.files;
+        if (files) {
+          Array.from(files).forEach(function(file) {
+            var reader = new FileReader();
+            reader.onload = function(event) {
+              pbPhotosList.push(event.target.result);
+              pbRenderPhotoPreviews();
+            };
+            reader.readAsDataURL(file);
+          });
+        }
+      });
+      
+      // Drag and drop
+      dropzone.addEventListener('dragover', function(e) {
+        e.preventDefault();
+        dropzone.style.borderColor = 'var(--accent)';
+      });
+      
+      dropzone.addEventListener('dragleave', function() {
+        dropzone.style.borderColor = '';
+      });
+      
+      dropzone.addEventListener('drop', function(e) {
+        e.preventDefault();
+        dropzone.style.borderColor = '';
+        var files = e.dataTransfer ? e.dataTransfer.files : null;
+        if (files) {
+          Array.from(files).forEach(function(file) {
+            if (file.type.indexOf('image/') === 0) {
+              var reader = new FileReader();
+              reader.onload = function(event) {
+                pbPhotosList.push(event.target.result);
+                pbRenderPhotoPreviews();
+              };
+              reader.readAsDataURL(file);
+            }
+          });
+        }
+      });
+    }
+    
+    // Remove photo (event delegation)
+    var photoPreviews = $('pbPhotoPreviews');
+    if (photoPreviews) {
+      photoPreviews.addEventListener('click', function(e) {
+        var removeEl = e.target.closest('.pb-photo-preview-remove');
+        if (removeEl) {
+          var index = parseInt(removeEl.dataset.index, 10);
+          pbPhotosList.splice(index, 1);
+          pbRenderPhotoPreviews();
+        }
+      });
+    }
+    
+    // Close expanded idea
+    var expandedClose = $('pbExpandedClose');
+    if (expandedClose) {
+      expandedClose.addEventListener('click', pbCloseExpandedIdea);
+    }
+    
+    // Click on idea card (event delegation on document)
+    document.addEventListener('click', function(e) {
+      var ideaCard = e.target.closest('.pb-idea-card');
+      if (ideaCard && ideaCard.dataset.ideaId) {
+        pbShowExpandedIdea(ideaCard.dataset.ideaId);
+      }
+    });
+    
+    // Close expanded on backdrop click
+    var expanded = $('pbIdeaExpanded');
+    if (expanded) {
+      expanded.addEventListener('click', function(e) {
+        if (e.target === expanded) {
+          pbCloseExpandedIdea();
+        }
+      });
+    }
+    
+    // Close modal on backdrop click
+    var modal = $('pbAddModal');
+    if (modal) {
+      modal.addEventListener('click', function(e) {
+        if (e.target === modal) {
+          pbCloseAddModal();
+        }
+      });
+    }
+  }
+  
+  // Initialize on DOM ready
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', pbInitEventListeners);
+  } else {
+    pbInitEventListeners();
+  }
+  
+  console.log('[PLANNING BOARD] System initialized');
+  
+})();
