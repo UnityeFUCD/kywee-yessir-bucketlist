@@ -3275,6 +3275,404 @@ input[type="date"]::-webkit-calendar-picker-indicator {
 
 
 /* ============================================
+   LIGHT THEME - ENHANCED TERMINAL DESIGN (v1.6.1)
+   Vintage terminal aesthetic with modern interactions
+   ============================================ */
+
+/* Light theme paper texture overlay */
+html[data-theme="light"] body::before {
+  background: repeating-linear-gradient(
+    0deg,
+    transparent,
+    transparent 2px,
+    rgba(26, 26, 26, 0.015) 2px,
+    rgba(26, 26, 26, 0.015) 4px
+  );
+  opacity: 0.5;
+}
+
+/* Light theme cards with corner brackets */
+html[data-theme="light"] .card {
+  background: var(--bg-card);
+  border: 2px solid var(--border);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
+  position: relative;
+  transition: all 0.2s ease;
+}
+
+html[data-theme="light"] .card:hover {
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.1);
+  transform: translateY(-2px);
+}
+
+/* Corner brackets on cards */
+html[data-theme="light"] .card::before,
+html[data-theme="light"] .card::after {
+  content: '';
+  position: absolute;
+  width: 12px;
+  height: 12px;
+  border: 2px solid var(--accent);
+  pointer-events: none;
+}
+
+html[data-theme="light"] .card::before {
+  top: -2px;
+  left: -2px;
+  border-right: none;
+  border-bottom: none;
+}
+
+html[data-theme="light"] .card::after {
+  bottom: -2px;
+  right: -2px;
+  border-left: none;
+  border-top: none;
+}
+
+/* Light theme card header with dashed border */
+html[data-theme="light"] .cardHeader {
+  border-bottom: 1px dashed var(--border);
+  padding-bottom: 12px;
+  margin-bottom: 16px;
+}
+
+html[data-theme="light"] .cardHeader h2 {
+  color: var(--text);
+  text-transform: uppercase;
+  letter-spacing: 2px;
+  font-size: 14px;
+}
+
+html[data-theme="light"] .cardHeader h2::before {
+  content: "[-] ";
+  color: var(--accent);
+}
+
+/* Light theme buttons with slide-in effect */
+html[data-theme="light"] .btn {
+  position: relative;
+  overflow: hidden;
+  background: transparent;
+  border: 2px solid var(--accent);
+  color: var(--accent);
+  transition: all 0.2s ease;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+}
+
+html[data-theme="light"] .btn::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: -100%;
+  width: 100%;
+  height: 100%;
+  background: var(--accent);
+  transition: left 0.3s ease;
+  z-index: -1;
+}
+
+html[data-theme="light"] .btn:hover {
+  color: white;
+  box-shadow: 0 0 20px rgba(233, 30, 99, 0.3);
+}
+
+html[data-theme="light"] .btn:hover::before {
+  left: 0;
+}
+
+html[data-theme="light"] .btn:active {
+  transform: scale(0.98);
+}
+
+/* Light theme pills */
+html[data-theme="light"] .pill {
+  border: 2px solid var(--border);
+  background: var(--bg-card);
+  transition: all 0.2s ease;
+}
+
+html[data-theme="light"] .pill:hover {
+  border-color: var(--accent);
+  box-shadow: 0 0 10px rgba(233, 30, 99, 0.15);
+}
+
+html[data-theme="light"] .pill.active {
+  background: var(--accent);
+  border-color: var(--accent);
+  color: white;
+}
+
+/* Light theme items with arrow indicator */
+html[data-theme="light"] .item {
+  border: 1px solid var(--border);
+  border-left: 4px solid var(--accent);
+  background: rgba(255, 255, 255, 0.8);
+  transition: all 0.2s ease;
+  position: relative;
+}
+
+html[data-theme="light"] .item::before {
+  content: '▸';
+  position: absolute;
+  left: -18px;
+  top: 50%;
+  transform: translateY(-50%);
+  color: var(--accent);
+  font-weight: 700;
+  opacity: 0;
+  transition: opacity 0.2s ease, left 0.2s ease;
+}
+
+html[data-theme="light"] .item:hover {
+  border-left-color: var(--accent-secondary);
+  background: var(--bg-card);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+  transform: translateX(4px);
+}
+
+html[data-theme="light"] .item:hover::before {
+  opacity: 1;
+  left: -14px;
+}
+
+/* Light theme calendar styling */
+html[data-theme="light"] .mini-cal {
+  border: 2px solid var(--border);
+  background: var(--bg-card);
+}
+
+html[data-theme="light"] .mini-cal-header {
+  border-bottom: 1px dashed var(--border);
+  padding-bottom: 10px;
+}
+
+html[data-theme="light"] .mini-cal-header::before {
+  content: "[▸] ";
+  color: var(--accent);
+}
+
+html[data-theme="light"] .mini-cal-day {
+  transition: all 0.15s ease;
+  cursor: pointer;
+  border: 1px solid transparent;
+  background: rgba(233, 30, 99, 0.02);
+}
+
+html[data-theme="light"] .mini-cal-day:hover {
+  background: rgba(233, 30, 99, 0.12);
+  border-color: var(--accent);
+  transform: scale(1.1);
+  box-shadow: 0 0 8px rgba(233, 30, 99, 0.2);
+}
+
+html[data-theme="light"] .mini-cal-day.today {
+  background: var(--accent);
+  color: white;
+  font-weight: 700;
+  box-shadow: 0 0 0 2px rgba(233, 30, 99, 0.3);
+}
+
+html[data-theme="light"] .mini-cal-day.has-event::after {
+  content: '•';
+  position: absolute;
+  bottom: 1px;
+  left: 50%;
+  transform: translateX(-50%);
+  color: var(--accent-secondary);
+  font-size: 12px;
+}
+
+/* Light theme message log */
+html[data-theme="light"] .message-log {
+  border: 2px solid var(--border);
+  background: var(--bg-card);
+}
+
+html[data-theme="light"] .message-log-item {
+  border-bottom: 1px dashed rgba(0, 0, 0, 0.1);
+  padding: 12px 0;
+  transition: all 0.2s ease;
+}
+
+html[data-theme="light"] .message-log-item:hover {
+  background: rgba(233, 30, 99, 0.03);
+  padding-left: 8px;
+}
+
+html[data-theme="light"] .message-from-name::before {
+  content: ">> ";
+  color: var(--accent);
+}
+
+/* Light theme scrollbar */
+html[data-theme="light"] ::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+html[data-theme="light"] ::-webkit-scrollbar-track {
+  background: var(--bg);
+  border-left: 1px solid var(--border);
+}
+
+html[data-theme="light"] ::-webkit-scrollbar-thumb {
+  background: var(--accent);
+  border: 1px solid var(--border);
+}
+
+html[data-theme="light"] ::-webkit-scrollbar-thumb:hover {
+  background: var(--accent-secondary);
+}
+
+/* Light theme input focus glow */
+html[data-theme="light"] input:focus,
+html[data-theme="light"] textarea:focus,
+html[data-theme="light"] select:focus {
+  outline: none;
+  border-color: var(--accent);
+  box-shadow: 0 0 0 3px rgba(233, 30, 99, 0.1);
+}
+
+/* Light theme modals */
+html[data-theme="light"] .modal {
+  background: rgba(0, 0, 0, 0.4);
+}
+
+html[data-theme="light"] .modal-inner,
+html[data-theme="light"] .settings-modal-inner {
+  background: var(--bg-card);
+  border: 2px solid var(--border);
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.15);
+  position: relative;
+}
+
+/* Corner brackets on modals */
+html[data-theme="light"] .modal-inner::before,
+html[data-theme="light"] .settings-modal-inner::before {
+  content: '';
+  position: absolute;
+  top: -2px;
+  left: -2px;
+  width: 16px;
+  height: 16px;
+  border: 2px solid var(--accent);
+  border-right: none;
+  border-bottom: none;
+}
+
+html[data-theme="light"] .modal-inner::after,
+html[data-theme="light"] .settings-modal-inner::after {
+  content: '';
+  position: absolute;
+  bottom: -2px;
+  right: -2px;
+  width: 16px;
+  height: 16px;
+  border: 2px solid var(--accent);
+  border-left: none;
+  border-top: none;
+}
+
+html[data-theme="light"] .modal-header h3::before {
+  content: "[-] ";
+  color: var(--accent);
+}
+
+/* Light theme tags */
+html[data-theme="light"] .tag {
+  background: rgba(233, 30, 99, 0.1);
+  border: 1px solid rgba(233, 30, 99, 0.3);
+  color: var(--accent);
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  font-size: 10px;
+}
+
+/* Light theme notifications */
+html[data-theme="light"] .notification-item {
+  border: 1px solid var(--border);
+  border-left: 3px solid var(--accent);
+  background: var(--bg-card);
+  transition: all 0.2s ease;
+}
+
+html[data-theme="light"] .notification-item:hover {
+  border-left-color: var(--accent-secondary);
+  transform: translateX(2px);
+}
+
+html[data-theme="light"] .notification-item.unread {
+  background: rgba(233, 30, 99, 0.05);
+}
+
+/* Light theme topbar */
+html[data-theme="light"] .topbar {
+  background: var(--bg-card);
+  border-bottom: 2px solid var(--border);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+}
+
+/* Light theme tracker */
+html[data-theme="light"] .tracker-fill {
+  background: linear-gradient(90deg, var(--accent), var(--accent-secondary));
+}
+
+/* Light theme theme dropdown */
+html[data-theme="light"] .theme-dropdown {
+  background: var(--bg-card);
+  border: 2px solid var(--border);
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.15);
+}
+
+html[data-theme="light"] .theme-option {
+  transition: all 0.15s ease;
+}
+
+html[data-theme="light"] .theme-option:hover {
+  background: rgba(233, 30, 99, 0.08);
+  padding-left: 14px;
+}
+
+html[data-theme="light"] .theme-option.active {
+  background: rgba(233, 30, 99, 0.12);
+  border-left: 3px solid var(--accent);
+}
+
+/* Light theme toast notifications */
+html[data-theme="light"] .toast {
+  background: var(--bg-card);
+  border: 2px solid var(--accent);
+  box-shadow: 0 4px 20px rgba(233, 30, 99, 0.2);
+}
+
+/* Light theme selection */
+html[data-theme="light"] ::selection {
+  background: rgba(233, 30, 99, 0.2);
+  color: var(--text);
+}
+
+/* Light theme focus visible */
+html[data-theme="light"] *:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+
+/* Light theme footer */
+html[data-theme="light"] .footer {
+  border-top: 2px dashed var(--border);
+  padding-top: 20px;
+  color: var(--muted);
+}
+
+html[data-theme="light"] .footer::before {
+  content: "// ";
+  color: var(--accent);
+}
+
+
+/* ============================================
    LIQUID GRADIENT THEME (v1.5.5)
    A fluid gradient aesthetic - heavily optimized
    ============================================ */
