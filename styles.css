@@ -54,19 +54,6 @@
     }
 
     /* Retro Windows 95 Theme Variables */
-    [data-theme="retro"] {
-      --bg: #008081;
-      --bg-card: #FFCDFA;
-      --text: #000000;
-      --muted: #353535;
-      --accent: #1C419F;
-      --accent-dim: #FF98F5;
-      --accent-secondary: #FF98F5;
-      --border: #353535;
-      --border-bright: #FFFFFF;
-      --shadow: none;
-    }
-
     * { box-sizing: border-box; }
 
     body {
@@ -541,8 +528,11 @@
         width: 100%;
         justify-content: center;
         text-align: center;
-        font-size: 12px;
+        font-size: 11px;
         white-space: normal;
+        word-break: break-word;
+        overflow-wrap: break-word;
+        line-height: 1.4;
       }
 
       .topbar-right {
@@ -1130,9 +1120,68 @@
       filter: drop-shadow(0 6px 10px rgba(0,0,0,.25));
       z-index: 5;
     }
+    
+    /* Foreground snowflakes - in front of UI */
+    .snowflake-foreground {
+      z-index: 99999 !important;
+      filter: blur(1px) drop-shadow(0 0 5px rgba(255,255,255,0.8));
+    }
 
     @keyframes fall {
       to { transform: translateY(110vh) rotate(360deg); opacity: 0.25; }
+    }
+    
+    /* Christmas Lights for Navbar */
+    .christmas-lights {
+      position: absolute;
+      top: 0;
+      left: 0;
+      right: 0;
+      height: 8px;
+      overflow: hidden;
+      pointer-events: none;
+      z-index: 100;
+    }
+    
+    .christmas-lights::before {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: 0;
+      right: 0;
+      height: 2px;
+      background: repeating-linear-gradient(
+        90deg,
+        transparent 0px,
+        transparent 30px,
+        #222 30px,
+        #222 32px
+      );
+    }
+    
+    .christmas-light {
+      position: absolute;
+      top: 2px;
+      width: 8px;
+      height: 12px;
+      border-radius: 50% 50% 50% 50% / 30% 30% 70% 70%;
+      animation: christmasLightGlow 1.5s ease-in-out infinite alternate;
+    }
+    
+    .christmas-light:nth-child(4n+1) { background: #ff3333; animation-delay: 0s; }
+    .christmas-light:nth-child(4n+2) { background: #00ff00; animation-delay: 0.2s; }
+    .christmas-light:nth-child(4n+3) { background: #3333ff; animation-delay: 0.4s; }
+    .christmas-light:nth-child(4n+4) { background: #ffff00; animation-delay: 0.6s; }
+    
+    @keyframes christmasLightGlow {
+      0% { 
+        filter: brightness(0.6) drop-shadow(0 0 2px currentColor);
+        opacity: 0.7;
+      }
+      100% { 
+        filter: brightness(1.2) drop-shadow(0 0 8px currentColor) drop-shadow(0 0 15px currentColor);
+        opacity: 1;
+      }
     }
 
     .tracker-grid {
@@ -1557,6 +1606,28 @@ input[type="date"]:focus {
 
 input[type="date"]::-webkit-calendar-picker-indicator {
   filter: invert(0.8);
+  cursor: pointer;
+}
+
+/* Date input wrapper - full clickable area */
+.date-input-wrapper {
+  position: relative;
+  cursor: pointer;
+}
+
+.date-input-wrapper input[type="date"] {
+  width: 100%;
+  cursor: pointer;
+}
+
+/* Make entire wrapper clickable */
+.date-input-wrapper::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 40px; /* Leave space for the actual picker icon */
+  bottom: 0;
   cursor: pointer;
 }
 
@@ -3688,1219 +3759,6 @@ html[data-theme="light"] .footer::before {
 
 
 /* ============================================
-   RETRO WINDOWS 95 THEME (v1.6.3)
-   Authentic pixel art aesthetic - IMPROVED
-   ============================================ */
-
-/* Retro theme keyframe animations */
-@keyframes retroBlink {
-  0%, 49% { opacity: 1; }
-  50%, 99% { opacity: 0; }
-  100% { opacity: 1; }
-}
-
-@keyframes retroPulse {
-  0%, 100% { opacity: 1; transform: scale(1); }
-  50% { opacity: 0.85; transform: scale(0.98); }
-}
-
-@keyframes retroFadeIn {
-  from { opacity: 0; transform: translateX(-10px); }
-  to { opacity: 1; transform: translateX(0); }
-}
-
-@keyframes retroMarquee {
-  0% { transform: translateX(100%); }
-  100% { transform: translateX(-100%); }
-}
-
-/* Retro boot progress bar animation */
-@keyframes retroProgressPulse {
-  0%, 100% { box-shadow: 0 0 5px #00FF00; }
-  50% { box-shadow: 0 0 15px #00FF00, 0 0 25px #00FF00; }
-}
-
-/* Retro body and background */
-html[data-theme="retro"] body {
-  font-family: 'Silkscreen', cursive !important;
-  -webkit-font-smoothing: none;
-  background: #008081 !important;
-  image-rendering: pixelated;
-  image-rendering: crisp-edges;
-  font-size: 14px !important;
-}
-
-/* Pixel grid overlay */
-html[data-theme="retro"] body::before {
-  content: '';
-  position: fixed;
-  top: 0;
-  left: 0;
-  width: 100%;
-  height: 100%;
-  background-image: 
-    repeating-linear-gradient(0deg, rgba(0,0,0,0.03) 0px, transparent 1px, transparent 2px, rgba(0,0,0,0.03) 3px),
-    repeating-linear-gradient(90deg, rgba(0,0,0,0.03) 0px, transparent 1px, transparent 2px, rgba(0,0,0,0.03) 3px);
-  pointer-events: none;
-  z-index: 9999;
-  opacity: 0.5;
-}
-
-/* All text uses pixel font - INCREASED SIZE */
-html[data-theme="retro"] * {
-  font-family: 'Silkscreen', cursive !important;
-  border-radius: 0 !important;
-}
-
-/* Base text size increase */
-html[data-theme="retro"] .wrap {
-  font-size: 14px !important;
-}
-
-/* Retro cards - Windows 95 window style */
-html[data-theme="retro"] .card {
-  background: #FFCDFA !important;
-  border: none !important;
-  padding: 6px !important;
-  box-shadow: 
-    3px 0px #353535,
-    0px 3px #353535,
-    -3px 0px #FFF,
-    0px -3px #FFF !important;
-  position: relative;
-}
-
-/* Multiple depth shadow */
-html[data-theme="retro"] .card::before {
-  content: '';
-  position: absolute;
-  top: 0;
-  left: 0;
-  width: 100%;
-  height: 100%;
-  box-shadow: 
-    rgba(34, 46, 44, 0.1) 0 2px 2px,
-    rgba(34, 46, 44, 0.1) 0 10px 10px,
-    rgba(34, 46, 44, 0.1) 0 18px 18px,
-    rgba(34, 46, 44, 0.1) 0 26px 26px;
-  pointer-events: none;
-  z-index: -1;
-}
-
-/* Remove corner brackets from retro theme */
-html[data-theme="retro"] .card::after {
-  display: none !important;
-}
-
-/* Retro card header - Title bar style with window controls */
-html[data-theme="retro"] .cardHeader {
-  background: #1C419F !important;
-  padding: 8px 6px 8px 8px !important;
-  margin: -6px -6px 8px -6px !important;
-  border-bottom: none !important;
-  display: flex !important;
-  align-items: center !important;
-  justify-content: space-between !important;
-  position: relative !important;
-}
-
-html[data-theme="retro"] .cardHeader h2 {
-  color: #FFF !important;
-  font-size: 14px !important;
-  text-transform: none !important;
-  letter-spacing: 0 !important;
-  flex: 1 !important;
-}
-
-html[data-theme="retro"] .cardHeader h2::before {
-  content: none !important;
-}
-
-/* Window control buttons - added via CSS pseudo elements */
-html[data-theme="retro"] .cardHeader::after {
-  content: '— □ ✕' !important;
-  display: flex !important;
-  gap: 4px !important;
-  font-size: 11px !important;
-  color: #000 !important;
-  background: #FFCDFA !important;
-  padding: 4px 8px !important;
-  margin-left: auto !important;
-  box-shadow: 
-    -2px 0px #FFF,
-    0px -2px #FFF,
-    2px 0px #353535,
-    0px 2px #353535,
-    inset -2px -2px #FF98F5 !important;
-  letter-spacing: 4px !important;
-}
-
-/* Retro menu bar style for cards */
-html[data-theme="retro"] .cardBody {
-  position: relative !important;
-}
-
-/* FIX: Notes and system messages - WHITE BACKGROUND for contrast */
-html[data-theme="retro"] .note {
-  background: #FFF !important;
-  border: 2px solid #353535 !important;
-  padding: 10px 12px !important;
-  color: #1C419F !important;
-  font-size: 13px !important;
-  margin-bottom: 12px !important;
-}
-
-/* FIX: Topbar pills - better visibility */
-html[data-theme="retro"] .topbar .pill {
-  background: #FFF !important;
-  border: 2px solid #353535 !important;
-  color: #1C419F !important;
-  font-size: 12px !important;
-  padding: 8px 14px !important;
-  display: flex !important;
-  align-items: center !important;
-  gap: 8px !important;
-}
-
-html[data-theme="retro"] .topbar .pill:hover {
-  background: #FF98F5 !important;
-}
-
-/* FIX: Icons in pills - ensure visibility */
-html[data-theme="retro"] .topbar .pill i,
-html[data-theme="retro"] .topbar .pill .fa-regular,
-html[data-theme="retro"] .topbar .pill .fa-solid,
-html[data-theme="retro"] .topbar .pill svg {
-  color: #1C419F !important;
-  font-size: 14px !important;
-}
-
-/* FIX: Dot indicators in pills */
-html[data-theme="retro"] .dot {
-  width: 10px !important;
-  height: 10px !important;
-  border: 2px solid #353535 !important;
-}
-
-html[data-theme="retro"] .dot.green {
-  background: #00FF00 !important;
-}
-
-html[data-theme="retro"] .dot.gray {
-  background: #999 !important;
-}
-
-/* FIX: Brand text in topbar */
-html[data-theme="retro"] .brand span {
-  color: #1C419F !important;
-  font-size: 14px !important;
-  font-weight: bold !important;
-}
-
-/* Retro inner containers */
-html[data-theme="retro"] .card-content,
-html[data-theme="retro"] .mission-list,
-html[data-theme="retro"] .mini-cal {
-  padding: 12px !important;
-  margin: 3px !important;
-  background: #FFCDFA !important;
-  box-shadow: 
-    3px 0px #FFF,
-    0px 3px #FFF,
-    -3px 0px #353535,
-    0px -3px #353535 !important;
-}
-
-/* Retro buttons - Windows 95 style - authentic */
-html[data-theme="retro"] .btn,
-html[data-theme="retro"] button {
-  background: #FFCDFA !important;
-  color: #000 !important;
-  border: none !important;
-  padding: 6px 14px !important;
-  font-size: 14px !important;
-  cursor: pointer;
-  transition: none !important;
-  box-shadow: 
-    -3px 0px #FFF,
-    0px -3px #FFF,
-    3px 0px #353535,
-    0px 3px #353535,
-    inset -4px -4px #FF98F5 !important;
-}
-
-html[data-theme="retro"] .btn:hover,
-html[data-theme="retro"] button:hover {
-  background: #FF98F5 !important;
-}
-
-html[data-theme="retro"] .btn:active,
-html[data-theme="retro"] button:active {
-  transform: translate(1px, 1px);
-  box-shadow: 
-    -3px 0px #353535,
-    0px -3px #353535,
-    3px 0px #FFF,
-    0px 3px #FFF,
-    inset 4px 4px #FF98F5 !important;
-}
-
-/* Button with auto width */
-html[data-theme="retro"] .btn.btn-auto {
-  padding-left: 10px !important;
-  padding-right: 10px !important;
-  width: auto !important;
-  height: 40px !important;
-}
-
-/* Remove slide effect on retro buttons */
-html[data-theme="retro"] .btn::before {
-  display: none !important;
-}
-
-/* Retro pills */
-html[data-theme="retro"] .pill {
-  background: #FFF !important;
-  border: 2px solid #353535 !important;
-  color: #1C419F !important;
-  padding: 8px 14px !important;
-  font-size: 12px !important;
-}
-
-html[data-theme="retro"] .pill:hover {
-  background: #FF98F5 !important;
-}
-
-html[data-theme="retro"] .pill.active {
-  background: #1C419F !important;
-  color: #FFF !important;
-  border-color: #1C419F !important;
-}
-
-/* Retro checkboxes - Windows 95 style */
-html[data-theme="retro"] input[type="checkbox"] {
-  width: 16px !important;
-  height: 16px !important;
-  appearance: none !important;
-  -webkit-appearance: none !important;
-  background: #FFF !important;
-  border: none !important;
-  box-shadow: 
-    inset 2px 2px #353535,
-    inset -1px -1px #FFF,
-    inset 3px 3px #808080 !important;
-  cursor: pointer !important;
-  position: relative !important;
-  vertical-align: middle !important;
-}
-
-html[data-theme="retro"] input[type="checkbox"]:checked {
-  background: #FFF !important;
-}
-
-html[data-theme="retro"] input[type="checkbox"]:checked::after {
-  content: '✓' !important;
-  position: absolute !important;
-  top: 50% !important;
-  left: 50% !important;
-  transform: translate(-50%, -50%) !important;
-  font-size: 12px !important;
-  font-weight: bold !important;
-  color: #000 !important;
-}
-
-html[data-theme="retro"] .check-icon {
-  display: none !important;
-}
-
-/* Retro items/list items - BETTER CONTRAST */
-html[data-theme="retro"] .item {
-  background: #FFF !important;
-  border: 2px solid #353535 !important;
-  border-left: 4px solid #1C419F !important;
-  color: #000 !important;
-  padding: 12px !important;
-  margin-bottom: 10px !important;
-  transition: none !important;
-  font-size: 13px !important;
-}
-
-html[data-theme="retro"] .item::before {
-  content: '▸' !important;
-  color: #1C419F !important;
-  margin-right: 8px;
-  animation: retroBlink 1s step-end infinite;
-}
-
-html[data-theme="retro"] .item:hover {
-  background: #FF98F5 !important;
-  transform: translate(-2px, -2px);
-  box-shadow: 
-    4px 4px 0px #353535 !important;
-}
-
-/* Retro calendar */
-html[data-theme="retro"] .mini-cal {
-  border: 2px solid #353535 !important;
-}
-
-html[data-theme="retro"] .mini-cal-header {
-  background: #1C419F !important;
-  color: #FFF !important;
-  padding: 10px !important;
-  margin: -12px -12px 12px -12px !important;
-  border-bottom: none !important;
-  font-size: 14px !important;
-}
-
-html[data-theme="retro"] .mini-cal-header::before {
-  content: none !important;
-}
-
-html[data-theme="retro"] .mini-cal-day {
-  background: #FFF !important;
-  border: 2px solid #353535 !important;
-  color: #000 !important;
-  cursor: pointer;
-  transition: none !important;
-  font-size: 13px !important;
-}
-
-html[data-theme="retro"] .mini-cal-day:hover {
-  background: #FF98F5 !important;
-  transform: translate(-1px, -1px);
-  box-shadow: 2px 2px 0px #353535 !important;
-}
-
-html[data-theme="retro"] .mini-cal-day.today {
-  background: #1C419F !important;
-  color: #FFF !important;
-  border-color: #1C419F !important;
-  animation: retroPulse 2s ease-in-out infinite;
-}
-
-html[data-theme="retro"] .mini-cal-day.has-event::after {
-  content: '●';
-  color: #FF98F5 !important;
-  font-size: 10px !important;
-  animation: retroBlink 1.5s step-end infinite;
-}
-
-html[data-theme="retro"] .calendar-day-name {
-  color: #353535 !important;
-  font-weight: bold !important;
-  font-size: 12px !important;
-}
-
-/* FIX: Calendar in message log - system message contrast */
-html[data-theme="retro"] .calendar__system-msg {
-  background: #FFF !important;
-  border: 2px solid #353535 !important;
-  padding: 8px 12px !important;
-  margin-bottom: 12px !important;
-}
-
-html[data-theme="retro"] .calendar__system-msg span {
-  color: #1C419F !important;
-  font-size: 12px !important;
-}
-
-/* Retro message log */
-html[data-theme="retro"] .message-log {
-  background: #000 !important;
-  border: none !important;
-  border-top: 4px solid #00FF00 !important;
-  border-left: 4px solid #00FF00 !important;
-  box-shadow: 
-    3px 0px #FFF,
-    0px 3px #FFF !important;
-  padding: 12px !important;
-}
-
-html[data-theme="retro"] .message-log-item {
-  background: transparent !important;
-  border-bottom: 1px dashed #00FF00 !important;
-  padding: 12px 0 !important;
-  color: #00FF00 !important;
-  animation: retroFadeIn 0.3s ease-out;
-  font-size: 13px !important;
-}
-
-html[data-theme="retro"] .message-from-name {
-  color: #00FF00 !important;
-  font-size: 14px !important;
-}
-
-html[data-theme="retro"] .message-from-name::before {
-  content: '▸ ' !important;
-  color: #00FF00 !important;
-  animation: retroBlink 1s step-end infinite;
-}
-
-html[data-theme="retro"] .message-text {
-  color: #FFF !important;
-  font-size: 13px !important;
-}
-
-html[data-theme="retro"] .message-time {
-  color: #00FF00 !important;
-  opacity: 0.7;
-}
-
-/* Retro input fields - Windows 95 style */
-html[data-theme="retro"] input,
-html[data-theme="retro"] textarea {
-  background: #FFF !important;
-  border: none !important;
-  color: #000 !important;
-  padding: 6px 8px !important;
-  font-size: 14px !important;
-  box-shadow: 
-    inset 2px 2px #353535,
-    inset -1px -1px #FFF,
-    inset 3px 3px #808080 !important;
-}
-
-html[data-theme="retro"] input:focus,
-html[data-theme="retro"] textarea:focus {
-  outline: none !important;
-  box-shadow: 
-    inset 2px 2px #1C419F,
-    inset -1px -1px #FFF,
-    inset 3px 3px #808080,
-    0 0 0 2px #FF98F5 !important;
-}
-
-html[data-theme="retro"] input::placeholder {
-  color: #808080 !important;
-}
-
-/* Retro select/dropdown - Windows 95 style */
-html[data-theme="retro"] select {
-  background: #FFF !important;
-  border: none !important;
-  color: #000 !important;
-  padding: 6px 24px 6px 8px !important;
-  font-size: 14px !important;
-  cursor: pointer !important;
-  appearance: none !important;
-  -webkit-appearance: none !important;
-  box-shadow: 
-    inset 2px 2px #353535,
-    inset -1px -1px #FFF,
-    inset 3px 3px #808080 !important;
-  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath fill='%23000' d='M2 4l4 4 4-4z'/%3E%3C/svg%3E") !important;
-  background-repeat: no-repeat !important;
-  background-position: right 6px center !important;
-}
-
-html[data-theme="retro"] select:focus {
-  outline: none !important;
-  box-shadow: 
-    inset 2px 2px #1C419F,
-    inset -1px -1px #FFF,
-    inset 3px 3px #808080,
-    0 0 0 2px #FF98F5 !important;
-}
-
-/* Dropdown button style */
-html[data-theme="retro"] select option {
-  background: #FFF !important;
-  color: #000 !important;
-  padding: 4px 8px !important;
-}
-
-html[data-theme="retro"] select option:hover,
-html[data-theme="retro"] select option:checked {
-  background: #1C419F !important;
-  color: #FFF !important;
-}
-
-/* Display area - scrolling text style like music player */
-html[data-theme="retro"] .message-log,
-html[data-theme="retro"] .display-area {
-  position: relative !important;
-  background: #000 !important;
-  padding: 8px 0 !important;
-  overflow: hidden !important;
-  border-top: 4px solid #FF98F5 !important;
-  border-left: 4px solid #FF98F5 !important;
-  box-shadow: 
-    3px 0px #FFF,
-    0px 3px #FFF !important;
-}
-
-/* Retro modals - Windows 95 style */
-html[data-theme="retro"] .modal {
-  background: rgba(0, 128, 129, 0.9) !important;
-}
-
-html[data-theme="retro"] .modal-inner,
-html[data-theme="retro"] .settings-modal-inner {
-  background: #FFCDFA !important;
-  border: none !important;
-  padding: 6px !important;
-  box-shadow: 
-    3px 0px #353535,
-    0px 3px #353535,
-    -3px 0px #FFF,
-    0px -3px #FFF,
-    rgba(34, 46, 44, 0.1) 0 2px 2px,
-    rgba(34, 46, 44, 0.1) 0 10px 10px,
-    rgba(34, 46, 44, 0.1) 0 18px 18px,
-    rgba(34, 46, 44, 0.1) 0 26px 26px !important;
-}
-
-html[data-theme="retro"] .modal-inner::before,
-html[data-theme="retro"] .modal-inner::after,
-html[data-theme="retro"] .settings-modal-inner::before,
-html[data-theme="retro"] .settings-modal-inner::after {
-  display: none !important;
-}
-
-html[data-theme="retro"] .modal-header {
-  background: #1C419F !important;
-  padding: 8px !important;
-  margin: -6px -6px 0 -6px !important;
-  display: flex !important;
-  align-items: center !important;
-  justify-content: space-between !important;
-}
-
-html[data-theme="retro"] .modal-header h3 {
-  color: #FFF !important;
-  font-size: 14px !important;
-  flex: 1 !important;
-}
-
-html[data-theme="retro"] .modal-header h3::before {
-  content: none !important;
-}
-
-/* Window controls for modal */
-html[data-theme="retro"] .modal-close {
-  background: #FFCDFA !important;
-  color: #000 !important;
-  width: auto !important;
-  height: 26px !important;
-  padding: 0 6px !important;
-  display: flex !important;
-  align-items: center !important;
-  justify-content: center !important;
-  font-size: 14px !important;
-  box-shadow: 
-    -2px 0px #FFF,
-    0px -2px #FFF,
-    2px 0px #353535,
-    0px 2px #353535,
-    inset -2px -2px #FF98F5 !important;
-}
-
-html[data-theme="retro"] .modal-close:hover {
-  background: #FF98F5 !important;
-}
-
-html[data-theme="retro"] .modal-close:active {
-  box-shadow: 
-    -2px 0px #353535,
-    0px -2px #353535,
-    2px 0px #FFF,
-    0px 2px #FFF,
-    inset 2px 2px #FF98F5 !important;
-}
-
-/* Menu bar style for modals */
-html[data-theme="retro"] .modal-body,
-html[data-theme="retro"] .settings-content {
-  padding: 12px !important;
-  margin: 3px !important;
-  background: #FFCDFA !important;
-  box-shadow: 
-    3px 0px #FFF,
-    0px 3px #FFF,
-    -3px 0px #353535,
-    0px -3px #353535 !important;
-}
-
-/* Retro topbar */
-html[data-theme="retro"] .topbar {
-  background: #FFCDFA !important;
-  border-bottom: 3px solid #353535 !important;
-  box-shadow: none !important;
-}
-
-html[data-theme="retro"] .topbar::before {
-  content: '';
-  position: absolute;
-  bottom: 0;
-  left: 0;
-  right: 0;
-  height: 3px;
-  background: #FFF;
-  transform: translateY(-3px);
-}
-
-/* Retro tracker */
-html[data-theme="retro"] .tracker-container {
-  background: #000 !important;
-  border: 2px solid #353535 !important;
-}
-
-html[data-theme="retro"] .tracker-fill {
-  background: #1C419F !important;
-}
-
-html[data-theme="retro"] .tracker-text {
-  color: #FFF !important;
-}
-
-/* Retro theme dropdown */
-html[data-theme="retro"] .theme-dropdown {
-  background: #FFCDFA !important;
-  border: 2px solid #353535 !important;
-  box-shadow: 
-    4px 4px 0px #353535,
-    -3px 0px #FFF,
-    0px -3px #FFF !important;
-}
-
-html[data-theme="retro"] .theme-option {
-  color: #000 !important;
-  border-bottom: 1px dashed #FF98F5 !important;
-  padding: 8px 12px !important;
-}
-
-html[data-theme="retro"] .theme-option:hover {
-  background: #FF98F5 !important;
-}
-
-html[data-theme="retro"] .theme-option.active {
-  background: #1C419F !important;
-  color: #FFF !important;
-}
-
-/* Retro tags */
-html[data-theme="retro"] .tag {
-  background: #1C419F !important;
-  color: #FFF !important;
-  border: none !important;
-  padding: 4px 8px !important;
-  font-size: 10px !important;
-  text-transform: uppercase !important;
-  box-shadow: 2px 2px 0px #353535 !important;
-}
-
-/* Retro notifications */
-html[data-theme="retro"] .notification-item {
-  background: #FFF !important;
-  border: 2px solid #353535 !important;
-  border-left: 4px solid #1C419F !important;
-  color: #000 !important;
-}
-
-html[data-theme="retro"] .notification-item:hover {
-  background: #FF98F5 !important;
-  transform: translate(-2px, -2px);
-  box-shadow: 4px 4px 0px #353535 !important;
-}
-
-html[data-theme="retro"] .notification-item.unread {
-  border-left-color: #FF98F5 !important;
-}
-
-/* Retro toast */
-html[data-theme="retro"] .toast {
-  background: #FFCDFA !important;
-  border: 2px solid #353535 !important;
-  color: #000 !important;
-  box-shadow: 
-    4px 4px 0px #353535,
-    -3px 0px #FFF,
-    0px -3px #FFF !important;
-}
-
-/* Retro scrollbar */
-html[data-theme="retro"] ::-webkit-scrollbar {
-  width: 16px !important;
-  height: 16px !important;
-}
-
-html[data-theme="retro"] ::-webkit-scrollbar-track {
-  background: #FFCDFA !important;
-  border: 1px solid #353535 !important;
-}
-
-html[data-theme="retro"] ::-webkit-scrollbar-thumb {
-  background: #FF98F5 !important;
-  border: 2px solid #353535 !important;
-  box-shadow: 
-    inset -2px -2px #FFCDFA,
-    inset 2px 2px #FFF !important;
-}
-
-html[data-theme="retro"] ::-webkit-scrollbar-thumb:hover {
-  background: #1C419F !important;
-}
-
-html[data-theme="retro"] ::-webkit-scrollbar-button {
-  background: #FFCDFA !important;
-  border: 1px solid #353535 !important;
-}
-
-/* Retro selection */
-html[data-theme="retro"] ::selection {
-  background: #1C419F !important;
-  color: #FFF !important;
-}
-
-/* Retro settings modal */
-html[data-theme="retro"] .settings-section {
-  border-bottom: 2px dashed #FF98F5 !important;
-  padding-bottom: 16px !important;
-  margin-bottom: 16px !important;
-}
-
-html[data-theme="retro"] .settings-section h4 {
-  color: #1C419F !important;
-  text-transform: uppercase !important;
-}
-
-html[data-theme="retro"] .settings-section h4::before {
-  content: '► ' !important;
-  color: #FF98F5 !important;
-}
-
-html[data-theme="retro"] .note {
-  background: #FFF !important;
-  border: 2px solid #FF98F5 !important;
-  padding: 8px !important;
-  color: #353535 !important;
-}
-
-/* Retro danger buttons */
-html[data-theme="retro"] .btn.danger {
-  background: #FFF !important;
-  border: 2px solid #FF0000 !important;
-  color: #FF0000 !important;
-  box-shadow: 
-    -2px 0px #FFF,
-    0px -2px #FFF,
-    2px 0px #353535,
-    0px 2px #353535 !important;
-}
-
-html[data-theme="retro"] .btn.danger:hover {
-  background: #FF0000 !important;
-  color: #FFF !important;
-}
-
-/* Retro who-btn */
-html[data-theme="retro"] .who-btn {
-  background: #FFCDFA !important;
-  border: 2px solid #353535 !important;
-  color: #000 !important;
-  box-shadow: 
-    -2px 0px #FFF,
-    0px -2px #FFF,
-    2px 0px #353535,
-    0px 2px #353535,
-    inset -3px -3px #FF98F5 !important;
-}
-
-html[data-theme="retro"] .who-btn:hover {
-  background: #FF98F5 !important;
-}
-
-html[data-theme="retro"] .who-btn.active {
-  background: #1C419F !important;
-  color: #FFF !important;
-}
-
-/* Retro envelope */
-html[data-theme="retro"] .envelope-container {
-  background: #FFCDFA !important;
-  border: 2px solid #353535 !important;
-  box-shadow: 4px 4px 0px #353535 !important;
-}
-
-/* Retro footer */
-html[data-theme="retro"] .footer {
-  color: #000 !important;
-  border-top: 3px solid #353535 !important;
-  background: #FFCDFA !important;
-  padding: 12px !important;
-}
-
-html[data-theme="retro"] .footer::before {
-  content: '► ' !important;
-  color: #1C419F !important;
-}
-
-/* Retro cover section */
-html[data-theme="retro"] .coverInner {
-  background: #FFCDFA !important;
-  border: 2px solid #353535 !important;
-  box-shadow: 
-    4px 4px 0px #353535,
-    -3px 0px #FFF,
-    0px -3px #FFF !important;
-}
-
-/* Retro photo cards */
-html[data-theme="retro"] .photo-card {
-  background: #FFF !important;
-  border: 2px solid #353535 !important;
-  box-shadow: 4px 4px 0px #353535 !important;
-}
-
-html[data-theme="retro"] .photo-card:hover {
-  transform: translate(-2px, -2px);
-  box-shadow: 6px 6px 0px #353535 !important;
-}
-
-/* Retro medal cards */
-html[data-theme="retro"] .medal-card {
-  background: #FFCDFA !important;
-  border: 2px solid #353535 !important;
-  box-shadow: 3px 3px 0px #353535 !important;
-}
-
-/* Menu style first letter underline */
-html[data-theme="retro"] .cardHeader h2::first-letter,
-html[data-theme="retro"] .settings-section h4::first-letter {
-  text-decoration: underline;
-  text-underline-offset: 2px;
-  text-decoration-thickness: 2px;
-}
-
-/* ============================================
-   RETRO THEME - ADDITIONAL FIXES (v1.6.4)
-   Better visibility, icons, and contrast
-   ============================================ */
-
-/* FIX: Tracker grid boxes - better contrast */
-html[data-theme="retro"] .tracker-grid {
-  gap: 10px !important;
-}
-
-html[data-theme="retro"] .tracker-box {
-  background: #FFF !important;
-  border: 3px solid #353535 !important;
-  padding: 15px !important;
-  box-shadow: 
-    inset -3px -3px #FFCDFA,
-    inset 3px 3px #FFF,
-    4px 4px 0 #353535 !important;
-}
-
-html[data-theme="retro"] .tracker-label {
-  color: #1C419F !important;
-  font-size: 11px !important;
-  text-transform: uppercase !important;
-  letter-spacing: 1px !important;
-  margin-bottom: 8px !important;
-}
-
-html[data-theme="retro"] .tracker-value {
-  color: #1C419F !important;
-  font-size: 16px !important;
-  font-weight: bold !important;
-}
-
-/* FIX: Progress tracker bar */
-html[data-theme="retro"] .tracker-bar {
-  background: #FFF !important;
-  border: 3px solid #353535 !important;
-  height: 20px !important;
-  box-shadow: inset 3px 3px #FFCDFA !important;
-}
-
-html[data-theme="retro"] .tracker-fill {
-  background: linear-gradient(180deg, #00FF00 0%, #00AA00 50%, #008800 100%) !important;
-  box-shadow: inset 0 2px 0 rgba(255,255,255,0.3) !important;
-}
-
-/* FIX: Calendar header DUO button with proper icon */
-html[data-theme="retro"] .calendar__header {
-  background: #1C419F !important;
-  padding: 10px 12px !important;
-}
-
-html[data-theme="retro"] .calendar__header-left span {
-  color: #FFF !important;
-  font-size: 14px !important;
-}
-
-html[data-theme="retro"] .calendar__duo-btn {
-  background: #FFF !important;
-  border: 2px solid #353535 !important;
-  color: #1C419F !important;
-  padding: 6px 12px !important;
-  font-size: 12px !important;
-  display: flex !important;
-  align-items: center !important;
-  gap: 6px !important;
-  box-shadow: 
-    -2px 0px #FFF,
-    0px -2px #FFF,
-    2px 0px #353535,
-    0px 2px #353535,
-    inset -2px -2px #FFCDFA !important;
-}
-
-html[data-theme="retro"] .calendar__duo-btn:hover {
-  background: #FF98F5 !important;
-}
-
-html[data-theme="retro"] .calendar__duo-btn i {
-  color: #1C419F !important;
-  font-size: 14px !important;
-}
-
-/* FIX: Envelope container/DUO button in message log */
-html[data-theme="retro"] .envelope-container {
-  background: #FFF !important;
-  border: 2px solid #353535 !important;
-  color: #1C419F !important;
-  padding: 8px 14px !important;
-  box-shadow: 
-    -2px 0px #FFF,
-    0px -2px #FFF,
-    2px 0px #353535,
-    0px 2px #353535,
-    inset -2px -2px #FFCDFA !important;
-}
-
-html[data-theme="retro"] .envelope-container:hover {
-  background: #FF98F5 !important;
-}
-
-html[data-theme="retro"] .envelope-container i {
-  color: #1C419F !important;
-  font-size: 16px !important;
-}
-
-html[data-theme="retro"] #envelopeLabel {
-  color: #1C419F !important;
-  font-size: 12px !important;
-}
-
-/* FIX: Mission tabs */
-html[data-theme="retro"] .mission-tabs {
-  background: #FFF !important;
-  border: 2px solid #353535 !important;
-  padding: 0 !important;
-  margin-bottom: 15px !important;
-}
-
-html[data-theme="retro"] .mission-tab {
-  background: #FFCDFA !important;
-  color: #1C419F !important;
-  border: none !important;
-  border-right: 2px solid #353535 !important;
-  padding: 10px 15px !important;
-  font-size: 12px !important;
-}
-
-html[data-theme="retro"] .mission-tab:last-child {
-  border-right: none !important;
-}
-
-html[data-theme="retro"] .mission-tab:hover {
-  background: #FF98F5 !important;
-}
-
-html[data-theme="retro"] .mission-tab.active {
-  background: #1C419F !important;
-  color: #FFF !important;
-}
-
-/* FIX: Labels in forms */
-html[data-theme="retro"] label {
-  color: #1C419F !important;
-  font-size: 12px !important;
-  text-transform: uppercase !important;
-  letter-spacing: 1px !important;
-}
-
-html[data-theme="retro"] .field label {
-  margin-bottom: 6px !important;
-  display: block !important;
-}
-
-/* FIX: Actions buttons container */
-html[data-theme="retro"] .actions {
-  gap: 10px !important;
-}
-
-html[data-theme="retro"] .actions-inline {
-  flex-wrap: wrap !important;
-}
-
-/* FIX: Primary buttons */
-html[data-theme="retro"] .btn.primary {
-  background: #1C419F !important;
-  color: #FFF !important;
-  box-shadow: 
-    -2px 0px #FFF,
-    0px -2px #FFF,
-    2px 0px #353535,
-    0px 2px #353535,
-    inset -3px -3px #0D2A6B !important;
-}
-
-html[data-theme="retro"] .btn.primary:hover {
-  background: #2A52B8 !important;
-}
-
-/* FIX: Footer text */
-html[data-theme="retro"] .footer {
-  color: #1C419F !important;
-  font-size: 11px !important;
-  text-align: center !important;
-  padding: 15px !important;
-  border-top: 2px dashed #FF98F5 !important;
-}
-
-/* FIX: Calendar navigation buttons */
-html[data-theme="retro"] .calendar__nav {
-  background: #FFF !important;
-  border: 2px solid #353535 !important;
-  color: #1C419F !important;
-  width: 32px !important;
-  height: 32px !important;
-  box-shadow: 
-    -2px 0px #FFF,
-    0px -2px #FFF,
-    2px 0px #353535,
-    0px 2px #353535 !important;
-}
-
-html[data-theme="retro"] .calendar__nav:hover {
-  background: #FF98F5 !important;
-}
-
-html[data-theme="retro"] .calendar__select {
-  background: #FFF !important;
-  border: 2px solid #353535 !important;
-  color: #1C419F !important;
-  font-size: 12px !important;
-  padding: 6px 10px !important;
-}
-
-/* FIX: Calendar days grid */
-html[data-theme="retro"] .calendar__days {
-  gap: 3px !important;
-}
-
-html[data-theme="retro"] .calendar__days > div {
-  background: #FFF !important;
-  border: 1px solid #353535 !important;
-  color: #000 !important;
-  font-size: 12px !important;
-  padding: 8px 4px !important;
-}
-
-html[data-theme="retro"] .calendar__days > div:first-child,
-html[data-theme="retro"] .calendar__days > div:nth-child(2),
-html[data-theme="retro"] .calendar__days > div:nth-child(3),
-html[data-theme="retro"] .calendar__days > div:nth-child(4),
-html[data-theme="retro"] .calendar__days > div:nth-child(5),
-html[data-theme="retro"] .calendar__days > div:nth-child(6),
-html[data-theme="retro"] .calendar__days > div:nth-child(7) {
-  background: #1C419F !important;
-  color: #FFF !important;
-  font-weight: bold !important;
-}
-
-html[data-theme="retro"] .calendar__day {
-  cursor: pointer !important;
-}
-
-html[data-theme="retro"] .calendar__day:hover {
-  background: #FF98F5 !important;
-}
-
-html[data-theme="retro"] .calendar__day.today {
-  background: #1C419F !important;
-  color: #FFF !important;
-  font-weight: bold !important;
-}
-
-html[data-theme="retro"] .calendar__day.has-event::after {
-  background: #00FF00 !important;
-  width: 6px !important;
-  height: 6px !important;
-}
-
-/* FIX: Notification bell icon */
-html[data-theme="retro"] .notification-bell {
-  background: #FFF !important;
-  border: 2px solid #353535 !important;
-  padding: 6px !important;
-  box-shadow: 
-    -2px 0px #FFF,
-    0px -2px #FFF,
-    2px 0px #353535,
-    0px 2px #353535 !important;
-}
-
-html[data-theme="retro"] .notification-bell svg {
-  fill: #1C419F !important;
-}
-
-html[data-theme="retro"] .notification-bell:hover {
-  background: #FF98F5 !important;
-}
-
-html[data-theme="retro"] .notification-badge {
-  background: #FF0000 !important;
-  color: #FFF !important;
-  border: 2px solid #FFF !important;
-}
-
-/* FIX: Notification dropdown */
-html[data-theme="retro"] .notification-dropdown {
-  background: #FFCDFA !important;
-  border: 3px solid #353535 !important;
-  box-shadow: 6px 6px 0 #353535 !important;
-}
-
-html[data-theme="retro"] .notification-header {
-  background: #1C419F !important;
-  color: #FFF !important;
-  padding: 10px !important;
-  margin: -3px -3px 0 -3px !important;
-}
-
-/* FIX: Game clips and expandable sections */
-html[data-theme="retro"] .game-clips-header,
-html[data-theme="retro"] .expandable-header {
-  background: #1C419F !important;
-  color: #FFF !important;
-  padding: 10px 12px !important;
-}
-
-html[data-theme="retro"] .game-clips-content,
-html[data-theme="retro"] .expandable-content {
-  background: #FFF !important;
-  border: 2px solid #353535 !important;
-  border-top: none !important;
-}
-
-/* FIX: Example/tag badges */
-html[data-theme="retro"] .item .tag,
-html[data-theme="retro"] .badge {
-  background: #1C419F !important;
-  color: #FFF !important;
-  font-size: 10px !important;
-  padding: 3px 8px !important;
-  border: none !important;
-  box-shadow: 2px 2px 0 #353535 !important;
-}
-
-
-/* ============================================
    PLANNING BOARD SYSTEM (v1.0)
    Year Planning with Card Navigation
    ============================================ */
@@ -4966,9 +3824,30 @@ html[data-theme="retro"] .badge {
 }
 
 .pb-beta {
-  color: var(--accent);
+  color: #ff00ff;
   font-weight: bold;
-  opacity: 0.7;
+  text-transform: uppercase;
+  letter-spacing: 2px;
+  padding: 2px 8px;
+  background: linear-gradient(135deg, rgba(255, 0, 255, 0.3), rgba(0, 255, 255, 0.2));
+  border: 1px solid #ff00ff;
+  border-radius: 4px;
+  animation: betaPulse 2s ease-in-out infinite;
+  text-shadow: 0 0 5px #ff00ff, 0 0 10px #ff00ff;
+  box-shadow: 0 0 10px rgba(255, 0, 255, 0.5), inset 0 0 5px rgba(255, 0, 255, 0.2);
+}
+
+@keyframes betaPulse {
+  0%, 100% { 
+    opacity: 1; 
+    text-shadow: 0 0 5px #ff00ff, 0 0 10px #ff00ff;
+    box-shadow: 0 0 10px rgba(255, 0, 255, 0.5), inset 0 0 5px rgba(255, 0, 255, 0.2);
+  }
+  50% { 
+    opacity: 0.8; 
+    text-shadow: 0 0 10px #ff00ff, 0 0 20px #ff00ff, 0 0 30px #00ffff;
+    box-shadow: 0 0 20px rgba(255, 0, 255, 0.8), 0 0 30px rgba(0, 255, 255, 0.4), inset 0 0 10px rgba(255, 0, 255, 0.3);
+  }
 }
 
 /* Bug Report Button */
@@ -6078,750 +4957,7 @@ html[data-theme="light"] .pb-close-btn:hover {
   color: #f44336;
 }
 
-/* --- RETRO THEME - DOS INSTALLER STYLE --- */
-html[data-theme="retro"] .pb-boot-screen {
-  background: #000080 !important;
-  font-family: 'Silkscreen', 'Courier New', monospace !important;
-}
-
-/* DOS-style blue background with box */
-html[data-theme="retro"] .pb-boot-content {
-  background: #0000AA !important;
-  border: 3px double #00FFFF !important;
-  padding: 30px 40px !important;
-  box-shadow: 
-    8px 8px 0 rgba(0,0,0,0.5),
-    inset 0 0 0 2px #000080 !important;
-  max-width: 650px !important;
-}
-
-html[data-theme="retro"] .pb-boot-title {
-  color: #FFFF00 !important;
-  font-family: 'Silkscreen', 'Courier New', monospace !important;
-  text-shadow: 2px 2px 0 #000 !important;
-  font-size: clamp(20px, 4vw, 28px) !important;
-  letter-spacing: 2px !important;
-  text-align: center !important;
-  margin-bottom: 10px !important;
-}
-
-html[data-theme="retro"] .pb-boot-title::before {
-  content: '╔══════════════════════════════════════╗' !important;
-  display: block !important;
-  color: #00FFFF !important;
-  font-size: 12px !important;
-  margin-bottom: 10px !important;
-}
-
-html[data-theme="retro"] .pb-boot-title::after {
-  content: '╚══════════════════════════════════════╝' !important;
-  display: block !important;
-  color: #00FFFF !important;
-  font-size: 12px !important;
-  margin-top: 10px !important;
-}
-
-html[data-theme="retro"] .pb-boot-line {
-  background: #00FFFF !important;
-  height: 2px !important;
-  margin: 20px 0 !important;
-}
-
-html[data-theme="retro"] .pb-boot-log {
-  color: #FFFFFF !important;
-  font-size: 13px !important;
-  line-height: 2.2 !important;
-  text-align: left !important;
-  background: #000080 !important;
-  border: 1px solid #00FFFF !important;
-  padding: 15px !important;
-  margin-bottom: 20px !important;
-}
-
-html[data-theme="retro"] .pb-boot-log-item {
-  color: #C0C0C0 !important;
-}
-
-html[data-theme="retro"] .pb-boot-log-item::before {
-  content: 'C:\\> ' !important;
-  color: #00FF00 !important;
-}
-
-html[data-theme="retro"] .pb-boot-log-item.success {
-  color: #00FF00 !important;
-}
-
-html[data-theme="retro"] .pb-boot-log-item.success::before {
-  content: '✓ ' !important;
-  color: #00FF00 !important;
-}
-
-/* DOS-style progress bar - blocky green segments */
-html[data-theme="retro"] .pb-boot-progress {
-  border: 3px solid #00FFFF !important;
-  background: #000080 !important;
-  height: 28px !important;
-  padding: 3px !important;
-  box-shadow: inset 2px 2px 0 #000 !important;
-}
-
-html[data-theme="retro"] .pb-boot-progress-bar {
-  background: repeating-linear-gradient(
-    90deg,
-    #00FF00 0px,
-    #00FF00 12px,
-    #008800 12px,
-    #008800 14px
-  ) !important;
-  box-shadow: 
-    inset 0 2px 0 #00FF88,
-    inset 0 -2px 0 #006600 !important;
-  animation: retroProgressPulse 0.5s ease-in-out infinite !important;
-}
-
-@keyframes retroProgressPulse {
-  0%, 100% { opacity: 1; }
-  50% { opacity: 0.85; }
-}
-
-html[data-theme="retro"] .pb-boot-status {
-  color: #FFFF00 !important;
-  font-size: 12px !important;
-  text-transform: uppercase !important;
-  letter-spacing: 2px !important;
-  margin-top: 15px !important;
-}
-
-html[data-theme="retro"] .pb-boot-status::before {
-  content: '► ' !important;
-  color: #00FF00 !important;
-  animation: retroBlink 0.5s step-end infinite !important;
-}
-
 /* Planning Board overlay */
-html[data-theme="retro"] .planning-board-overlay {
-  background: #008081 !important;
-}
-
-html[data-theme="retro"] .planning-board-btn {
-  background: #FFCDFA !important;
-  border: none !important;
-  color: #1C419F !important;
-  box-shadow: 
-    -3px 0px #FFF,
-    0px -3px #FFF,
-    3px 0px #353535,
-    0px 3px #353535,
-    inset -4px -4px #FF98F5 !important;
-}
-
-html[data-theme="retro"] .planning-board-btn:hover {
-  background: #FF98F5 !important;
-  transform: none;
-  box-shadow: 
-    -3px 0px #FFF,
-    0px -3px #FFF,
-    3px 0px #353535,
-    0px 3px #353535,
-    inset -4px -4px #FFCDFA !important;
-}
-
-html[data-theme="retro"] .pb-stat-card,
-html[data-theme="retro"] .pb-quick-add,
-html[data-theme="retro"] .pb-month-card {
-  background: #FFCDFA !important;
-  border: none !important;
-  box-shadow: 
-    3px 0px #353535,
-    0px 3px #353535,
-    -3px 0px #FFF,
-    0px -3px #FFF !important;
-}
-
-html[data-theme="retro"] .pb-nav-arrow {
-  background: #FFCDFA !important;
-  border: none !important;
-  color: #1C419F !important;
-  box-shadow: 
-    -3px 0px #FFF,
-    0px -3px #FFF,
-    3px 0px #353535,
-    0px 3px #353535,
-    inset -4px -4px #FF98F5 !important;
-}
-
-html[data-theme="retro"] .pb-nav-arrow:hover:not(:disabled) {
-  background: #FF98F5 !important;
-  transform: none;
-}
-
-html[data-theme="retro"] .pb-nav-arrow:active {
-  transform: translate(1px, 1px);
-  box-shadow: 
-    -3px 0px #353535,
-    0px -3px #353535,
-    3px 0px #FFF,
-    0px 3px #FFF,
-    inset 4px 4px #FF98F5 !important;
-}
-
-html[data-theme="retro"] .pb-idea-card {
-  background: #FFF !important;
-  border: 2px solid #353535 !important;
-}
-
-html[data-theme="retro"] .pb-idea-card:hover {
-  background: #FF98F5 !important;
-  transform: translate(-2px, -2px);
-  box-shadow: 4px 4px 0px #353535 !important;
-}
-
-html[data-theme="retro"] .pb-title,
-html[data-theme="retro"] .pb-stat-value,
-html[data-theme="retro"] .pb-month-card-title {
-  color: #1C419F !important;
-}
-
-html[data-theme="retro"] .pb-code-stream-column {
-  color: rgba(28, 65, 159, 0.5);
-  text-shadow: 0 0 5px rgba(28, 65, 159, 0.3);
-}
-
-html[data-theme="retro"] .pb-idea-card-tag {
-  background: #1C419F;
-  color: #FFF;
-}
-
-html[data-theme="retro"] .pb-add-detailed {
-  background: #1C419F !important;
-  color: #FFF !important;
-  border: none !important;
-}
-
-html[data-theme="retro"] .pb-modal-inner {
-  background: #FFCDFA !important;
-  border: 3px solid #353535 !important;
-  box-shadow: 6px 6px 0 #353535 !important;
-}
-
-html[data-theme="retro"] .pb-idea-expanded-inner {
-  background: #FFCDFA !important;
-  border: 3px solid #353535 !important;
-}
-
-/* --- LIQUID GRADIENT THEME --- */
-html[data-theme="liquid-gradient"] .pb-boot-screen {
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-}
-
-html[data-theme="liquid-gradient"] .pb-boot-title {
-  color: #fff;
-  text-shadow: 0 2px 10px rgba(0,0,0,0.3);
-}
-
-html[data-theme="liquid-gradient"] .pb-boot-log {
-  color: rgba(255,255,255,0.7);
-}
-
-html[data-theme="liquid-gradient"] .pb-boot-log-item.success {
-  color: #fff;
-}
-
-html[data-theme="liquid-gradient"] .pb-stat-card,
-html[data-theme="liquid-gradient"] .pb-quick-add,
-html[data-theme="liquid-gradient"] .pb-month-card {
-  background: rgba(255, 255, 255, 0.15) !important;
-  backdrop-filter: blur(10px);
-  border: 1px solid rgba(255, 255, 255, 0.25) !important;
-}
-
-html[data-theme="liquid-gradient"] .pb-idea-card {
-  background: rgba(255, 255, 255, 0.1) !important;
-  border: 1px solid rgba(255, 255, 255, 0.2) !important;
-}
-
-html[data-theme="liquid-gradient"] .pb-idea-card:hover {
-  background: rgba(255, 255, 255, 0.2) !important;
-  border-color: rgba(255, 255, 255, 0.4) !important;
-}
-
-html[data-theme="liquid-gradient"] .planning-board-btn {
-  background: rgba(255, 255, 255, 0.15);
-  backdrop-filter: blur(10px);
-  border: 1px solid rgba(255, 255, 255, 0.25);
-  color: #fff;
-}
-
-html[data-theme="liquid-gradient"] .planning-board-btn:hover {
-  background: rgba(255, 255, 255, 0.25);
-  border-color: rgba(255, 255, 255, 0.4);
-  box-shadow: 0 8px 32px rgba(0,0,0,0.2);
-}
-
-html[data-theme="liquid-gradient"] .pb-code-stream-column {
-  color: rgba(255, 255, 255, 0.4);
-  text-shadow: 0 0 10px rgba(255, 255, 255, 0.3);
-}
-
-/* --- CHRISTMAS THEME - FESTIVE BOOT SCREEN --- */
-
-/* Snow animation keyframes */
-@keyframes christmasSnowfall {
-  0% { transform: translateY(-10px) translateX(0); opacity: 0; }
-  10% { opacity: 1; }
-  90% { opacity: 1; }
-  100% { transform: translateY(100vh) translateX(20px); opacity: 0; }
-}
-
-@keyframes christmasTreeGlow {
-  0%, 100% { filter: drop-shadow(0 0 10px #e74c3c); }
-  50% { filter: drop-shadow(0 0 20px #27ae60); }
-}
-
-@keyframes christmasStarTwinkle {
-  0%, 100% { opacity: 1; transform: scale(1); }
-  50% { opacity: 0.5; transform: scale(0.8); }
-}
-
-@keyframes christmasOrnamentBlink {
-  0%, 30%, 100% { opacity: 1; }
-  15% { opacity: 0.3; }
-}
-
-html[data-theme="christmas"] .pb-boot-screen {
-  background: linear-gradient(180deg, #1a1a2e 0%, #16213e 50%, #0f3460 100%) !important;
-  overflow: hidden !important;
-}
-
-/* Snow particles */
-html[data-theme="christmas"] .pb-boot-screen::before {
-  content: '❄ ❅ ❆ ✻ ❄ ❅ ❆ ✻ ❄ ❅ ❆ ✻ ❄ ❅' !important;
-  position: absolute !important;
-  top: 0 !important;
-  left: 0 !important;
-  width: 200% !important;
-  height: 100% !important;
-  font-size: 18px !important;
-  color: rgba(255, 255, 255, 0.6) !important;
-  letter-spacing: 50px !important;
-  line-height: 40px !important;
-  animation: christmasSnowfall 8s linear infinite !important;
-  pointer-events: none !important;
-  z-index: 1 !important;
-}
-
-html[data-theme="christmas"] .pb-boot-screen::after {
-  content: '✻ ❆ ❅ ❄ ✻ ❆ ❅ ❄ ✻ ❆ ❅ ❄ ✻ ❆' !important;
-  position: absolute !important;
-  top: -50% !important;
-  left: 25% !important;
-  width: 200% !important;
-  height: 100% !important;
-  font-size: 14px !important;
-  color: rgba(255, 255, 255, 0.4) !important;
-  letter-spacing: 40px !important;
-  line-height: 35px !important;
-  animation: christmasSnowfall 12s linear infinite 2s !important;
-  pointer-events: none !important;
-  z-index: 1 !important;
-}
-
-html[data-theme="christmas"] .pb-boot-content {
-  position: relative !important;
-  z-index: 10 !important;
-  background: rgba(26, 26, 46, 0.9) !important;
-  border: 3px solid #27ae60 !important;
-  padding: 30px !important;
-  box-shadow: 
-    0 0 30px rgba(39, 174, 96, 0.3),
-    inset 0 0 20px rgba(231, 76, 60, 0.1) !important;
-}
-
-/* Christmas tree in boot screen */
-html[data-theme="christmas"] .pb-boot-title {
-  color: #FFD700 !important;
-  text-shadow: 0 0 10px #FFD700, 0 0 20px #e74c3c !important;
-  font-size: clamp(20px, 4vw, 28px) !important;
-  position: relative !important;
-}
-
-html[data-theme="christmas"] .pb-boot-title::before {
-  content: '🎄' !important;
-  display: block !important;
-  font-size: 60px !important;
-  margin-bottom: 15px !important;
-  animation: christmasTreeGlow 2s ease-in-out infinite !important;
-}
-
-html[data-theme="christmas"] .pb-boot-title::after {
-  content: '⭐' !important;
-  position: absolute !important;
-  top: -10px !important;
-  left: 50% !important;
-  transform: translateX(-50%) !important;
-  font-size: 24px !important;
-  animation: christmasStarTwinkle 1s ease-in-out infinite !important;
-}
-
-html[data-theme="christmas"] .pb-boot-line {
-  background: linear-gradient(90deg, #e74c3c, #FFD700, #27ae60, #FFD700, #e74c3c) !important;
-  height: 4px !important;
-  animation: christmasOrnamentBlink 2s ease-in-out infinite !important;
-}
-
-html[data-theme="christmas"] .pb-boot-log {
-  color: #FFF !important;
-  background: rgba(0, 0, 0, 0.3) !important;
-  border: 1px solid #27ae60 !important;
-  padding: 15px !important;
-  font-size: 13px !important;
-}
-
-html[data-theme="christmas"] .pb-boot-log-item {
-  color: #CCC !important;
-}
-
-html[data-theme="christmas"] .pb-boot-log-item::before {
-  content: '🎁 ' !important;
-}
-
-html[data-theme="christmas"] .pb-boot-log-item.success {
-  color: #27ae60 !important;
-}
-
-html[data-theme="christmas"] .pb-boot-log-item.success::before {
-  content: '✓ ' !important;
-  color: #27ae60 !important;
-}
-
-/* Candy cane progress bar */
-html[data-theme="christmas"] .pb-boot-progress {
-  border: 3px solid #27ae60 !important;
-  background: #1a1a2e !important;
-  height: 24px !important;
-  overflow: hidden !important;
-}
-
-html[data-theme="christmas"] .pb-boot-progress-bar {
-  background: repeating-linear-gradient(
-    45deg,
-    #e74c3c 0px,
-    #e74c3c 10px,
-    #FFF 10px,
-    #FFF 20px,
-    #27ae60 20px,
-    #27ae60 30px,
-    #FFF 30px,
-    #FFF 40px
-  ) !important;
-  background-size: 56px 100% !important;
-  animation: christmasCandyStripe 1s linear infinite !important;
-}
-
-@keyframes christmasCandyStripe {
-  0% { background-position: 0 0; }
-  100% { background-position: 56px 0; }
-}
-
-html[data-theme="christmas"] .pb-boot-status {
-  color: #FFD700 !important;
-  font-size: 12px !important;
-}
-
-html[data-theme="christmas"] .pb-boot-status::before {
-  content: '🔔 ' !important;
-}
-
-html[data-theme="christmas"] .pb-title,
-html[data-theme="christmas"] .pb-stat-value {
-  color: #e74c3c;
-}
-
-html[data-theme="christmas"] .pb-idea-card-tag {
-  background: rgba(39, 174, 96, 0.2);
-  color: #27ae60;
-}
-
-html[data-theme="christmas"] .planning-board-btn {
-  border-color: #e74c3c;
-  color: #e74c3c;
-}
-
-html[data-theme="christmas"] .planning-board-btn:hover {
-  background: rgba(231, 76, 60, 0.1);
-  box-shadow: 0 0 20px rgba(231, 76, 60, 0.3);
-}
-
-html[data-theme="christmas"] .pb-code-stream-column {
-  color: rgba(231, 76, 60, 0.4);
-  text-shadow: 0 0 5px rgba(231, 76, 60, 0.3);
-}
-
-/* Fix Christmas theme button visibility */
-html[data-theme="christmas"] .pb-add-detailed {
-  background: #e74c3c !important;
-  border-color: #e74c3c !important;
-  color: #fff !important;
-}
-
-html[data-theme="christmas"] .pb-add-detailed:hover {
-  background: #c0392b !important;
-  border-color: #c0392b !important;
-}
-
-html[data-theme="christmas"] .pb-form-submit {
-  background: #27ae60 !important;
-  border-color: #27ae60 !important;
-  color: #fff !important;
-}
-
-/* Responsive */
-@media (max-width: 768px) {
-  .pb-month-navigator {
-    flex-direction: column;
-    min-height: auto;
-    gap: 10px;
-  }
-  
-  .pb-nav-arrow {
-    width: 100%;
-    height: 50px;
-    order: 0;
-  }
-  
-  .pb-nav-prev {
-    order: 1;
-  }
-  
-  .pb-card-container {
-    order: 2;
-    height: auto;
-    min-height: 350px;
-    position: relative;
-  }
-  
-  .pb-nav-next {
-    order: 3;
-  }
-  
-  .pb-month-card {
-    position: relative;
-    height: auto;
-    min-height: 300px;
-  }
-  
-  .pb-month-card.prev,
-  .pb-month-card.next {
-    position: absolute;
-    top: 0;
-    left: 0;
-    width: 100%;
-  }
-  
-  .pb-form-grid {
-    grid-template-columns: 1fr;
-  }
-  
-  .pb-header {
-    flex-direction: column;
-    align-items: stretch;
-  }
-  
-  .pb-header-right {
-    width: 100%;
-    justify-content: space-between;
-  }
-  
-  .pb-close-btn {
-    flex: 1;
-    justify-content: center;
-  }
-  
-  .pb-ideas-grid {
-    grid-template-columns: 1fr;
-  }
-  
-  .pb-stats {
-    grid-template-columns: repeat(2, 1fr);
-  }
-}
-
-
-/* ============================================
-   LIQUID GRADIENT THEME (v1.5.5)
-   A fluid gradient aesthetic - heavily optimized
-   ============================================ */
-
-/* Theme variables */
-html[data-theme="liquid-gradient"] {
-  --bg: #667eea;
-  --bg-card: rgba(255, 255, 255, 0.15);
-  --card: rgba(255, 255, 255, 0.15);
-  --card-hover: rgba(255, 255, 255, 0.22);
-  --text: #ffffff;
-  --text-secondary: rgba(255, 255, 255, 0.85);
-  --muted: rgba(255, 255, 255, 0.6);
-  --border: rgba(255, 255, 255, 0.3);
-  --border-bright: rgba(255, 255, 255, 0.45);
-  --accent: rgba(255, 255, 255, 0.95);
-  --accent-dim: rgba(200, 200, 255, 0.7);
-  --accent-secondary: rgba(200, 200, 255, 0.8);
-  --input-bg: rgba(255, 255, 255, 0.1);
-  --scrollbar: rgba(255, 255, 255, 0.2);
-  --scrollbar-thumb: rgba(255, 255, 255, 0.4);
-  --shadow: 0 4px 20px rgba(0, 0, 0, 0.12);
-}
-
-/* Static gradient background - NO animation for performance */
-html[data-theme="liquid-gradient"] body {
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 50%, #6B8DD6 100%) !important;
-  background-attachment: fixed !important;
-}
-
-/* Remove pseudo-elements completely */
-html[data-theme="liquid-gradient"] body::before,
-html[data-theme="liquid-gradient"] body::after {
-  display: none !important;
-}
-
-/* Cards - NO backdrop-filter for performance */
-html[data-theme="liquid-gradient"] .card,
-html[data-theme="liquid-gradient"] .pill {
-  background: rgba(255, 255, 255, 0.15) !important;
-  border: 1px solid rgba(255, 255, 255, 0.25) !important;
-  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1) !important;
-}
-
-/* Settings modal - more opaque for readability */
-html[data-theme="liquid-gradient"] .modal-inner,
-html[data-theme="liquid-gradient"] .settings-modal-inner {
-  background: rgba(40, 40, 80, 0.97) !important;
-  border: 2px solid rgba(255, 255, 255, 0.35) !important;
-  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4) !important;
-  padding: 24px !important;
-}
-
-html[data-theme="liquid-gradient"] .settings-modal-inner h3 {
-  color: #ffffff !important;
-}
-
-html[data-theme="liquid-gradient"] .settings-section h4 {
-  color: rgba(255, 255, 255, 0.9) !important;
-}
-
-html[data-theme="liquid-gradient"] .settings-section {
-  border-bottom-color: rgba(255, 255, 255, 0.2) !important;
-}
-
-html[data-theme="liquid-gradient"] .note {
-  color: rgba(255, 255, 255, 0.7) !important;
-  border-left-color: rgba(255, 255, 255, 0.4) !important;
-}
-
-/* Buttons - simple, no blur */
-html[data-theme="liquid-gradient"] .btn {
-  background: rgba(255, 255, 255, 0.2) !important;
-  color: #ffffff !important;
-  border: 1px solid rgba(255, 255, 255, 0.3) !important;
-}
-
-html[data-theme="liquid-gradient"] .btn:hover {
-  background: rgba(255, 255, 255, 0.35) !important;
-  border-color: rgba(255, 255, 255, 0.5) !important;
-}
-
-html[data-theme="liquid-gradient"] .btn.danger {
-  background: rgba(220, 53, 69, 0.35) !important;
-  border-color: rgba(220, 53, 69, 0.5) !important;
-}
-
-/* Input fields - no blur */
-html[data-theme="liquid-gradient"] input,
-html[data-theme="liquid-gradient"] textarea,
-html[data-theme="liquid-gradient"] select {
-  background: rgba(255, 255, 255, 0.1) !important;
-  border: 1px solid rgba(255, 255, 255, 0.2) !important;
-  color: #ffffff !important;
-}
-
-html[data-theme="liquid-gradient"] input:focus,
-html[data-theme="liquid-gradient"] textarea:focus {
-  border-color: rgba(255, 255, 255, 0.5) !important;
-  box-shadow: 0 0 0 2px rgba(255, 255, 255, 0.15);
-}
-
-html[data-theme="liquid-gradient"] input::placeholder {
-  color: rgba(255, 255, 255, 0.5) !important;
-}
-
-/* Header - simple */
-html[data-theme="liquid-gradient"] .app-header {
-  background: rgba(255, 255, 255, 0.08) !important;
-  border-bottom: 1px solid rgba(255, 255, 255, 0.15) !important;
-}
-
-/* Cover section */
-html[data-theme="liquid-gradient"] .coverInner {
-  background: rgba(255, 255, 255, 0.1) !important;
-  border: 1px solid rgba(255, 255, 255, 0.15) !important;
-}
-
-/* Messages */
-html[data-theme="liquid-gradient"] .msg {
-  background: rgba(255, 255, 255, 0.1) !important;
-  border: 1px solid rgba(255, 255, 255, 0.12) !important;
-}
-
-html[data-theme="liquid-gradient"] .msg.me {
-  background: rgba(255, 255, 255, 0.18) !important;
-  border-color: rgba(255, 255, 255, 0.2) !important;
-}
-
-/* Calendar */
-html[data-theme="liquid-gradient"] .calendar {
-  background: rgba(255, 255, 255, 0.08) !important;
-  border: 1px solid rgba(255, 255, 255, 0.15) !important;
-}
-
-/* Modals */
-html[data-theme="liquid-gradient"] .modal {
-  background: rgba(0, 0, 0, 0.4) !important;
-}
-
-/* Theme dropdown */
-html[data-theme="liquid-gradient"] .theme-dropdown {
-  background: rgba(255, 255, 255, 0.18) !important;
-  border: 1px solid rgba(255, 255, 255, 0.25) !important;
-}
-
-html[data-theme="liquid-gradient"] .theme-option:hover {
-  background: rgba(255, 255, 255, 0.2) !important;
-}
-
-html[data-theme="liquid-gradient"] .theme-option.active {
-  background: rgba(255, 255, 255, 0.3) !important;
-}
-
-/* Toast */
-html[data-theme="liquid-gradient"] .toast {
-  background: rgba(255, 255, 255, 0.2) !important;
-  border: 1px solid rgba(255, 255, 255, 0.25) !important;
-  color: white !important;
-}
-
-/* Scrollbar */
-html[data-theme="liquid-gradient"] ::-webkit-scrollbar-track {
-  background: rgba(255, 255, 255, 0.08);
-}
-
-html[data-theme="liquid-gradient"] ::-webkit-scrollbar-thumb {
-  background: rgba(255, 255, 255, 0.25);
-  border-radius: 10px;
-}
-
-html[data-theme="liquid-gradient"] ::-webkit-scrollbar-thumb:hover {
-  background: rgba(255, 255, 255, 0.4);
-}
 
 /* ============================================
    MARATHON THEME (v1.6.0)
@@ -6972,7 +5108,7 @@ html[data-theme="marathon"] body::before {
   opacity: 0.5;
 }
 
-/* Marathon CRT Vignette Effect */
+/* Marathon CRT Vignette Effect - Enhanced Fishbowl */
 html[data-theme="marathon"] body::after {
   content: "";
   position: fixed;
@@ -6983,13 +5119,51 @@ html[data-theme="marathon"] body::after {
   pointer-events: none;
   z-index: 998;
   background: radial-gradient(
-    ellipse 75% 70% at center,
+    ellipse 80% 75% at center,
     transparent 0%,
-    transparent 20%,
-    rgba(0, 0, 0, 0.15) 50%,
-    rgba(0, 0, 0, 0.5) 80%,
-    rgba(0, 0, 0, 0.85) 100%
+    transparent 15%,
+    rgba(0, 0, 0, 0.1) 40%,
+    rgba(0, 0, 0, 0.4) 70%,
+    rgba(0, 0, 0, 0.75) 90%,
+    rgba(0, 0, 0, 0.95) 100%
   );
+  /* Subtle barrel distortion via box-shadow */
+  box-shadow: 
+    inset 0 0 100px 20px rgba(0, 0, 0, 0.5),
+    inset 0 0 200px 60px rgba(0, 0, 0, 0.3);
+}
+
+/* CRT Glass Reflection Overlay */
+html[data-theme="marathon"] .wrap::before {
+  content: "";
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+  z-index: 1000;
+  background: linear-gradient(
+    135deg,
+    rgba(255, 255, 255, 0.02) 0%,
+    transparent 30%,
+    transparent 70%,
+    rgba(255, 255, 255, 0.01) 100%
+  );
+  opacity: 0.5;
+}
+
+/* CRT Screen Curvature Effect */
+html[data-theme="marathon"] .wrap {
+  position: relative;
+  /* Subtle perspective to create depth */
+  transform-style: preserve-3d;
+  perspective: 1500px;
+}
+
+html[data-theme="marathon"] .wrap > * {
+  /* Very subtle barrel effect */
+  transform: perspective(1200px) translateZ(0);
 }
 
 /* Marathon Body */
@@ -8704,5 +6878,473 @@ html[data-theme="marathon"] .modal-header h3:hover {
   html[data-theme="marathon"] .boot-item {
     opacity: 1;
     transform: none;
+  }
+}
+
+/* Floating Bug Report Button (FAB) */
+.fab-bug-report {
+  position: fixed;
+  bottom: 24px;
+  right: 24px;
+  width: 56px;
+  height: 56px;
+  border-radius: 50%;
+  background: var(--accent);
+  color: #fff;
+  border: none;
+  cursor: pointer;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3), 0 0 20px rgba(255, 107, 157, 0.3);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 22px;
+  z-index: 9000;
+  transition: all 0.2s ease;
+}
+
+.fab-bug-report:hover {
+  transform: scale(1.1);
+  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.4), 0 0 30px rgba(255, 107, 157, 0.5);
+}
+
+.fab-bug-report:active {
+  transform: scale(0.95);
+}
+
+/* Hide on planning board overlay */
+.planning-board-overlay.active ~ .fab-bug-report {
+  display: none;
+}
+
+/* Mobile responsive */
+@media (max-width: 600px) {
+  .fab-bug-report {
+    bottom: 16px;
+    right: 16px;
+    width: 48px;
+    height: 48px;
+    font-size: 18px;
+  }
+}
+
+
+/* Completed Mission Expandable Details */
+.completed-clickable {
+  cursor: pointer;
+  transition: background 0.2s ease;
+}
+
+.completed-clickable:hover {
+  background: rgba(255, 107, 157, 0.05);
+}
+
+.completed-item .expand-icon {
+  margin-left: 8px;
+  font-size: 12px;
+  opacity: 0.6;
+  transition: transform 0.2s ease;
+}
+
+.completed-item.expanded .expand-icon {
+  transform: rotate(180deg);
+}
+
+.expanded-details {
+  margin-top: 12px;
+  padding-top: 12px;
+  border-top: 1px dashed var(--border);
+  animation: expandIn 0.2s ease;
+}
+
+.expanded-details.hidden {
+  display: none;
+}
+
+.expanded-detail {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 12px;
+  color: var(--muted);
+  margin-bottom: 6px;
+}
+
+.expanded-detail i {
+  width: 16px;
+  color: var(--accent);
+}
+
+@keyframes expandIn {
+  from {
+    opacity: 0;
+    transform: translateY(-8px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* Import from Planning Board - Item Actions */
+.pb-import-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.pb-import-item-content {
+  flex: 1;
+  min-width: 200px;
+}
+
+.pb-import-item-actions {
+  display: flex;
+  gap: 8px;
+  flex-shrink: 0;
+}
+
+.pb-import-item-actions .btn {
+  font-size: 11px;
+  padding: 6px 12px;
+}
+
+.pb-import-select {
+  background: var(--accent) !important;
+  border-color: var(--accent) !important;
+  color: #fff !important;
+}
+
+.pb-import-edit {
+  background: transparent !important;
+  border-color: var(--border) !important;
+}
+
+.pb-import-edit:hover {
+  border-color: var(--accent) !important;
+  color: var(--accent) !important;
+}
+
+/* Calendar Legend Tooltip */
+.calendar__legend-btn {
+  background: transparent;
+  border: none;
+  color: var(--muted);
+  cursor: pointer;
+  font-size: 14px;
+  padding: 4px 8px;
+  opacity: 0.6;
+  transition: all 0.2s ease;
+}
+
+.calendar__legend-btn:hover {
+  opacity: 1;
+  color: var(--accent);
+}
+
+.calendar__legend-tooltip {
+  position: absolute;
+  top: 100%;
+  right: 0;
+  background: var(--bg);
+  border: 1px solid var(--border);
+  padding: 12px;
+  min-width: 180px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+  z-index: 100;
+  display: none;
+}
+
+.calendar__legend-tooltip.active {
+  display: block;
+  animation: fadeIn 0.2s ease;
+}
+
+.calendar__legend-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 11px;
+  margin-bottom: 8px;
+  color: var(--text);
+}
+
+.calendar__legend-item:last-child {
+  margin-bottom: 0;
+}
+
+.calendar__legend-item i {
+  width: 16px;
+  text-align: center;
+}
+
+.calendar__legend-item .fa-tree { color: #27ae60; }
+.calendar__legend-item .fa-heart { color: #e74c3c; }
+.calendar__legend-item .fa-champagne-glasses { color: #f39c12; }
+.calendar__legend-item .fa-leaf { color: #e67e22; }
+.calendar__legend-item .fa-calendar { color: var(--accent); }
+
+/* File Too Large Notification */
+.file-too-large-modal {
+  background: var(--card);
+  border: 2px solid #ff3b3b;
+  padding: 30px;
+  text-align: center;
+  max-width: 400px;
+  animation: fileTooLargeAppear 0.3s ease;
+}
+
+@keyframes fileTooLargeAppear {
+  from {
+    opacity: 0;
+    transform: scale(0.8) translateY(-20px);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1) translateY(0);
+  }
+}
+
+.file-too-large-icon {
+  font-size: 48px;
+  color: #ff3b3b;
+  margin-bottom: 15px;
+  animation: fileTooLargePulse 1s ease-in-out infinite;
+}
+
+@keyframes fileTooLargePulse {
+  0%, 100% { transform: scale(1); }
+  50% { transform: scale(1.1); }
+}
+
+.file-too-large-modal h3 {
+  color: #ff3b3b;
+  margin: 0 0 15px;
+  font-size: 18px;
+  letter-spacing: 2px;
+}
+
+.file-too-large-name {
+  color: var(--muted);
+  font-size: 12px;
+  margin: 0 0 8px;
+  word-break: break-all;
+}
+
+.file-too-large-limit {
+  color: var(--text);
+  font-size: 14px;
+  margin: 0 0 8px;
+}
+
+.file-too-large-limit strong {
+  color: #ff3b3b;
+}
+
+.file-too-large-tip {
+  color: var(--muted);
+  font-size: 11px;
+  margin: 0 0 20px;
+}
+
+.file-too-large-ok {
+  min-width: 100px;
+}
+
+/* ASCII Ripple Effect for Dark Theme */
+html[data-theme="marathon"] .ascii-ripple-target {
+  cursor: pointer;
+  user-select: none;
+}
+
+html[data-theme="marathon"] .ascii-ripple-target:hover {
+  position: relative;
+}
+
+html[data-theme="marathon"] .ascii-ripple-target::selection {
+  background: transparent;
+}
+
+/* Calendar Footer Legend Wrap Fix */
+.calendar__footer {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.calendar__footer-text {
+  flex: 1;
+  min-width: 200px;
+}
+
+/* ============================================
+   CHRISTMAS BLIZZARD & FREEZE EFFECTS
+   ============================================ */
+
+/* Blizzard overlay for boot screen */
+.christmas-blizzard {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  overflow: hidden;
+  pointer-events: none;
+  z-index: 10;
+}
+
+.blizzard-layer {
+  position: absolute;
+  top: -100%;
+  left: -50%;
+  width: 200%;
+  height: 200%;
+  background-image: 
+    radial-gradient(2px 2px at 20px 30px, white, transparent),
+    radial-gradient(3px 3px at 40px 70px, rgba(255,255,255,0.9), transparent),
+    radial-gradient(2px 2px at 70px 40px, white, transparent),
+    radial-gradient(3px 3px at 90px 80px, rgba(255,255,255,0.8), transparent),
+    radial-gradient(2px 2px at 130px 50px, white, transparent),
+    radial-gradient(3px 3px at 160px 100px, rgba(255,255,255,0.9), transparent);
+  background-size: 200px 150px;
+  animation: blizzardFall 2s linear infinite;
+  opacity: 0.4;
+}
+
+.blizzard-layer-2 {
+  animation-duration: 1.5s;
+  animation-delay: 0.3s;
+  opacity: 0.3;
+  background-size: 150px 120px;
+}
+
+.blizzard-layer-3 {
+  animation-duration: 2.5s;
+  animation-delay: 0.7s;
+  opacity: 0.5;
+  background-size: 250px 180px;
+}
+
+@keyframes blizzardFall {
+  0% {
+    transform: translateY(0) translateX(0) rotate(0deg);
+  }
+  100% {
+    transform: translateY(50%) translateX(10%) rotate(5deg);
+  }
+}
+
+.christmas-blizzard.intensifying .blizzard-layer {
+  opacity: 0.6;
+  animation-duration: 1s;
+}
+
+.christmas-blizzard.intensifying .blizzard-layer-2 {
+  opacity: 0.5;
+  animation-duration: 0.8s;
+}
+
+.christmas-blizzard.intensifying .blizzard-layer-3 {
+  opacity: 0.7;
+  animation-duration: 1.2s;
+}
+
+.christmas-blizzard.peak .blizzard-layer {
+  opacity: 0.9;
+  animation-duration: 0.6s;
+}
+
+.christmas-blizzard.fading {
+  animation: blizzardFade 0.5s ease-out forwards;
+}
+
+@keyframes blizzardFade {
+  to {
+    opacity: 0;
+  }
+}
+
+/* Freeze-over termination effect */
+.christmas-freeze-overlay {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  z-index: 9999;
+  pointer-events: none;
+}
+
+.freeze-frost {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: radial-gradient(ellipse at center, transparent 0%, rgba(200, 230, 255, 0) 30%, rgba(200, 230, 255, 0.3) 60%, rgba(200, 230, 255, 0.8) 100%);
+  opacity: 0;
+  transition: opacity 0.8s ease-in;
+}
+
+.freeze-ice-crystals {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='100' height='100'%3E%3Cpath d='M50 0L50 100M0 50L100 50M15 15L85 85M85 15L15 85' stroke='%23e0f0ff' stroke-width='0.5' opacity='0.3'/%3E%3C/svg%3E");
+  background-size: 60px 60px;
+  opacity: 0;
+  transition: opacity 1s ease-in;
+}
+
+.freeze-breath {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: linear-gradient(180deg, rgba(255,255,255,0.1) 0%, rgba(200,220,255,0.4) 50%, rgba(255,255,255,0.1) 100%);
+  opacity: 0;
+  transition: opacity 0.5s ease-in;
+  animation: breathFog 2s ease-in-out infinite;
+}
+
+@keyframes breathFog {
+  0%, 100% { transform: scale(1); }
+  50% { transform: scale(1.02); }
+}
+
+.christmas-freeze-overlay.freezing .freeze-frost {
+  opacity: 1;
+}
+
+.christmas-freeze-overlay.freezing .freeze-ice-crystals {
+  opacity: 0.6;
+}
+
+.christmas-freeze-overlay.freezing .freeze-breath {
+  opacity: 0.8;
+}
+
+.christmas-freeze-overlay.defrosting {
+  animation: defrostFade 0.8s ease-out forwards;
+}
+
+@keyframes defrostFade {
+  0% {
+    opacity: 1;
+    filter: blur(0);
+  }
+  50% {
+    opacity: 0.8;
+    filter: blur(4px);
+  }
+  100% {
+    opacity: 0;
+    filter: blur(10px);
   }
 }

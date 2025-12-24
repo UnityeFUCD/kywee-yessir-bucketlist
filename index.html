@@ -94,9 +94,7 @@
             <div class="theme-option active" data-theme="system">System</div>
             <div class="theme-option" data-theme="light">Light</div>
             <div class="theme-option" data-theme="dark">Dark</div>
-            <div class="theme-option" data-theme="retro">Retro</div>
             <div class="theme-option" data-theme="christmas">Christmas</div>
-            <div class="theme-option" data-theme="liquid-gradient">Liquid Gradient</div>
           </div>
         </div>
         
@@ -229,7 +227,7 @@
             
             <!-- ✅ [FEATURE B] Attachment input -->
             <div class="field attachment-field">
-              <label for="attachmentInput">📎 ATTACH IMAGE/VIDEO</label>
+              <label for="attachmentInput"><i class="fas fa-paperclip"></i> ATTACH IMAGE/VIDEO</label>
               <input type="file" id="attachmentInput" accept="image/*,video/*" />
               <div id="attachmentPreview" class="attachment-preview hidden"></div>
             </div>
@@ -267,8 +265,10 @@
             <input id="customTagInput" type="text" placeholder="Enter custom tag" inputmode="text">
           </div>
           <div class="field">
-            <label for="newDueDate"><i class="fas fa-calendar"></i> DUE DATE (optional)</label>
-            <input id="newDueDate" type="date">
+            <label for="newDueDate"><i class="fas fa-calendar"></i> DUE DATE (OPTIONAL)</label>
+            <div class="date-input-wrapper" id="dateInputWrapper">
+              <input id="newDueDate" type="date">
+            </div>
           </div>
           <div class="actions">
             <button class="btn primary" id="btnAdd">+ ADD MISSION</button>
@@ -775,9 +775,7 @@
               <option value="system">System</option>
               <option value="light">Light</option>
               <option value="dark">Dark</option>
-              <option value="retro">Retro</option>
               <option value="christmas">Christmas</option>
-              <option value="liquid-gradient">Liquid Gradient</option>
             </select>
           </div>
         </div>
@@ -878,9 +876,12 @@
 
   <link rel="stylesheet" href="gift.css">
   
+  <!-- Floating Bug Report Button -->
+  <button class="fab-bug-report" id="fabBugReport" title="Report a Bug">
+    <i class="fas fa-bug"></i>
+  </button>
+  
   <script src="confetti.js"></script>
-  <script src="liquid-gradient.js"></script>
-  <script src="gift.js" defer></script>
   <script src="app.js" defer></script>
 </body>
 </html>

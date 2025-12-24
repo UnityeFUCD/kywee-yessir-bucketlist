@@ -124,14 +124,14 @@
     // Use event delegation for efficiency
     document.addEventListener('mouseenter', (e) => {
       const target = e.target;
-      if (target.matches('button, .btn, .pill.clickable, .item, .theme-option, .notification-item, .who-btn, .envelope-container')) {
+      if (target && target.matches && target.matches('button, .btn, .pill.clickable, .item, .theme-option, .notification-item, .who-btn, .envelope-container')) {
         playMarathonSound('hover');
       }
     }, true);
     
     document.addEventListener('click', (e) => {
       const target = e.target;
-      if (target.matches('button, .btn, .pill.clickable')) {
+      if (target && target.matches && target.matches('button, .btn, .pill.clickable')) {
         playMarathonSound('click');
       }
     }, true);
@@ -157,22 +157,113 @@
           }
         });
       }
+      
+      // Make date input wrapper fully clickable
+      const dateWrapper = document.getElementById('dateInputWrapper');
+      if (dateWrapper) {
+        dateWrapper.addEventListener('click', (e) => {
+          // If clicked on wrapper (not the input itself), trigger the date input
+          const dateInput = dateWrapper.querySelector('input[type="date"]');
+          if (dateInput && e.target !== dateInput) {
+            dateInput.showPicker ? dateInput.showPicker() : dateInput.focus();
+          }
+        });
+      }
     });
   }
   
   // Call on page load
   initMarathonSounds();
+  
+  // [NEW] ASCII Ripple Effect for Dark Theme
+  const ASCII_CHARS = '.,·-─~+:;=*π""┐┌┘┴┬╗╔╝╚╬╠╣╩╦║░▒▓█▄▀▌▐■!?&#$@0123456789*';
+  
+  function createASCIIRipple(element) {
+    if (!element || element._asciiRipple) return;
+    element._asciiRipple = true;
+    
+    const originalText = element.textContent;
+    let isAnimating = false;
+    let animationFrame = null;
+    
+    element.addEventListener('mouseenter', (e) => {
+      // Only run for marathon/dark theme
+      const theme = document.documentElement.getAttribute('data-theme');
+      if (theme !== 'marathon') return;
+      
+      if (isAnimating) return;
+      isAnimating = true;
+      
+      const chars = originalText.split('');
+      const startTime = Date.now();
+      const duration = 400;
+      
+      const animate = () => {
+        const elapsed = Date.now() - startTime;
+        const progress = Math.min(elapsed / duration, 1);
+        
+        // Wave spreads from cursor position
+        const rect = element.getBoundingClientRect();
+        const mouseX = e.clientX - rect.left;
+        const centerPos = Math.round((mouseX / rect.width) * chars.length);
+        
+        let newText = chars.map((char, i) => {
+          if (char === ' ') return ' ';
+          
+          const dist = Math.abs(i - centerPos);
+          const waveRadius = progress * chars.length * 1.5;
+          
+          if (dist < waveRadius && progress < 0.9) {
+            const intensity = Math.max(0, waveRadius - dist);
+            if (intensity < 3 && intensity > 0) {
+              return ASCII_CHARS[Math.floor(Math.random() * ASCII_CHARS.length)];
+            }
+          }
+          return char;
+        }).join('');
+        
+        element.textContent = newText;
+        
+        if (progress < 1) {
+          animationFrame = requestAnimationFrame(animate);
+        } else {
+          element.textContent = originalText;
+          isAnimating = false;
+        }
+      };
+      
+      animationFrame = requestAnimationFrame(animate);
+    });
+    
+    element.addEventListener('mouseleave', () => {
+      if (animationFrame) {
+        cancelAnimationFrame(animationFrame);
+      }
+      element.textContent = originalText;
+      isAnimating = false;
+    });
+  }
+  
+  // Initialize ASCII ripple on appropriate elements
+  function initASCIIRipple() {
+    // Apply to menu items and specific links in dark theme
+    const targets = document.querySelectorAll('.brand span, .cardHeader h2, .theme-option');
+    targets.forEach(createASCIIRipple);
+  }
+  
+  // Run on DOM ready
+  document.addEventListener('DOMContentLoaded', initASCIIRipple);
 
   // [OK] UPCOMING EVENTS with type for distinct styling
   const UPCOMING_EVENTS = [
-    { date: "2025-01-01", title: "New Year's Day", type: "holiday", icon: "🎆" },
-    { date: "2025-02-14", title: "Valentine's Day", type: "holiday", icon: "💕" },
-    { date: "2025-11-27", title: "Thanksgiving", type: "holiday", icon: "🦃" },
-    { date: "2025-12-25", title: "Christmas", type: "holiday", icon: "🎄" },
-    { date: "2026-01-01", title: "New Year's Day", type: "holiday", icon: "🎆" },
-    { date: "2026-02-14", title: "Valentine's Day", type: "holiday", icon: "💕" },
-    { date: "2026-11-26", title: "Thanksgiving", type: "holiday", icon: "🦃" },
-    { date: "2026-12-25", title: "Christmas", type: "holiday", icon: "🎄" }
+    { date: "2025-01-01", title: "New Year's Day", type: "holiday", icon: "fa-champagne-glasses" },
+    { date: "2025-02-14", title: "Valentine's Day", type: "holiday", icon: "fa-heart" },
+    { date: "2025-11-27", title: "Thanksgiving", type: "holiday", icon: "fa-leaf" },
+    { date: "2025-12-25", title: "Christmas", type: "holiday", icon: "fa-tree" },
+    { date: "2026-01-01", title: "New Year's Day", type: "holiday", icon: "fa-champagne-glasses" },
+    { date: "2026-02-14", title: "Valentine's Day", type: "holiday", icon: "fa-heart" },
+    { date: "2026-11-26", title: "Thanksgiving", type: "holiday", icon: "fa-leaf" },
+    { date: "2026-12-25", title: "Christmas", type: "holiday", icon: "fa-tree" }
   ];
 
   // [FIX] Device-based user storage (like YouTube - persists across tabs on same device)
@@ -466,12 +557,94 @@ const DAILY_EMOTICONS = [
     });
   }
 
+  // [NEW] Alert modal for simple messages (replaces native alert())
+  function showAlertModal(message, onClose = null) {
+    // Remove any existing alert modal
+    const existing = document.querySelector(".alert-modal-overlay");
+    if (existing) existing.remove();
+    
+    const overlay = document.createElement("div");
+    overlay.className = "confirm-modal-overlay alert-modal-overlay";
+    overlay.innerHTML = `
+      <div class="confirm-modal alert-modal">
+        <div class="confirm-modal-message">${escapeHtml(message)}</div>
+        <div class="confirm-modal-buttons">
+          <button class="btn primary alert-modal-ok">OK</button>
+        </div>
+      </div>
+    `;
+    
+    document.body.appendChild(overlay);
+    
+    // Add event listeners
+    overlay.querySelector(".alert-modal-ok").addEventListener("click", () => {
+      overlay.remove();
+      if (onClose) onClose();
+    });
+    
+    // Close on backdrop click
+    overlay.addEventListener("click", (e) => {
+      if (e.target === overlay) {
+        overlay.remove();
+        if (onClose) onClose();
+      }
+    });
+    
+    // Close on Escape key
+    const handleEscape = (e) => {
+      if (e.key === 'Escape') {
+        overlay.remove();
+        document.removeEventListener('keydown', handleEscape);
+        if (onClose) onClose();
+      }
+    };
+    document.addEventListener('keydown', handleEscape);
+  }
+
+  // [NEW] Prominent file too large notification (center screen)
+  function showFileTooLargeNotification(fileName, maxSize) {
+    // Remove any existing notification
+    const existing = document.querySelector(".file-too-large-notification");
+    if (existing) existing.remove();
+    
+    const notification = document.createElement("div");
+    notification.className = "confirm-modal-overlay file-too-large-notification";
+    notification.innerHTML = `
+      <div class="file-too-large-modal">
+        <div class="file-too-large-icon">
+          <i class="fas fa-exclamation-triangle"></i>
+        </div>
+        <h3>FILE TOO LARGE</h3>
+        <p class="file-too-large-name">${escapeHtml(fileName)}</p>
+        <p class="file-too-large-limit">Maximum allowed size: <strong>${maxSize}</strong></p>
+        <p class="file-too-large-tip">Try compressing the file or using a shorter clip.</p>
+        <button class="btn primary file-too-large-ok">OK</button>
+      </div>
+    `;
+    
+    document.body.appendChild(notification);
+    
+    // Close handlers
+    notification.querySelector(".file-too-large-ok").addEventListener("click", () => {
+      notification.remove();
+    });
+    
+    notification.addEventListener("click", (e) => {
+      if (e.target === notification) notification.remove();
+    });
+    
+    // Auto-close after 8 seconds
+    setTimeout(() => {
+      if (notification.parentNode) notification.remove();
+    }, 8000);
+  }
+
   // [OK] Check for system updates (new version)
   function checkSystemUpdates() {
     const lastSeen = localStorage.getItem(KEY_LAST_VERSION_SEEN);
     if (lastSeen !== CURRENT_VERSION) {
       const latest = VERSION_HISTORY[VERSION_HISTORY.length - 1];
-      showToast(`🎉 Update v${latest.version}: ${latest.note}`, "info");
+      showToast(`Update v${latest.version}: ${latest.note}`, "info");
       localStorage.setItem(KEY_LAST_VERSION_SEEN, CURRENT_VERSION);
     }
   }
@@ -486,17 +659,24 @@ const DAILY_EMOTICONS = [
       const diffMs = eventDate - today;
       const diffDays = Math.round(diffMs / (1000 * 60 * 60 * 24));
       
+      // Helper to render icon (handles both emoji and FA class)
+      const renderIcon = (iconStr) => {
+        if (!iconStr) return '<i class="fas fa-calendar"></i>';
+        if (iconStr.startsWith('fa-')) return `<i class="fas ${iconStr}"></i>`;
+        return iconStr; // Fallback for any remaining emojis
+      };
+      
       // Show notification for events within 7 days (but not past)
       if (diffDays > 0 && diffDays <= 7) {
-        const icon = event.icon || "📅";
+        const iconHtml = renderIcon(event.icon);
         if (diffDays === 1) {
-          showToast(`${icon} Tomorrow: ${event.title}!`, "event");
+          showToast(`${iconHtml} Tomorrow: ${event.title}!`, "event");
         } else {
-          showToast(`${icon} ${event.title} in ${diffDays} days!`, "event");
+          showToast(`${iconHtml} ${event.title} in ${diffDays} days!`, "event");
         }
       } else if (diffDays === 0) {
-        const icon = event.icon || "🎉";
-        showToast(`${icon} Today is ${event.title}!`, "event");
+        const iconHtml = renderIcon(event.icon);
+        showToast(`${iconHtml} Today is ${event.title}!`, "event");
       }
       // Events in the past are automatically not shown (diffDays < 0)
     });
@@ -1560,7 +1740,7 @@ const DAILY_EMOTICONS = [
           title: event.title,
           date: event.date,
           subtitle: diffDays === 0 ? "TODAY!" : diffDays === 1 ? "Tomorrow!" : `In ${diffDays} days`,
-          icon: event.icon || "📅",
+          icon: event.icon || "fa-calendar",
           id: notifId,
           isRead: isRead
         });
@@ -1608,9 +1788,13 @@ const DAILY_EMOTICONS = [
         const dateFormatted = new Date(notif.date + "T00:00:00").toLocaleDateString('en-US', { 
           weekday: 'short', month: 'short', day: 'numeric' 
         });
+        // Render icon as Font Awesome if it starts with fa-
+        const iconHtml = notif.icon && notif.icon.startsWith('fa-') 
+          ? `<i class="fas ${notif.icon}"></i>` 
+          : (notif.icon || '<i class="fas fa-calendar"></i>');
         item.innerHTML = `
           <div class="holiday-notif-card">
-            <div class="holiday-notif-icon">${notif.icon}</div>
+            <div class="holiday-notif-icon">${iconHtml}</div>
             <div class="holiday-notif-content">
               <div class="holiday-notif-title">${escapeHtml(notif.title)}</div>
               <div class="holiday-notif-date">${dateFormatted}</div>
@@ -1619,8 +1803,11 @@ const DAILY_EMOTICONS = [
           </div>
         `;
       } else {
+        const iconHtml = notif.icon && notif.icon.startsWith('fa-') 
+          ? `<i class="fas ${notif.icon}"></i>` 
+          : (notif.icon || '');
         item.innerHTML = `
-          <div class="notification-from">${notif.icon} ${escapeHtml(notif.title)}</div>
+          <div class="notification-from">${iconHtml} ${escapeHtml(notif.title)}</div>
           <div class="notification-preview">${escapeHtml(notif.subtitle)}</div>
         `;
       }
@@ -2146,9 +2333,12 @@ const DAILY_EMOTICONS = [
 
   // ---------- Theme + Snow (christmas only) ----------
   let snowTimer = null;
+  let foregroundSnowTimer = null;
 
   function startSnow() {
     if (snowTimer) return;
+    
+    // Background snow - increased by 25% (was 220ms, now ~175ms)
     snowTimer = setInterval(() => {
       const s = document.createElement("div");
       s.className = "snowflake";
@@ -2159,7 +2349,20 @@ const DAILY_EMOTICONS = [
       s.style.opacity = (0.35 + Math.random() * 0.6);
       document.body.appendChild(s);
       setTimeout(() => s.remove(), 12000);
-    }, 220);
+    }, 175);
+    
+    // Foreground snow - in front of UI elements
+    foregroundSnowTimer = setInterval(() => {
+      const s = document.createElement("div");
+      s.className = "snowflake snowflake-foreground";
+      s.textContent = "*";
+      s.style.left = Math.random() * 100 + "vw";
+      s.style.animationDuration = (3 + Math.random() * 4) + "s";
+      s.style.fontSize = (18 + Math.random() * 12) + "px";
+      s.style.opacity = (0.6 + Math.random() * 0.4);
+      document.body.appendChild(s);
+      setTimeout(() => s.remove(), 8000);
+    }, 400);
   }
 
   function stopSnow() {
@@ -2167,7 +2370,39 @@ const DAILY_EMOTICONS = [
       clearInterval(snowTimer);
       snowTimer = null;
     }
+    if (foregroundSnowTimer) {
+      clearInterval(foregroundSnowTimer);
+      foregroundSnowTimer = null;
+    }
     document.querySelectorAll(".snowflake").forEach(s => s.remove());
+  }
+  
+  // Christmas lights for navbar
+  function addChristmasLights() {
+    // Remove existing lights first
+    removeChristmasLights();
+    
+    const topbar = document.querySelector('.topbar');
+    if (!topbar) return;
+    
+    const lightsContainer = document.createElement('div');
+    lightsContainer.className = 'christmas-lights';
+    
+    // Create lights along the width
+    const lightCount = Math.floor(window.innerWidth / 35);
+    for (let i = 0; i < lightCount; i++) {
+      const light = document.createElement('div');
+      light.className = 'christmas-light';
+      light.style.left = (i * 35 + 15) + 'px';
+      lightsContainer.appendChild(light);
+    }
+    
+    topbar.style.position = 'relative';
+    topbar.appendChild(lightsContainer);
+  }
+  
+  function removeChristmasLights() {
+    document.querySelectorAll('.christmas-lights').forEach(el => el.remove());
   }
 
   function applyTheme(theme) {
@@ -2176,9 +2411,7 @@ const DAILY_EMOTICONS = [
     // Dark theme now uses Marathon styling
     if (theme === "dark") document.documentElement.setAttribute("data-theme", "marathon");
     else if (theme === "light") document.documentElement.setAttribute("data-theme", "light");
-    else if (theme === "retro") document.documentElement.setAttribute("data-theme", "retro");
     else if (theme === "christmas") document.documentElement.setAttribute("data-theme", "christmas");
-    else if (theme === "liquid-gradient") document.documentElement.setAttribute("data-theme", "liquid-gradient");
     else if (theme === "marathon") document.documentElement.setAttribute("data-theme", "marathon");
     else document.documentElement.removeAttribute("data-theme");
 
@@ -2188,6 +2421,13 @@ const DAILY_EMOTICONS = [
 
     if (theme === "christmas") startSnow();
     else stopSnow();
+    
+    // Add/remove Christmas lights
+    if (theme === "christmas") {
+      addChristmasLights();
+    } else {
+      removeChristmasLights();
+    }
     
     // Show/hide sound settings based on theme (only for dark/marathon)
     const soundSection = document.getElementById("soundSettingsSection");
@@ -2960,7 +3200,7 @@ const DAILY_EMOTICONS = [
           // [NEW] Trigger confetti on mission completion!
           triggerConfetti();
           playMarathonSound('success'); // Marathon sound effect
-          showToast("Mission completed! 🎉");
+          showToast("Mission completed!");
 
           renderActive();
           renderCompleted();
@@ -3004,21 +3244,51 @@ const DAILY_EMOTICONS = [
 
     withExample.forEach((it, idx) => {
       const el = document.createElement("div");
-      el.className = "item" + (it.isExample ? " example" : "");
+      el.className = "item completed-item" + (it.isExample ? " example" : "");
+      
+      // Build expanded details section
+      const dueInfo = it.dueDate ? `<div class="expanded-detail"><i class="fas fa-calendar"></i> Due: ${formatMissionDate(it.dueDate)}</div>` : '';
+      const completedInfo = it.completedAt ? `<div class="expanded-detail"><i class="fas fa-check-circle"></i> Completed: ${it.completedAt}</div>` : '';
+      
       el.innerHTML = `
-        <div class="itext">
+        <div class="itext completed-clickable" title="Click to expand">
           <div class="ititle">
             <span>${escapeHtml(it.title)}</span>
             <span class="itag">${escapeHtml(it.tag || "idea")}</span>
+            <i class="fas fa-chevron-down expand-icon"></i>
           </div>
           <p class="idesc">${escapeHtml(it.desc || "")}</p>
+          <div class="expanded-details hidden">
+            ${dueInfo}
+            ${completedInfo}
+            <div class="expanded-detail"><i class="fas fa-tag"></i> Tag: ${escapeHtml(it.tag || "idea")}</div>
+          </div>
         </div>
         ${!it.isExample ? '<button class="btn" style="padding:8px 12px;" title="Undo">UNDO</button>' : ""}
       `;
+      
+      // Add click to expand functionality
+      const clickable = el.querySelector('.completed-clickable');
+      if (clickable) {
+        clickable.addEventListener('click', (e) => {
+          // Don't toggle if clicking on button
+          if (e.target.closest('button')) return;
+          
+          const details = el.querySelector('.expanded-details');
+          const icon = el.querySelector('.expand-icon');
+          if (details && icon) {
+            details.classList.toggle('hidden');
+            icon.classList.toggle('fa-chevron-down');
+            icon.classList.toggle('fa-chevron-up');
+            el.classList.toggle('expanded');
+          }
+        });
+      }
 
       if (!it.isExample) {
         const undo = el.querySelector("button");
-        undo.addEventListener("click", () => {
+        undo.addEventListener("click", (e) => {
+          e.stopPropagation();
           // [FIX] Show confirmation before undoing
           showConfirmModal("Are you sure you want to undo this mission?", () => {
             const completedNow = loadCompleted();
@@ -3069,11 +3339,11 @@ const DAILY_EMOTICONS = [
       el.className = `message-log-item ${userClass}`;
       el.innerHTML = `
         <div class="message-log-header">
-          <span class="message-from-name">FROM: ${escapeHtml(displayName)} ${hasAttachment ? '<span class="attachment-badge" title="Has attachment">📎</span>' : ''}</span>
+          <span class="message-from-name">FROM: ${escapeHtml(displayName)} ${hasAttachment ? '<span class="attachment-badge" title="Has attachment"><i class="fas fa-paperclip"></i></span>' : ''}</span>
           <span>${escapeHtml(msg.timestamp || "")}</span>
         </div>
         <div class="message-log-content">${escapeHtml(msg.content || "")}</div>
-        ${hasAttachment ? `<div class="message-attachment-preview" onclick="openAttachmentModal('${escapeHtml(msg.attachment)}', '${escapeHtml(msg.attachmentType || 'image')}')">📎 View Attachment</div>` : ''}
+        ${hasAttachment ? `<div class="message-attachment-preview" onclick="openAttachmentModal('${escapeHtml(msg.attachment)}', '${escapeHtml(msg.attachmentType || 'image')}')"><i class="fas fa-paperclip"></i> View Attachment</div>` : ''}
       `;
       container.appendChild(el);
     });
@@ -3124,13 +3394,9 @@ const DAILY_EMOTICONS = [
           <span>[-]</span>
           <span>MESSAGE_LOG</span>
         </div>
-        <button class="calendar__duo-btn" id="calDuoBtn">
-          <i class="fas fa-envelope"></i>
-          <span>DUO</span>
-        </button>
       </div>
       <div class="calendar__system-msg">
-        <span>// SYSTEM MESSAGE: ${systemMsgText}</span>
+        <span>// PROTOCOL STATUS: ${systemMsgText}</span>
       </div>
       <div class="calendar__body">
         <div class="calendar__controls">
@@ -3150,6 +3416,18 @@ const DAILY_EMOTICONS = [
         <div class="calendar__footer-text">
           <span class="marker">[*]</span>
           <span>SYSTEM.LOG: Calendar interface operational. Date selection enabled for mission planning. <span class="highlight">UESC</span> protocol active.</span>
+        </div>
+        <div class="calendar__legend-wrap" style="position: relative;">
+          <button class="calendar__legend-btn" id="calLegendBtn" title="Show legend">
+            <i class="fas fa-info-circle"></i>
+          </button>
+          <div class="calendar__legend-tooltip" id="calLegendTooltip">
+            <div class="calendar__legend-item"><i class="fas fa-tree"></i> Christmas</div>
+            <div class="calendar__legend-item"><i class="fas fa-heart"></i> Valentine's Day</div>
+            <div class="calendar__legend-item"><i class="fas fa-champagne-glasses"></i> New Year's Day</div>
+            <div class="calendar__legend-item"><i class="fas fa-leaf"></i> Thanksgiving</div>
+            <div class="calendar__legend-item"><span class="cal-event-dot">*</span> Your Events</div>
+          </div>
         </div>
       </div>
     `;
@@ -3200,7 +3478,11 @@ const DAILY_EMOTICONS = [
       if (c.hasEvent && !c.isHoliday) {
         indicator = '<span class="cal-event-dot">*</span>';
       } else if (c.isHoliday && c.icon) {
-        indicator = `<span class="cal-holiday-icon">${c.icon}</span>`;
+        // Use Font Awesome icon if it starts with fa-
+        const iconHtml = c.icon.startsWith('fa-') 
+          ? `<i class="fas ${c.icon}"></i>` 
+          : c.icon;
+        indicator = `<span class="cal-holiday-icon">${iconHtml}</span>`;
       }
       
       const dataDay = c.grey ? '' : `data-day="${c.day}"`;
@@ -3238,13 +3520,21 @@ const DAILY_EMOTICONS = [
       renderBigCalendar();
     });
     
-    // DUO button scrolls to message section
-    document.getElementById('calDuoBtn').addEventListener('click', () => {
-      const msgSection = document.getElementById('messageSection');
-      if (msgSection) {
-        msgSection.scrollIntoView({ behavior: 'smooth' });
-      }
-    });
+    // Legend toggle
+    const legendBtn = document.getElementById('calLegendBtn');
+    const legendTooltip = document.getElementById('calLegendTooltip');
+    if (legendBtn && legendTooltip) {
+      legendBtn.addEventListener('click', (e) => {
+        e.stopPropagation();
+        legendTooltip.classList.toggle('active');
+      });
+      // Close on outside click
+      document.addEventListener('click', (e) => {
+        if (!legendBtn.contains(e.target) && !legendTooltip.contains(e.target)) {
+          legendTooltip.classList.remove('active');
+        }
+      });
+    }
   }
 
   function closeWhoModal() {
@@ -3568,7 +3858,7 @@ const DAILY_EMOTICONS = [
       const dueDateEl = $("newDueDate");
       
       const title = titleEl?.value?.trim() || "";
-      if (!title) return alert("Enter a title");
+      if (!title) return showAlertModal("Please enter a title for your mission");
 
       let tag = tagEl?.value || "idea";
       if (tag === "custom") {
@@ -3673,34 +3963,76 @@ const DAILY_EMOTICONS = [
         });
 
         card.querySelector('[data-action="edit"]').addEventListener("click", () => {
-          $("newTitle").value = mission.title;
-          $("newDesc").value = mission.desc;
-
-          const tagSelect = $("newTag");
-          const hasTag = Array.from(tagSelect.options).some(opt => opt.value === mission.tag);
-          if (hasTag) {
-            tagSelect.value = mission.tag;
-          } else {
-            tagSelect.value = "custom";
-            $("customTagField").classList.remove("hidden");
-            $("customTagInput").value = mission.tag;
-          }
-
+          // Close the saved missions modal
           $("savedMissionsModal").classList.remove("active");
-          showToast("Mission loaded for editing");
+          
+          // Open Planning Board first
+          const planningBoardOverlay = $("planningBoardOverlay");
+          if (planningBoardOverlay) {
+            planningBoardOverlay.classList.add("active");
+            
+            // Wait a moment for Planning Board to render, then open the add modal
+            setTimeout(() => {
+              // Open the add idea modal
+              const pbAddModal = $('pbAddModal');
+              if (pbAddModal) {
+                pbAddModal.classList.remove('hidden');
+                pbAddModal.classList.add('active');
+                
+                // Pre-fill the form with mission data
+                const titleInput = $('pbFormTitle');
+                const descInput = $('pbFormDesc');
+                const tagSelect = $('pbFormTag');
+                const customTagField = $('pbCustomTagField');
+                const customTagInput = $('pbCustomTagInput');
+                
+                if (titleInput) titleInput.value = mission.title || '';
+                if (descInput) descInput.value = mission.desc || '';
+                
+                if (tagSelect) {
+                  const hasTag = Array.from(tagSelect.options).some(opt => opt.value === mission.tag);
+                  if (hasTag) {
+                    tagSelect.value = mission.tag;
+                    if (customTagField) customTagField.classList.add('hidden');
+                  } else if (mission.tag) {
+                    tagSelect.value = 'custom';
+                    if (customTagField) customTagField.classList.remove('hidden');
+                    if (customTagInput) customTagInput.value = mission.tag;
+                  }
+                }
+                
+                showToast("Edit your mission and save as a new idea!");
+              }
+            }, 300);
+          } else {
+            // Fallback: fill in the simple form
+            $("newTitle").value = mission.title;
+            $("newDesc").value = mission.desc;
+
+            const tagSelect = $("newTag");
+            const hasTag = Array.from(tagSelect.options).some(opt => opt.value === mission.tag);
+            if (hasTag) {
+              tagSelect.value = mission.tag;
+            } else {
+              tagSelect.value = "custom";
+              $("customTagField").classList.remove("hidden");
+              $("customTagInput").value = mission.tag;
+            }
+            showToast("Mission loaded for editing");
+          }
         });
 
         // [NEW] Delete saved mission
         card.querySelector('[data-action="delete"]').addEventListener("click", (e) => {
           e.stopPropagation();
-          if (confirm(`Delete "${mission.title}" from saved missions?`)) {
+          showConfirmModal(`Delete "${mission.title}" from saved missions?`, () => {
             const savedNow = loadSaved();
             savedNow.splice(idx, 1);
             saveSaved(savedNow);
             showToast("Mission deleted from saved");
             // Re-render the modal
             $("btnAddSaved").click();
-          }
+          });
         });
 
         container.appendChild(card);
@@ -3714,7 +4046,7 @@ const DAILY_EMOTICONS = [
   const btnAddSelectedEl = $("btnAddSelectedMissions");
   if (btnAddSelectedEl) {
     btnAddSelectedEl.addEventListener("click", () => {
-      if (selectedSavedMissions.length === 0) return alert("Please select at least one mission");
+      if (selectedSavedMissions.length === 0) return showAlertModal("Please select at least one mission");
 
       const saved = loadSaved();
       const active = loadActive();
@@ -3793,7 +4125,7 @@ const DAILY_EMOTICONS = [
         pendingAttachmentType = isVideo ? "video" : "image";
         
         if (preview) {
-          preview.innerHTML = `<span>📎 ${escapeHtml(file.name)}</span><button type="button" class="btn" id="clearAttachment">✖</button>`;
+          preview.innerHTML = `<span><i class="fas fa-paperclip"></i> ${escapeHtml(file.name)}</span><button type="button" class="btn" id="clearAttachment"><i class="fas fa-times"></i></button>`;
           const clearAttachEl = $("clearAttachment");
           if (clearAttachEl) {
             clearAttachEl.addEventListener("click", () => {
@@ -4249,15 +4581,15 @@ const DAILY_EMOTICONS = [
       <div class="confirm-modal" style="max-width: 400px;">
         <h4 style="margin-bottom: 15px;"><i class="fas fa-video"></i> Upload Game Clip</h4>
         <div style="margin-bottom: 12px;">
-          <label style="display: block; margin-bottom: 5px; font-size: 11px; color: var(--muted);">Video File *</label>
-          <input type="file" id="gameClipFile" accept="video/*" style="width: 100%;">
+          <label style="display: block; margin-bottom: 5px; font-size: 11px; color: var(--muted);">VIDEO OR IMAGE FILE *</label>
+          <input type="file" id="gameClipFile" accept="video/*,image/*" style="width: 100%;">
         </div>
         <div style="margin-bottom: 12px;">
-          <label style="display: block; margin-bottom: 5px; font-size: 11px; color: var(--muted);">Title (optional)</label>
+          <label style="display: block; margin-bottom: 5px; font-size: 11px; color: var(--muted);">TITLE (OPTIONAL)</label>
           <input type="text" id="gameClipTitle" placeholder="Enter clip title..." class="input" style="width: 100%; padding: 8px;">
         </div>
         <div style="margin-bottom: 15px;">
-          <label style="display: block; margin-bottom: 5px; font-size: 11px; color: var(--muted);">Date (optional)</label>
+          <label style="display: block; margin-bottom: 5px; font-size: 11px; color: var(--muted);">DATE (OPTIONAL)</label>
           <input type="date" id="gameClipDate" class="input" style="width: 100%; padding: 8px;">
         </div>
         <div class="confirm-modal-buttons">
@@ -4282,18 +4614,25 @@ const DAILY_EMOTICONS = [
       
       const file = fileInput.files?.[0];
       if (!file) {
-        showToast("Please select a video file");
+        showAlertModal("Please select a video or image file");
         return;
       }
       
-      if (!file.type.startsWith("video/")) {
-        showToast("Only video files are allowed");
+      const isVideo = file.type.startsWith("video/");
+      const isImage = file.type.startsWith("image/");
+      
+      if (!isVideo && !isImage) {
+        showAlertModal("Only video and image files are allowed");
         return;
       }
       
-      // Size check (100MB max for videos)
-      if (file.size > 100 * 1024 * 1024) {
-        showToast("Video too large (max 100MB)");
+      // Size check (150MB max for videos to support 2-min clips, 20MB for images)
+      const maxSize = isVideo ? 150 * 1024 * 1024 : 20 * 1024 * 1024;
+      const maxLabel = isVideo ? "150MB" : "20MB";
+      
+      if (file.size > maxSize) {
+        // Show prominent center notification
+        showFileTooLargeNotification(file.name, maxLabel);
         return;
       }
       
@@ -4761,27 +5100,38 @@ ${completed.map(i => `[X] ${i.title}  ${i.desc} (#${i.tag})`).join("\n")}
       // Get current theme for themed boot messages
       const currentTheme = document.documentElement.getAttribute('data-theme') || 'system';
       
+      // Add blizzard effect for Christmas theme
+      let blizzardEl = null;
+      if (currentTheme === 'christmas') {
+        blizzardEl = document.createElement('div');
+        blizzardEl.className = 'christmas-blizzard';
+        blizzardEl.innerHTML = `
+          <div class="blizzard-layer blizzard-layer-1"></div>
+          <div class="blizzard-layer blizzard-layer-2"></div>
+          <div class="blizzard-layer blizzard-layer-3"></div>
+        `;
+        elBoot.appendChild(blizzardEl);
+        
+        // Intensify blizzard over time
+        setTimeout(() => blizzardEl.classList.add('intensifying'), 500);
+        setTimeout(() => blizzardEl.classList.add('peak'), 1200);
+      }
+      
       // Theme-specific boot messages
       let bootMessages;
-      if (currentTheme === 'retro') {
+      let bootDuration = 1800;
+      
+      if (currentTheme === 'christmas') {
+        bootDuration = 2500; // Slower, more dramatic for Christmas
         bootMessages = [
-          { text: 'PLANBOARD.EXE Version 2.026', delay: 150 },
-          { text: 'Loading CONFIG.SYS...', delay: 350 },
-          { text: 'HIMEM.SYS loaded successfully', delay: 550 },
-          { text: 'Reading CALENDAR.DAT...', delay: 750 },
-          { text: 'Mounting IDEAS drive D:\\', delay: 950 },
-          { text: 'Memory check: 640K OK', delay: 1100 },
-          { text: 'READY.', delay: 1300, success: true },
-        ];
-      } else if (currentTheme === 'christmas') {
-        bootMessages = [
-          { text: 'Checking naughty/nice list...', delay: 150 },
-          { text: 'Warming up the hot cocoa...', delay: 350 },
-          { text: 'Counting presents under tree...', delay: 550 },
-          { text: 'Feeding the reindeer...', delay: 750 },
-          { text: 'Polishing the sleigh bells...', delay: 950 },
-          { text: 'Spreading holiday cheer...', delay: 1100 },
-          { text: 'Ho ho ho! Ready!', delay: 1300, success: true },
+          { text: 'Braving the winter storm...', delay: 200 },
+          { text: 'Checking naughty/nice list...', delay: 500 },
+          { text: 'Warming up the hot cocoa...', delay: 800 },
+          { text: 'Counting presents under tree...', delay: 1100 },
+          { text: 'Feeding the reindeer...', delay: 1400 },
+          { text: 'Polishing the sleigh bells...', delay: 1700 },
+          { text: 'Spreading holiday cheer...', delay: 2000 },
+          { text: 'Ho ho ho! Ready!', delay: 2300, success: true },
         ];
       } else {
         bootMessages = [
@@ -4809,9 +5159,7 @@ ${completed.map(i => `[X] ${i.title}  ${i.desc} (#${i.tag})`).join("\n")}
           elItem.textContent = msg.text;
           elLog.appendChild(elItem);
           // Update status text based on theme
-          if (currentTheme === 'retro') {
-            elStatus.textContent = msg.success ? 'Press any key to continue...' : msg.text;
-          } else if (currentTheme === 'christmas') {
+          if (currentTheme === 'christmas') {
             elStatus.textContent = msg.success ? 'Merry Planning!' : msg.text;
           } else {
             elStatus.textContent = msg.text.replace('[OK] ', '');
@@ -4822,19 +5170,22 @@ ${completed.map(i => `[X] ${i.title}  ${i.desc} (#${i.tag})`).join("\n")}
       setTimeout(function() {
         clearInterval(progressInterval);
         elProgress.style.width = '100%';
-        if (currentTheme === 'retro') {
-          elStatus.textContent = 'Starting PLANBOARD.EXE...';
-        } else if (currentTheme === 'christmas') {
+        if (currentTheme === 'christmas') {
           elStatus.textContent = 'Unwrapping your plans...';
+          // Fade blizzard
+          if (blizzardEl) {
+            blizzardEl.classList.add('fading');
+          }
         } else {
           elStatus.textContent = 'Launching...';
         }
         
         setTimeout(function() {
+          if (blizzardEl) blizzardEl.remove();
           elBoot.classList.add('hidden');
           resolve();
         }, 500);
-      }, 1800);
+      }, bootDuration);
     });
   }
   
@@ -5092,12 +5443,38 @@ ${completed.map(i => `[X] ${i.title}  ${i.desc} (#${i.tag})`).join("\n")}
   function pbClose() {
     var closeEffect = $('pbCloseEffect');
     var overlay = $('planningBoardOverlay');
+    var currentTheme = document.documentElement.getAttribute('data-theme') || 'system';
     
-    if (closeEffect && overlay) {
-      // Show glitch effect
+    if (currentTheme === 'christmas' && overlay) {
+      // Christmas freeze-over effect
+      var freezeOverlay = document.createElement('div');
+      freezeOverlay.className = 'christmas-freeze-overlay';
+      freezeOverlay.innerHTML = `
+        <div class="freeze-frost"></div>
+        <div class="freeze-ice-crystals"></div>
+        <div class="freeze-breath"></div>
+      `;
+      overlay.appendChild(freezeOverlay);
+      
+      // Trigger freeze animation
+      setTimeout(function() {
+        freezeOverlay.classList.add('freezing');
+      }, 50);
+      
+      // After freeze, show defrost and close
+      setTimeout(function() {
+        freezeOverlay.classList.add('defrosting');
+      }, 1200);
+      
+      setTimeout(function() {
+        overlay.classList.add('hidden');
+        freezeOverlay.remove();
+      }, 2000);
+      
+    } else if (closeEffect && overlay) {
+      // Standard glitch effect
       closeEffect.classList.remove('hidden');
       
-      // After glitch animation, hide everything
       setTimeout(function() {
         overlay.classList.add('hidden');
         closeEffect.classList.add('hidden');
@@ -5436,6 +5813,15 @@ ${completed.map(i => `[X] ${i.title}  ${i.desc} (#${i.tag})`).join("\n")}
       });
     }
     
+    // Floating Bug Report Button (FAB)
+    var fabBugBtn = $('fabBugReport');
+    if (fabBugBtn && bugModal) {
+      fabBugBtn.addEventListener('click', function() {
+        bugModal.classList.remove('hidden');
+        bugModal.classList.add('active');
+      });
+    }
+    
     function closeBugModal() {
       if (bugModal) {
         bugModal.classList.add('hidden');
@@ -5468,7 +5854,7 @@ ${completed.map(i => `[X] ${i.title}  ${i.desc} (#${i.tag})`).join("\n")}
         });
         localStorage.setItem('bug_reports', JSON.stringify(bugReports));
         closeBugModal();
-        alert('Bug report submitted! Thank you for your feedback.');
+        showAlertModal('Bug report submitted! Thank you for your feedback.');
       });
     }
     
@@ -5492,12 +5878,18 @@ ${completed.map(i => `[X] ${i.title}  ${i.desc} (#${i.tag})`).join("\n")}
             importList.classList.remove('hidden');
             importList.innerHTML = storedIdeas.map(function(idea) {
               return '<div class="pb-import-item" data-idea-id="' + idea.id + '">' +
-                '<div class="pb-import-item-title">' + idea.title + '</div>' +
-                (idea.desc ? '<div class="pb-import-item-desc">' + idea.desc + '</div>' : '') +
-                '<div class="pb-import-item-meta">' +
-                  '<span>' + (idea.targetMonth || 'Unplanned') + '</span>' +
-                  '<span>' + idea.priority + '</span>' +
-                  (idea.tag ? '<span>' + idea.tag + '</span>' : '') +
+                '<div class="pb-import-item-content">' +
+                  '<div class="pb-import-item-title">' + idea.title + '</div>' +
+                  (idea.desc ? '<div class="pb-import-item-desc">' + idea.desc + '</div>' : '') +
+                  '<div class="pb-import-item-meta">' +
+                    '<span>' + (idea.targetMonth || 'Unplanned') + '</span>' +
+                    '<span>' + idea.priority + '</span>' +
+                    (idea.tag ? '<span>' + idea.tag + '</span>' : '') +
+                  '</div>' +
+                '</div>' +
+                '<div class="pb-import-item-actions">' +
+                  '<button class="btn pb-import-select" data-action="select">SELECT</button>' +
+                  '<button class="btn pb-import-edit" data-action="edit">EDIT</button>' +
                 '</div>' +
               '</div>';
             }).join('');
@@ -5522,30 +5914,61 @@ ${completed.map(i => `[X] ${i.title}  ${i.desc} (#${i.tag})`).join("\n")}
       importModal.addEventListener('click', function(e) {
         if (e.target === importModal) closeImportModal();
         
-        // Handle clicking on import item
+        // Handle clicking on import item buttons
         var importItem = e.target.closest('.pb-import-item');
-        if (importItem && importItem.dataset.ideaId) {
-          var storedIdeas = JSON.parse(localStorage.getItem('planning_board_ideas') || '[]');
-          var idea = storedIdeas.find(function(i) { return i.id === importItem.dataset.ideaId; });
+        if (!importItem || !importItem.dataset.ideaId) return;
+        
+        var actionBtn = e.target.closest('[data-action]');
+        var action = actionBtn ? actionBtn.dataset.action : 'select';
+        
+        var storedIdeas = JSON.parse(localStorage.getItem('planning_board_ideas') || '[]');
+        var idea = storedIdeas.find(function(i) { return i.id === importItem.dataset.ideaId; });
+        
+        if (!idea) return;
+        
+        if (action === 'edit') {
+          // Close import modal and open simple form with edit
+          closeImportModal();
           
-          if (idea) {
-            // Fill the mission form with idea data
-            var newTitle = document.getElementById('newTitle');
-            var newDesc = document.getElementById('newDesc');
-            var newTag = document.getElementById('newTag');
-            
-            if (newTitle) newTitle.value = idea.title;
-            if (newDesc) newDesc.value = idea.desc || '';
-            if (newTag && idea.tag) {
-              // Check if tag exists in dropdown
-              var tagExists = Array.from(newTag.options).some(function(opt) { return opt.value === idea.tag; });
-              if (tagExists) {
-                newTag.value = idea.tag;
-              }
+          // Fill the mission form with idea data
+          var newTitle = document.getElementById('newTitle');
+          var newDesc = document.getElementById('newDesc');
+          var newTag = document.getElementById('newTag');
+          var customTagField = document.getElementById('customTagField');
+          var customTagInput = document.getElementById('customTagInput');
+          
+          if (newTitle) newTitle.value = idea.title;
+          if (newDesc) newDesc.value = idea.desc || '';
+          if (newTag && idea.tag) {
+            var tagExists = Array.from(newTag.options).some(function(opt) { return opt.value === idea.tag; });
+            if (tagExists) {
+              newTag.value = idea.tag;
+              if (customTagField) customTagField.classList.add('hidden');
+            } else {
+              newTag.value = 'custom';
+              if (customTagField) customTagField.classList.remove('hidden');
+              if (customTagInput) customTagInput.value = idea.tag;
             }
-            
-            closeImportModal();
           }
+          
+          showToast("Edit the mission details and click Add!");
+        } else {
+          // Default: Select and fill form
+          var newTitle = document.getElementById('newTitle');
+          var newDesc = document.getElementById('newDesc');
+          var newTag = document.getElementById('newTag');
+          
+          if (newTitle) newTitle.value = idea.title;
+          if (newDesc) newDesc.value = idea.desc || '';
+          if (newTag && idea.tag) {
+            var tagExists = Array.from(newTag.options).some(function(opt) { return opt.value === idea.tag; });
+            if (tagExists) {
+              newTag.value = idea.tag;
+            }
+          }
+          
+          closeImportModal();
+          showToast("Idea imported! Click Add Mission to save.");
         }
       });
     }
