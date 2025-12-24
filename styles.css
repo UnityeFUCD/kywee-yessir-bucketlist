@@ -3792,23 +3792,52 @@ html[data-theme="retro"] .card::after {
   display: none !important;
 }
 
-/* Retro card header - Title bar style */
+/* Retro card header - Title bar style with window controls */
 html[data-theme="retro"] .cardHeader {
   background: #1C419F !important;
-  padding: 12px 10px !important;
+  padding: 8px 6px 8px 8px !important;
   margin: -6px -6px 8px -6px !important;
   border-bottom: none !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: space-between !important;
+  position: relative !important;
 }
 
 html[data-theme="retro"] .cardHeader h2 {
   color: #FFF !important;
-  font-size: 16px !important;
+  font-size: 14px !important;
   text-transform: none !important;
-  letter-spacing: 1px !important;
+  letter-spacing: 0 !important;
+  flex: 1 !important;
 }
 
 html[data-theme="retro"] .cardHeader h2::before {
   content: none !important;
+}
+
+/* Window control buttons - added via CSS pseudo elements */
+html[data-theme="retro"] .cardHeader::after {
+  content: '— □ ✕' !important;
+  display: flex !important;
+  gap: 4px !important;
+  font-size: 11px !important;
+  color: #000 !important;
+  background: #FFCDFA !important;
+  padding: 4px 8px !important;
+  margin-left: auto !important;
+  box-shadow: 
+    -2px 0px #FFF,
+    0px -2px #FFF,
+    2px 0px #353535,
+    0px 2px #353535,
+    inset -2px -2px #FF98F5 !important;
+  letter-spacing: 4px !important;
+}
+
+/* Retro menu bar style for cards */
+html[data-theme="retro"] .cardBody {
+  position: relative !important;
 }
 
 /* FIX: Notes and system messages - WHITE BACKGROUND for contrast */
@@ -3882,14 +3911,14 @@ html[data-theme="retro"] .mini-cal {
     0px -3px #353535 !important;
 }
 
-/* Retro buttons - Windows 95 style - INCREASED SIZE */
+/* Retro buttons - Windows 95 style - authentic */
 html[data-theme="retro"] .btn,
 html[data-theme="retro"] button {
   background: #FFCDFA !important;
-  color: #1C419F !important;
+  color: #000 !important;
   border: none !important;
-  padding: 10px 18px !important;
-  font-size: 13px !important;
+  padding: 6px 14px !important;
+  font-size: 14px !important;
   cursor: pointer;
   transition: none !important;
   box-shadow: 
@@ -3903,7 +3932,6 @@ html[data-theme="retro"] button {
 html[data-theme="retro"] .btn:hover,
 html[data-theme="retro"] button:hover {
   background: #FF98F5 !important;
-  color: #000 !important;
 }
 
 html[data-theme="retro"] .btn:active,
@@ -3915,6 +3943,14 @@ html[data-theme="retro"] button:active {
     3px 0px #FFF,
     0px 3px #FFF,
     inset 4px 4px #FF98F5 !important;
+}
+
+/* Button with auto width */
+html[data-theme="retro"] .btn.btn-auto {
+  padding-left: 10px !important;
+  padding-right: 10px !important;
+  width: auto !important;
+  height: 40px !important;
 }
 
 /* Remove slide effect on retro buttons */
@@ -3939,6 +3975,42 @@ html[data-theme="retro"] .pill.active {
   background: #1C419F !important;
   color: #FFF !important;
   border-color: #1C419F !important;
+}
+
+/* Retro checkboxes - Windows 95 style */
+html[data-theme="retro"] input[type="checkbox"] {
+  width: 16px !important;
+  height: 16px !important;
+  appearance: none !important;
+  -webkit-appearance: none !important;
+  background: #FFF !important;
+  border: none !important;
+  box-shadow: 
+    inset 2px 2px #353535,
+    inset -1px -1px #FFF,
+    inset 3px 3px #808080 !important;
+  cursor: pointer !important;
+  position: relative !important;
+  vertical-align: middle !important;
+}
+
+html[data-theme="retro"] input[type="checkbox"]:checked {
+  background: #FFF !important;
+}
+
+html[data-theme="retro"] input[type="checkbox"]:checked::after {
+  content: '✓' !important;
+  position: absolute !important;
+  top: 50% !important;
+  left: 50% !important;
+  transform: translate(-50%, -50%) !important;
+  font-size: 12px !important;
+  font-weight: bold !important;
+  color: #000 !important;
+}
+
+html[data-theme="retro"] .check-icon {
+  display: none !important;
 }
 
 /* Retro items/list items - BETTER CONTRAST */
@@ -4075,30 +4147,90 @@ html[data-theme="retro"] .message-time {
   opacity: 0.7;
 }
 
-/* Retro input fields */
+/* Retro input fields - Windows 95 style */
 html[data-theme="retro"] input,
-html[data-theme="retro"] textarea,
-html[data-theme="retro"] select {
+html[data-theme="retro"] textarea {
   background: #FFF !important;
-  border: 2px solid #353535 !important;
+  border: none !important;
   color: #000 !important;
-  padding: 8px !important;
+  padding: 6px 8px !important;
   font-size: 14px !important;
+  box-shadow: 
+    inset 2px 2px #353535,
+    inset -1px -1px #FFF,
+    inset 3px 3px #808080 !important;
 }
 
 html[data-theme="retro"] input:focus,
-html[data-theme="retro"] textarea:focus,
-html[data-theme="retro"] select:focus {
+html[data-theme="retro"] textarea:focus {
   outline: none !important;
-  border-color: #1C419F !important;
-  box-shadow: 0 0 0 2px #FF98F5 !important;
+  box-shadow: 
+    inset 2px 2px #1C419F,
+    inset -1px -1px #FFF,
+    inset 3px 3px #808080,
+    0 0 0 2px #FF98F5 !important;
 }
 
 html[data-theme="retro"] input::placeholder {
-  color: #999 !important;
+  color: #808080 !important;
 }
 
-/* Retro modals */
+/* Retro select/dropdown - Windows 95 style */
+html[data-theme="retro"] select {
+  background: #FFF !important;
+  border: none !important;
+  color: #000 !important;
+  padding: 6px 24px 6px 8px !important;
+  font-size: 14px !important;
+  cursor: pointer !important;
+  appearance: none !important;
+  -webkit-appearance: none !important;
+  box-shadow: 
+    inset 2px 2px #353535,
+    inset -1px -1px #FFF,
+    inset 3px 3px #808080 !important;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath fill='%23000' d='M2 4l4 4 4-4z'/%3E%3C/svg%3E") !important;
+  background-repeat: no-repeat !important;
+  background-position: right 6px center !important;
+}
+
+html[data-theme="retro"] select:focus {
+  outline: none !important;
+  box-shadow: 
+    inset 2px 2px #1C419F,
+    inset -1px -1px #FFF,
+    inset 3px 3px #808080,
+    0 0 0 2px #FF98F5 !important;
+}
+
+/* Dropdown button style */
+html[data-theme="retro"] select option {
+  background: #FFF !important;
+  color: #000 !important;
+  padding: 4px 8px !important;
+}
+
+html[data-theme="retro"] select option:hover,
+html[data-theme="retro"] select option:checked {
+  background: #1C419F !important;
+  color: #FFF !important;
+}
+
+/* Display area - scrolling text style like music player */
+html[data-theme="retro"] .message-log,
+html[data-theme="retro"] .display-area {
+  position: relative !important;
+  background: #000 !important;
+  padding: 8px 0 !important;
+  overflow: hidden !important;
+  border-top: 4px solid #FF98F5 !important;
+  border-left: 4px solid #FF98F5 !important;
+  box-shadow: 
+    3px 0px #FFF,
+    0px 3px #FFF !important;
+}
+
+/* Retro modals - Windows 95 style */
 html[data-theme="retro"] .modal {
   background: rgba(0, 128, 129, 0.9) !important;
 }
@@ -4112,7 +4244,11 @@ html[data-theme="retro"] .settings-modal-inner {
     3px 0px #353535,
     0px 3px #353535,
     -3px 0px #FFF,
-    0px -3px #FFF !important;
+    0px -3px #FFF,
+    rgba(34, 46, 44, 0.1) 0 2px 2px,
+    rgba(34, 46, 44, 0.1) 0 10px 10px,
+    rgba(34, 46, 44, 0.1) 0 18px 18px,
+    rgba(34, 46, 44, 0.1) 0 26px 26px !important;
 }
 
 html[data-theme="retro"] .modal-inner::before,
@@ -4124,26 +4260,34 @@ html[data-theme="retro"] .settings-modal-inner::after {
 
 html[data-theme="retro"] .modal-header {
   background: #1C419F !important;
-  padding: 10px 8px !important;
-  margin: -6px -6px 12px -6px !important;
+  padding: 8px !important;
+  margin: -6px -6px 0 -6px !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: space-between !important;
 }
 
 html[data-theme="retro"] .modal-header h3 {
   color: #FFF !important;
+  font-size: 14px !important;
+  flex: 1 !important;
 }
 
 html[data-theme="retro"] .modal-header h3::before {
   content: none !important;
 }
 
+/* Window controls for modal */
 html[data-theme="retro"] .modal-close {
   background: #FFCDFA !important;
   color: #000 !important;
-  width: 28px !important;
-  height: 28px !important;
+  width: auto !important;
+  height: 26px !important;
+  padding: 0 6px !important;
   display: flex !important;
   align-items: center !important;
   justify-content: center !important;
+  font-size: 14px !important;
   box-shadow: 
     -2px 0px #FFF,
     0px -2px #FFF,
@@ -4154,6 +4298,28 @@ html[data-theme="retro"] .modal-close {
 
 html[data-theme="retro"] .modal-close:hover {
   background: #FF98F5 !important;
+}
+
+html[data-theme="retro"] .modal-close:active {
+  box-shadow: 
+    -2px 0px #353535,
+    0px -2px #353535,
+    2px 0px #FFF,
+    0px 2px #FFF,
+    inset 2px 2px #FF98F5 !important;
+}
+
+/* Menu bar style for modals */
+html[data-theme="retro"] .modal-body,
+html[data-theme="retro"] .settings-content {
+  padding: 12px !important;
+  margin: 3px !important;
+  background: #FFCDFA !important;
+  box-shadow: 
+    3px 0px #FFF,
+    0px 3px #FFF,
+    -3px 0px #353535,
+    0px -3px #353535 !important;
 }
 
 /* Retro topbar */
@@ -6197,17 +6363,173 @@ html[data-theme="liquid-gradient"] .pb-code-stream-column {
   text-shadow: 0 0 10px rgba(255, 255, 255, 0.3);
 }
 
-/* --- CHRISTMAS THEME --- */
+/* --- CHRISTMAS THEME - FESTIVE BOOT SCREEN --- */
+
+/* Snow animation keyframes */
+@keyframes christmasSnowfall {
+  0% { transform: translateY(-10px) translateX(0); opacity: 0; }
+  10% { opacity: 1; }
+  90% { opacity: 1; }
+  100% { transform: translateY(100vh) translateX(20px); opacity: 0; }
+}
+
+@keyframes christmasTreeGlow {
+  0%, 100% { filter: drop-shadow(0 0 10px #e74c3c); }
+  50% { filter: drop-shadow(0 0 20px #27ae60); }
+}
+
+@keyframes christmasStarTwinkle {
+  0%, 100% { opacity: 1; transform: scale(1); }
+  50% { opacity: 0.5; transform: scale(0.8); }
+}
+
+@keyframes christmasOrnamentBlink {
+  0%, 30%, 100% { opacity: 1; }
+  15% { opacity: 0.3; }
+}
+
+html[data-theme="christmas"] .pb-boot-screen {
+  background: linear-gradient(180deg, #1a1a2e 0%, #16213e 50%, #0f3460 100%) !important;
+  overflow: hidden !important;
+}
+
+/* Snow particles */
+html[data-theme="christmas"] .pb-boot-screen::before {
+  content: '❄ ❅ ❆ ✻ ❄ ❅ ❆ ✻ ❄ ❅ ❆ ✻ ❄ ❅' !important;
+  position: absolute !important;
+  top: 0 !important;
+  left: 0 !important;
+  width: 200% !important;
+  height: 100% !important;
+  font-size: 18px !important;
+  color: rgba(255, 255, 255, 0.6) !important;
+  letter-spacing: 50px !important;
+  line-height: 40px !important;
+  animation: christmasSnowfall 8s linear infinite !important;
+  pointer-events: none !important;
+  z-index: 1 !important;
+}
+
+html[data-theme="christmas"] .pb-boot-screen::after {
+  content: '✻ ❆ ❅ ❄ ✻ ❆ ❅ ❄ ✻ ❆ ❅ ❄ ✻ ❆' !important;
+  position: absolute !important;
+  top: -50% !important;
+  left: 25% !important;
+  width: 200% !important;
+  height: 100% !important;
+  font-size: 14px !important;
+  color: rgba(255, 255, 255, 0.4) !important;
+  letter-spacing: 40px !important;
+  line-height: 35px !important;
+  animation: christmasSnowfall 12s linear infinite 2s !important;
+  pointer-events: none !important;
+  z-index: 1 !important;
+}
+
+html[data-theme="christmas"] .pb-boot-content {
+  position: relative !important;
+  z-index: 10 !important;
+  background: rgba(26, 26, 46, 0.9) !important;
+  border: 3px solid #27ae60 !important;
+  padding: 30px !important;
+  box-shadow: 
+    0 0 30px rgba(39, 174, 96, 0.3),
+    inset 0 0 20px rgba(231, 76, 60, 0.1) !important;
+}
+
+/* Christmas tree in boot screen */
 html[data-theme="christmas"] .pb-boot-title {
-  color: #e74c3c;
+  color: #FFD700 !important;
+  text-shadow: 0 0 10px #FFD700, 0 0 20px #e74c3c !important;
+  font-size: clamp(20px, 4vw, 28px) !important;
+  position: relative !important;
+}
+
+html[data-theme="christmas"] .pb-boot-title::before {
+  content: '🎄' !important;
+  display: block !important;
+  font-size: 60px !important;
+  margin-bottom: 15px !important;
+  animation: christmasTreeGlow 2s ease-in-out infinite !important;
+}
+
+html[data-theme="christmas"] .pb-boot-title::after {
+  content: '⭐' !important;
+  position: absolute !important;
+  top: -10px !important;
+  left: 50% !important;
+  transform: translateX(-50%) !important;
+  font-size: 24px !important;
+  animation: christmasStarTwinkle 1s ease-in-out infinite !important;
+}
+
+html[data-theme="christmas"] .pb-boot-line {
+  background: linear-gradient(90deg, #e74c3c, #FFD700, #27ae60, #FFD700, #e74c3c) !important;
+  height: 4px !important;
+  animation: christmasOrnamentBlink 2s ease-in-out infinite !important;
+}
+
+html[data-theme="christmas"] .pb-boot-log {
+  color: #FFF !important;
+  background: rgba(0, 0, 0, 0.3) !important;
+  border: 1px solid #27ae60 !important;
+  padding: 15px !important;
+  font-size: 13px !important;
+}
+
+html[data-theme="christmas"] .pb-boot-log-item {
+  color: #CCC !important;
+}
+
+html[data-theme="christmas"] .pb-boot-log-item::before {
+  content: '🎁 ' !important;
 }
 
 html[data-theme="christmas"] .pb-boot-log-item.success {
-  color: #27ae60;
+  color: #27ae60 !important;
+}
+
+html[data-theme="christmas"] .pb-boot-log-item.success::before {
+  content: '✓ ' !important;
+  color: #27ae60 !important;
+}
+
+/* Candy cane progress bar */
+html[data-theme="christmas"] .pb-boot-progress {
+  border: 3px solid #27ae60 !important;
+  background: #1a1a2e !important;
+  height: 24px !important;
+  overflow: hidden !important;
 }
 
 html[data-theme="christmas"] .pb-boot-progress-bar {
-  background: linear-gradient(90deg, #e74c3c, #27ae60);
+  background: repeating-linear-gradient(
+    45deg,
+    #e74c3c 0px,
+    #e74c3c 10px,
+    #FFF 10px,
+    #FFF 20px,
+    #27ae60 20px,
+    #27ae60 30px,
+    #FFF 30px,
+    #FFF 40px
+  ) !important;
+  background-size: 56px 100% !important;
+  animation: christmasCandyStripe 1s linear infinite !important;
+}
+
+@keyframes christmasCandyStripe {
+  0% { background-position: 0 0; }
+  100% { background-position: 56px 0; }
+}
+
+html[data-theme="christmas"] .pb-boot-status {
+  color: #FFD700 !important;
+  font-size: 12px !important;
+}
+
+html[data-theme="christmas"] .pb-boot-status::before {
+  content: '🔔 ' !important;
 }
 
 html[data-theme="christmas"] .pb-title,

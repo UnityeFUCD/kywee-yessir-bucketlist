@@ -4773,6 +4773,16 @@ ${completed.map(i => `[X] ${i.title}  ${i.desc} (#${i.tag})`).join("\n")}
           { text: 'Memory check: 640K OK', delay: 1100 },
           { text: 'READY.', delay: 1300, success: true },
         ];
+      } else if (currentTheme === 'christmas') {
+        bootMessages = [
+          { text: 'Checking naughty/nice list...', delay: 150 },
+          { text: 'Warming up the hot cocoa...', delay: 350 },
+          { text: 'Counting presents under tree...', delay: 550 },
+          { text: 'Feeding the reindeer...', delay: 750 },
+          { text: 'Polishing the sleigh bells...', delay: 950 },
+          { text: 'Spreading holiday cheer...', delay: 1100 },
+          { text: 'Ho ho ho! Ready!', delay: 1300, success: true },
+        ];
       } else {
         bootMessages = [
           { text: '[OK] Initializing Planning Board...', delay: 200 },
@@ -4801,6 +4811,8 @@ ${completed.map(i => `[X] ${i.title}  ${i.desc} (#${i.tag})`).join("\n")}
           // Update status text based on theme
           if (currentTheme === 'retro') {
             elStatus.textContent = msg.success ? 'Press any key to continue...' : msg.text;
+          } else if (currentTheme === 'christmas') {
+            elStatus.textContent = msg.success ? 'Merry Planning!' : msg.text;
           } else {
             elStatus.textContent = msg.text.replace('[OK] ', '');
           }
@@ -4810,7 +4822,13 @@ ${completed.map(i => `[X] ${i.title}  ${i.desc} (#${i.tag})`).join("\n")}
       setTimeout(function() {
         clearInterval(progressInterval);
         elProgress.style.width = '100%';
-        elStatus.textContent = currentTheme === 'retro' ? 'Starting PLANBOARD.EXE...' : 'Launching...';
+        if (currentTheme === 'retro') {
+          elStatus.textContent = 'Starting PLANBOARD.EXE...';
+        } else if (currentTheme === 'christmas') {
+          elStatus.textContent = 'Unwrapping your plans...';
+        } else {
+          elStatus.textContent = 'Launching...';
+        }
         
         setTimeout(function() {
           elBoot.classList.add('hidden');
