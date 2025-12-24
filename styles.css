@@ -1126,32 +1126,21 @@
     .snowflake {
       position: fixed;
       top: -10px;
-      font-size: 14px;
-      opacity: 0.85;
       pointer-events: none;
-      animation: fall linear forwards;
-      filter: drop-shadow(0 6px 10px rgba(0,0,0,.25));
+      user-select: none;
+      color: #fff;
+      text-shadow: 0 0 5px rgba(255, 255, 255, 0.5);
       z-index: 5;
     }
     
-    /* Foreground snowflakes - in front of UI */
-    .snowflake-foreground {
-      z-index: 99999 !important;
-      filter: blur(1px) drop-shadow(0 0 5px rgba(255,255,255,0.8));
-    }
-
-    @keyframes fall {
-      to { transform: translateY(110vh) rotate(360deg); opacity: 0.25; }
-    }
-    
-    /* Christmas Lights for Navbar */
+    /* Christmas Lights for Navbar - Cleaner integrated design */
     .christmas-lights {
       position: absolute;
-      top: 0;
+      top: -2px;
       left: 0;
       right: 0;
-      height: 8px;
-      overflow: hidden;
+      height: 12px;
+      overflow: visible;
       pointer-events: none;
       z-index: 100;
     }
@@ -1159,40 +1148,36 @@
     .christmas-lights::before {
       content: '';
       position: absolute;
-      top: 0;
+      top: 4px;
       left: 0;
       right: 0;
       height: 2px;
-      background: repeating-linear-gradient(
-        90deg,
-        transparent 0px,
-        transparent 30px,
-        #222 30px,
-        #222 32px
-      );
+      background: #333;
+      opacity: 0.6;
     }
     
     .christmas-light {
       position: absolute;
-      top: 2px;
-      width: 8px;
-      height: 12px;
+      top: 4px;
+      width: 6px;
+      height: 10px;
       border-radius: 50% 50% 50% 50% / 30% 30% 70% 70%;
-      animation: christmasLightGlow 1.5s ease-in-out infinite alternate;
+      animation: christmasLightGlow 2s ease-in-out infinite alternate;
+      opacity: 0.85;
     }
     
-    .christmas-light:nth-child(4n+1) { background: #ff3333; animation-delay: 0s; }
-    .christmas-light:nth-child(4n+2) { background: #00ff00; animation-delay: 0.2s; }
-    .christmas-light:nth-child(4n+3) { background: #3333ff; animation-delay: 0.4s; }
-    .christmas-light:nth-child(4n+4) { background: #ffff00; animation-delay: 0.6s; }
+    .christmas-light:nth-child(4n+1) { background: #ff4444; box-shadow: 0 2px 6px rgba(255, 68, 68, 0.5); animation-delay: 0s; }
+    .christmas-light:nth-child(4n+2) { background: #44ff44; box-shadow: 0 2px 6px rgba(68, 255, 68, 0.5); animation-delay: 0.5s; }
+    .christmas-light:nth-child(4n+3) { background: #4488ff; box-shadow: 0 2px 6px rgba(68, 136, 255, 0.5); animation-delay: 1s; }
+    .christmas-light:nth-child(4n+4) { background: #ffcc00; box-shadow: 0 2px 6px rgba(255, 204, 0, 0.5); animation-delay: 1.5s; }
     
     @keyframes christmasLightGlow {
       0% { 
-        filter: brightness(0.6) drop-shadow(0 0 2px currentColor);
-        opacity: 0.7;
+        filter: brightness(0.7);
+        opacity: 0.6;
       }
       100% { 
-        filter: brightness(1.2) drop-shadow(0 0 8px currentColor) drop-shadow(0 0 15px currentColor);
+        filter: brightness(1.1);
         opacity: 1;
       }
     }
@@ -3885,30 +3870,36 @@ html[data-theme="light"] .footer::before {
 }
 
 .pb-beta {
-  color: #ff00ff;
-  font-weight: bold;
+  color: #b8a9c9;
+  font-weight: 600;
   text-transform: uppercase;
   letter-spacing: 2px;
-  padding: 2px 8px;
-  background: linear-gradient(135deg, rgba(255, 0, 255, 0.3), rgba(0, 255, 255, 0.2));
-  border: 1px solid #ff00ff;
-  border-radius: 4px;
-  animation: betaPulse 2s ease-in-out infinite;
-  text-shadow: 0 0 5px #ff00ff, 0 0 10px #ff00ff;
-  box-shadow: 0 0 10px rgba(255, 0, 255, 0.5), inset 0 0 5px rgba(255, 0, 255, 0.2);
+  padding: 3px 10px;
+  background: rgba(184, 169, 201, 0.15);
+  border: 1px solid rgba(184, 169, 201, 0.4);
+  border-radius: 3px;
+  font-size: 10px;
+  opacity: 0.85;
+  /* No animation - solid and smooth */
 }
 
-@keyframes betaPulse {
-  0%, 100% { 
-    opacity: 1; 
-    text-shadow: 0 0 5px #ff00ff, 0 0 10px #ff00ff;
-    box-shadow: 0 0 10px rgba(255, 0, 255, 0.5), inset 0 0 5px rgba(255, 0, 255, 0.2);
-  }
-  50% { 
-    opacity: 0.8; 
-    text-shadow: 0 0 10px #ff00ff, 0 0 20px #ff00ff, 0 0 30px #00ffff;
-    box-shadow: 0 0 20px rgba(255, 0, 255, 0.8), 0 0 30px rgba(0, 255, 255, 0.4), inset 0 0 10px rgba(255, 0, 255, 0.3);
-  }
+/* Theme-specific beta colors */
+html[data-theme="marathon"] .pb-beta {
+  color: #76915f;
+  background: rgba(205, 228, 122, 0.1);
+  border-color: rgba(205, 228, 122, 0.3);
+}
+
+html[data-theme="christmas"] .pb-beta {
+  color: #a8d5a2;
+  background: rgba(168, 213, 162, 0.15);
+  border-color: rgba(168, 213, 162, 0.3);
+}
+
+html[data-theme="light"] .pb-beta {
+  color: #9c5c7c;
+  background: rgba(233, 30, 99, 0.08);
+  border-color: rgba(233, 30, 99, 0.25);
 }
 
 /* Bug Report Button */
@@ -5582,9 +5573,40 @@ html[data-theme="marathon"] .theme-dropdown {
   border: 2px solid #cde47a;
 }
 
+html[data-theme="marathon"] .theme-option {
+  color: #76915f;
+  transition: all 0.2s ease;
+}
+
 html[data-theme="marathon"] .theme-option:hover {
-  background: rgba(205, 228, 122, 0.1);
+  background: rgba(205, 228, 122, 0.08);
   color: #cde47a;
+}
+
+/* Theme-specific hover colors in Dark/Marathon dropdown */
+html[data-theme="marathon"] .theme-option[data-theme="system"]:hover {
+  background: rgba(255, 107, 157, 0.12);
+  color: #ff6b9d;
+  text-shadow: 0 0 8px rgba(255, 107, 157, 0.3);
+}
+
+html[data-theme="marathon"] .theme-option[data-theme="light"]:hover {
+  background: rgba(255, 107, 157, 0.1);
+  color: #ff8fab;
+  text-shadow: 0 0 8px rgba(255, 107, 157, 0.25);
+}
+
+html[data-theme="marathon"] .theme-option[data-theme="dark"]:hover,
+html[data-theme="marathon"] .theme-option[data-theme="marathon"]:hover {
+  background: rgba(205, 228, 122, 0.12);
+  color: #cde47a;
+  text-shadow: 0 0 8px rgba(205, 228, 122, 0.3);
+}
+
+html[data-theme="marathon"] .theme-option[data-theme="christmas"]:hover {
+  background: rgba(255, 82, 82, 0.12);
+  color: #ff5252;
+  text-shadow: 0 0 8px rgba(255, 82, 82, 0.3);
 }
 
 html[data-theme="marathon"] .theme-option.active {
@@ -7195,6 +7217,25 @@ html[data-theme="christmas"] .fab-bug-report:hover {
 .calendar__legend-item .fa-champagne-glasses { color: #f39c12; }
 .calendar__legend-item .fa-leaf { color: #e67e22; }
 .calendar__legend-item .fa-calendar { color: var(--accent); }
+.calendar__legend-item .fa-bell { color: #f1c40f; }
+
+/* Legend button - Show on hover for desktop */
+@media (hover: hover) {
+  .calendar__legend-btn {
+    opacity: 0.4;
+  }
+  
+  .calendar__legend-wrap:hover .calendar__legend-btn {
+    opacity: 1;
+  }
+}
+
+/* Legend button - Always visible on mobile/touch */
+@media (hover: none) {
+  .calendar__legend-btn {
+    opacity: 0.7;
+  }
+}
 
 /* File Too Large Notification */
 .file-too-large-modal {
@@ -7560,4 +7601,212 @@ html[data-theme="light"] .toast-event {
 html[data-theme="light"] .toast-event i.fas,
 html[data-theme="light"] .toast-event i.far {
   color: #4caf50;
+}
+
+/* ============================================
+   TERMINAL SCRAMBLE TRANSITION EFFECT
+   ============================================ */
+.terminal-transition-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: #07080c;
+  z-index: 99999;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  animation: terminalFlashIn 0.15s ease-out;
+}
+
+.terminal-transition-overlay.fade-out {
+  animation: terminalFadeOut 0.4s ease-out forwards;
+}
+
+@keyframes terminalFlashIn {
+  0% { opacity: 0; }
+  50% { opacity: 1; background: #1a1d24; }
+  100% { opacity: 1; background: #07080c; }
+}
+
+@keyframes terminalFadeOut {
+  0% { opacity: 1; }
+  100% { opacity: 0; visibility: hidden; }
+}
+
+.terminal-scanlines {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: repeating-linear-gradient(
+    0deg,
+    transparent,
+    transparent 2px,
+    rgba(205, 228, 122, 0.03) 2px,
+    rgba(205, 228, 122, 0.03) 4px
+  );
+  pointer-events: none;
+  animation: scanlineMove 0.1s linear infinite;
+}
+
+@keyframes scanlineMove {
+  0% { transform: translateY(0); }
+  100% { transform: translateY(4px); }
+}
+
+.terminal-scramble-text {
+  font-family: 'Courier New', monospace;
+  font-size: 14px;
+  color: #cde47a;
+  text-transform: uppercase;
+  letter-spacing: 2px;
+  white-space: pre-wrap;
+  text-shadow: 0 0 10px rgba(205, 228, 122, 0.5);
+  z-index: 1;
+}
+
+/* ============================================
+   CALENDAR DAY POPUP (Mission Details)
+   ============================================ */
+.calendar-day-popup {
+  position: fixed;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  background: var(--bg-card);
+  border: 2px solid var(--accent);
+  border-radius: 8px;
+  padding: 0;
+  z-index: 10000;
+  min-width: 320px;
+  max-width: 90vw;
+  max-height: 80vh;
+  overflow: hidden;
+  box-shadow: 0 10px 40px rgba(0, 0, 0, 0.5);
+  animation: popupSlideIn 0.2s ease-out;
+}
+
+@keyframes popupSlideIn {
+  from { opacity: 0; transform: translate(-50%, -45%); }
+  to { opacity: 1; transform: translate(-50%, -50%); }
+}
+
+.calendar-day-popup-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 12px 16px;
+  border-bottom: 1px solid var(--border);
+  background: rgba(255, 107, 157, 0.05);
+}
+
+.calendar-day-popup-title {
+  font-size: 14px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  color: var(--accent);
+}
+
+.calendar-day-popup-close {
+  background: none;
+  border: none;
+  color: var(--muted);
+  cursor: pointer;
+  font-size: 18px;
+  padding: 4px 8px;
+  transition: color 0.2s;
+}
+
+.calendar-day-popup-close:hover {
+  color: var(--accent);
+}
+
+.calendar-day-popup-content {
+  padding: 16px;
+  max-height: 60vh;
+  overflow-y: auto;
+}
+
+.calendar-day-popup-empty {
+  text-align: center;
+  color: var(--muted);
+  font-size: 13px;
+  padding: 20px;
+}
+
+.calendar-day-mission {
+  padding: 12px;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  margin-bottom: 10px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.calendar-day-mission:hover {
+  border-color: var(--accent);
+  background: rgba(255, 107, 157, 0.05);
+}
+
+.calendar-day-mission:last-child {
+  margin-bottom: 0;
+}
+
+.calendar-day-mission-title {
+  font-weight: 600;
+  font-size: 13px;
+  margin-bottom: 4px;
+}
+
+.calendar-day-mission-tag {
+  font-size: 10px;
+  padding: 2px 6px;
+  border-radius: 3px;
+  background: rgba(255, 107, 157, 0.15);
+  color: var(--accent);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.calendar-day-popup-backdrop {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.6);
+  z-index: 9999;
+}
+
+/* Marathon theme popup */
+html[data-theme="marathon"] .calendar-day-popup {
+  background: #0c0d11;
+  border-color: #cde47a;
+}
+
+html[data-theme="marathon"] .calendar-day-popup-header {
+  background: rgba(205, 228, 122, 0.05);
+  border-color: #323644;
+}
+
+html[data-theme="marathon"] .calendar-day-popup-title {
+  color: #cde47a;
+}
+
+html[data-theme="marathon"] .calendar-day-mission {
+  border-color: #323644;
+}
+
+html[data-theme="marathon"] .calendar-day-mission:hover {
+  border-color: #cde47a;
+  background: rgba(205, 228, 122, 0.05);
+}
+
+html[data-theme="marathon"] .calendar-day-mission-tag {
+  background: rgba(205, 228, 122, 0.15);
+  color: #cde47a;
 }

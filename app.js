@@ -1381,6 +1381,7 @@ const DAILY_EMOTICONS = [
   // [FIX] Track if system message has been animated to prevent spam
   let systemMessageAnimated = false;
   let lastSystemMessageText = "";
+  let systemMessageAnimating = false;
 
   function renderSystemMessage(msg, forceAnimate = false) {
     const herName = $("herName");
@@ -1389,25 +1390,34 @@ const DAILY_EMOTICONS = [
     if (herName) {
       // Only animate if: forced, first time, or text changed
       const shouldAnimate = forceAnimate || !systemMessageAnimated || lastSystemMessageText !== text;
+      const needsCorrection = systemMessageAnimated && lastSystemMessageText !== text && herName.textContent.length > 0;
       
-      if (shouldAnimate) {
-        systemMessageAnimated = true;
-        lastSystemMessageText = text;
+      if (shouldAnimate && !systemMessageAnimating) {
+        systemMessageAnimating = true;
         
-        // Clear and do typewriter effect
-        herName.textContent = "";
-        let i = 0;
-        const typeInterval = setInterval(() => {
-          if (i < text.length) {
-            herName.textContent += text[i];
-            i++;
-          } else {
-            clearInterval(typeInterval);
-          }
-        }, 80);
+        if (needsCorrection && herName.textContent.length > 0) {
+          // BACKSPACE effect first, then rewrite
+          const currentText = herName.textContent;
+          let deleteIndex = currentText.length;
+          
+          const deleteInterval = setInterval(() => {
+            if (deleteIndex > 0) {
+              deleteIndex--;
+              herName.textContent = currentText.substring(0, deleteIndex);
+            } else {
+              clearInterval(deleteInterval);
+              // Now type the new text
+              typeNewMessage(herName, text);
+            }
+          }, 25); // Fast backspace
+        } else {
+          // Just type fresh
+          herName.textContent = "";
+          typeNewMessage(herName, text);
+        }
       }
-      // If not animating but text is same, just ensure it's set correctly
-      else if (herName.textContent !== text) {
+      // If not animating but text differs, just set it
+      else if (!systemMessageAnimating && herName.textContent !== text) {
         herName.textContent = text;
       }
     }
@@ -1416,6 +1426,22 @@ const DAILY_EMOTICONS = [
     if (loveNote) {
       loveNote.textContent = `// SYSTEM MESSAGE: ${text}`;
     }
+  }
+  
+  function typeNewMessage(element, text) {
+    systemMessageAnimated = true;
+    lastSystemMessageText = text;
+    let i = 0;
+    
+    const typeInterval = setInterval(() => {
+      if (i < text.length) {
+        element.textContent += text[i];
+        i++;
+      } else {
+        clearInterval(typeInterval);
+        systemMessageAnimating = false;
+      }
+    }, 60); // Slightly faster typing
   }
   
   // [FIX] Re-animate system message on visibility change (tab back in)
@@ -2366,36 +2392,62 @@ const DAILY_EMOTICONS = [
 
   // ---------- Theme + Snow (christmas only) ----------
   let snowTimer = null;
-  let foregroundSnowTimer = null;
+  let activeSnowflakes = 0;
+  const snowflakeChars = ['❄', '❅', '❆', '*'];
+  const MAX_SNOWFLAKES = 120;
+
+  function createSnowflake() {
+    if (activeSnowflakes >= MAX_SNOWFLAKES) return;
+    
+    const s = document.createElement('div');
+    s.className = 'snowflake';
+    
+    // Random snowflake character
+    s.textContent = snowflakeChars[Math.floor(Math.random() * snowflakeChars.length)];
+    
+    // Random size (8-24px)
+    const size = 8 + Math.random() * 16;
+    s.style.fontSize = size + 'px';
+    
+    // Random starting position
+    const startX = Math.random() * window.innerWidth;
+    s.style.left = startX + 'px';
+    
+    // Opacity based on size (smaller = further = more transparent)
+    const opacity = 0.3 + (size / 24) * 0.5;
+    s.style.opacity = opacity;
+    
+    document.body.appendChild(s);
+    activeSnowflakes++;
+    
+    // Animation parameters
+    const duration = (4 + Math.random() * 4) * 1000; // 4-8 seconds
+    const swayDistance = (Math.random() - 0.5) * 150;
+    const rotationAmount = Math.random() * 360;
+    
+    // Keyframe animation using Web Animations API
+    const keyframes = [
+      { transform: 'translate(0, 0) rotate(0deg)', opacity: 0 },
+      { transform: `translate(${swayDistance * 0.3}px, ${window.innerHeight * 0.3}px) rotate(${rotationAmount * 0.3}deg)`, opacity: opacity, offset: 0.1 },
+      { transform: `translate(${swayDistance * 0.6}px, ${window.innerHeight * 0.6}px) rotate(${rotationAmount * 0.6}deg)`, opacity: opacity, offset: 0.6 },
+      { transform: `translate(${swayDistance}px, ${window.innerHeight + 20}px) rotate(${rotationAmount}deg)`, opacity: 0 }
+    ];
+    
+    const animation = s.animate(keyframes, {
+      duration: duration,
+      easing: 'linear',
+      fill: 'forwards'
+    });
+    
+    animation.onfinish = () => {
+      s.remove();
+      activeSnowflakes--;
+    };
+  }
 
   function startSnow() {
     if (snowTimer) return;
-    
-    // Background snow - increased by 25% (was 220ms, now ~175ms)
-    snowTimer = setInterval(() => {
-      const s = document.createElement("div");
-      s.className = "snowflake";
-      s.textContent = "*";
-      s.style.left = Math.random() * 100 + "vw";
-      s.style.animationDuration = (5 + Math.random() * 6) + "s";
-      s.style.fontSize = (12 + Math.random() * 14) + "px";
-      s.style.opacity = (0.35 + Math.random() * 0.6);
-      document.body.appendChild(s);
-      setTimeout(() => s.remove(), 12000);
-    }, 175);
-    
-    // Foreground snow - in front of UI elements
-    foregroundSnowTimer = setInterval(() => {
-      const s = document.createElement("div");
-      s.className = "snowflake snowflake-foreground";
-      s.textContent = "*";
-      s.style.left = Math.random() * 100 + "vw";
-      s.style.animationDuration = (3 + Math.random() * 4) + "s";
-      s.style.fontSize = (18 + Math.random() * 12) + "px";
-      s.style.opacity = (0.6 + Math.random() * 0.4);
-      document.body.appendChild(s);
-      setTimeout(() => s.remove(), 8000);
-    }, 400);
+    snowTimer = setInterval(createSnowflake, 150);
   }
 
   function stopSnow() {
@@ -2403,14 +2455,15 @@ const DAILY_EMOTICONS = [
       clearInterval(snowTimer);
       snowTimer = null;
     }
-    if (foregroundSnowTimer) {
-      clearInterval(foregroundSnowTimer);
-      foregroundSnowTimer = null;
-    }
-    document.querySelectorAll(".snowflake").forEach(s => s.remove());
+    // Let existing snowflakes finish their animation naturally
+    document.querySelectorAll(".snowflake").forEach(s => {
+      s.style.opacity = '0';
+      setTimeout(() => s.remove(), 500);
+    });
+    activeSnowflakes = 0;
   }
   
-  // Christmas lights for navbar
+  // Christmas lights for navbar - cleaner integrated design
   function addChristmasLights() {
     // Remove existing lights first
     removeChristmasLights();
@@ -2421,12 +2474,12 @@ const DAILY_EMOTICONS = [
     const lightsContainer = document.createElement('div');
     lightsContainer.className = 'christmas-lights';
     
-    // Create lights along the width
-    const lightCount = Math.floor(window.innerWidth / 35);
+    // Create lights along the width - more spacing for cleaner look
+    const lightCount = Math.floor(window.innerWidth / 45);
     for (let i = 0; i < lightCount; i++) {
       const light = document.createElement('div');
       light.className = 'christmas-light';
-      light.style.left = (i * 35 + 15) + 'px';
+      light.style.left = (i * 45 + 20) + 'px';
       lightsContainer.appendChild(light);
     }
     
@@ -2439,6 +2492,7 @@ const DAILY_EMOTICONS = [
   }
 
   function applyTheme(theme) {
+    const previousTheme = currentTheme;
     currentTheme = theme;
 
     // Dark theme now uses Marathon styling
@@ -2469,29 +2523,81 @@ const DAILY_EMOTICONS = [
       soundSection.style.display = isMarathonTheme ? "block" : "none";
     }
     
-    // [Marathon] Show boot screen when switching to dark/marathon theme
-    const bootScreen = document.getElementById("bootScreen");
+    // [NEW] Terminal Scramble Transition for Dark/Marathon theme
     const isMarathonTheme = (theme === "dark" || theme === "marathon");
+    const wasMarathonTheme = (previousTheme === "dark" || previousTheme === "marathon");
     
-    if (bootScreen && isMarathonTheme) {
-      // Always show boot animation when switching to this theme
-      bootScreen.classList.remove("hidden");
-      const bootItems = bootScreen.querySelectorAll(".boot-item");
-      bootItems.forEach((item) => {
-        item.classList.remove("visible");
-      });
-      // Animate boot items with delays
-      bootItems.forEach((item) => {
-        const delay = parseInt(item.dataset.delay) || 0;
-        setTimeout(() => item.classList.add("visible"), delay);
-      });
-      // Hide boot screen after animation
-      setTimeout(() => {
-        bootScreen.classList.add("hidden");
-      }, 2800);
-    } else if (bootScreen) {
-      bootScreen.classList.add("hidden");
+    if (isMarathonTheme && !wasMarathonTheme && previousTheme) {
+      // Trigger terminal scramble transition
+      triggerTerminalTransition();
     }
+  }
+  
+  // [NEW] Terminal Scramble Transition Effect
+  const TERMINAL_CHARS = '░▒▓█▀▄▌▐■□●○◐◑◒◓◔◕0123456789ABCDEF';
+  
+  function triggerTerminalTransition() {
+    // Create overlay
+    const overlay = document.createElement('div');
+    overlay.className = 'terminal-transition-overlay';
+    overlay.innerHTML = `
+      <div class="terminal-scanlines"></div>
+      <div class="terminal-scramble-text" id="terminalScrambleText"></div>
+    `;
+    document.body.appendChild(overlay);
+    
+    const textEl = overlay.querySelector('#terminalScrambleText');
+    const lines = [
+      '[TERMINAL] INITIATING THEME SWITCH...',
+      '[SYNC] LOADING MARATHON PROTOCOL...',
+      '[OK] SYSTEM READY'
+    ];
+    
+    let lineIndex = 0;
+    let charIndex = 0;
+    let scrambleCount = 0;
+    
+    // Quick scramble effect
+    const scrambleInterval = setInterval(() => {
+      if (lineIndex < lines.length) {
+        const currentLine = lines[lineIndex];
+        let displayText = '';
+        
+        for (let i = 0; i < currentLine.length; i++) {
+          if (i < charIndex) {
+            displayText += currentLine[i];
+          } else if (i === charIndex) {
+            displayText += TERMINAL_CHARS[Math.floor(Math.random() * TERMINAL_CHARS.length)];
+          }
+        }
+        
+        textEl.textContent = displayText;
+        
+        scrambleCount++;
+        if (scrambleCount > 2) {
+          scrambleCount = 0;
+          charIndex++;
+          if (charIndex > currentLine.length) {
+            charIndex = 0;
+            lineIndex++;
+            textEl.textContent += '\n';
+          }
+        }
+      } else {
+        clearInterval(scrambleInterval);
+        // Fade out
+        overlay.classList.add('fade-out');
+        setTimeout(() => overlay.remove(), 400);
+      }
+    }, 15);
+    
+    // Safety timeout
+    setTimeout(() => {
+      if (overlay.parentNode) {
+        overlay.classList.add('fade-out');
+        setTimeout(() => overlay.remove(), 400);
+      }
+    }, 1200);
   }
 
   // ---------- 2026 tracker ----------
@@ -3459,7 +3565,7 @@ const DAILY_EMOTICONS = [
             <div class="calendar__legend-item"><i class="fas fa-heart"></i> Valentine's Day</div>
             <div class="calendar__legend-item"><i class="fas fa-champagne-glasses"></i> New Year's Day</div>
             <div class="calendar__legend-item"><i class="fas fa-leaf"></i> Thanksgiving</div>
-            <div class="calendar__legend-item"><span class="cal-event-dot">*</span> Your Events</div>
+            <div class="calendar__legend-item"><i class="fas fa-bell" style="color: #f1c40f;"></i> Your Events</div>
           </div>
         </div>
       </div>
@@ -3528,6 +3634,9 @@ const DAILY_EMOTICONS = [
         const day = parseInt(el.dataset.day);
         selectedCalDate = { year: calendarYear, month: calendarMonth, day };
         renderBigCalendar();
+        
+        // Show popup with missions for this day
+        showCalendarDayPopup(calendarYear, calendarMonth, day);
       });
     });
 
@@ -3568,6 +3677,127 @@ const DAILY_EMOTICONS = [
         }
       });
     }
+  }
+  
+  // [NEW] Show popup with missions for a specific calendar day
+  function showCalendarDayPopup(year, month, day) {
+    // Format the date
+    const dateStr = `${year}-${String(month + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
+    const displayDate = new Date(year, month, day).toLocaleDateString('en-US', { 
+      weekday: 'long', month: 'long', day: 'numeric', year: 'numeric' 
+    });
+    
+    // Find missions for this day
+    const active = loadActive();
+    const completed = loadCompleted();
+    const allMissions = [...active.map(m => ({...m, status: 'active'})), ...completed.map(m => ({...m, status: 'completed'}))];
+    
+    const missionsForDay = allMissions.filter(m => m.dueDate === dateStr);
+    
+    // Remove existing popup
+    const existingBackdrop = document.querySelector('.calendar-day-popup-backdrop');
+    const existingPopup = document.querySelector('.calendar-day-popup');
+    if (existingBackdrop) existingBackdrop.remove();
+    if (existingPopup) existingPopup.remove();
+    
+    // Create backdrop
+    const backdrop = document.createElement('div');
+    backdrop.className = 'calendar-day-popup-backdrop';
+    document.body.appendChild(backdrop);
+    
+    // Create popup
+    const popup = document.createElement('div');
+    popup.className = 'calendar-day-popup';
+    
+    let missionsHtml = '';
+    if (missionsForDay.length === 0) {
+      missionsHtml = '<div class="calendar-day-popup-empty">No missions scheduled for this day.</div>';
+    } else {
+      missionsHtml = missionsForDay.map((m, idx) => `
+        <div class="calendar-day-mission" data-idx="${idx}" data-status="${m.status}">
+          <div class="calendar-day-mission-title">${escapeHtml(m.title)}</div>
+          <span class="calendar-day-mission-tag">${escapeHtml(m.tag || 'idea')}</span>
+          ${m.status === 'completed' ? '<span style="margin-left:8px;color:#3bff6b;font-size:10px;">✓ DONE</span>' : ''}
+        </div>
+      `).join('');
+    }
+    
+    popup.innerHTML = `
+      <div class="calendar-day-popup-header">
+        <div class="calendar-day-popup-title">${displayDate}</div>
+        <button class="calendar-day-popup-close">&times;</button>
+      </div>
+      <div class="calendar-day-popup-content">
+        ${missionsHtml}
+      </div>
+    `;
+    
+    document.body.appendChild(popup);
+    
+    // Close handlers
+    const closePopup = () => {
+      backdrop.remove();
+      popup.remove();
+    };
+    
+    backdrop.addEventListener('click', closePopup);
+    popup.querySelector('.calendar-day-popup-close').addEventListener('click', closePopup);
+    
+    // Mission click - expand details
+    popup.querySelectorAll('.calendar-day-mission').forEach(el => {
+      el.addEventListener('click', () => {
+        const idx = parseInt(el.dataset.idx);
+        const mission = missionsForDay[idx];
+        if (mission) {
+          closePopup();
+          // Show expanded mission detail modal
+          showMissionDetailModal(mission);
+        }
+      });
+    });
+  }
+  
+  // [NEW] Show mission detail modal (similar to Planning Board expansion)
+  function showMissionDetailModal(mission) {
+    // Remove existing
+    const existing = document.querySelector('.mission-detail-modal-overlay');
+    if (existing) existing.remove();
+    
+    const overlay = document.createElement('div');
+    overlay.className = 'confirm-modal-overlay mission-detail-modal-overlay';
+    
+    const dueText = mission.dueDate ? new Date(mission.dueDate + 'T00:00:00').toLocaleDateString('en-US', {
+      month: 'short', day: 'numeric', year: 'numeric'
+    }) : 'No due date';
+    
+    const completedText = mission.completedAt ? new Date(mission.completedAt).toLocaleDateString('en-US', {
+      month: 'short', day: 'numeric', year: 'numeric'
+    }) : '';
+    
+    overlay.innerHTML = `
+      <div class="confirm-modal" style="max-width: 450px;">
+        <div style="margin-bottom: 16px;">
+          <div style="font-size: 18px; font-weight: 700; margin-bottom: 8px;">${escapeHtml(mission.title)}</div>
+          <span class="calendar-day-mission-tag">${escapeHtml(mission.tag || 'idea')}</span>
+          ${mission.status === 'completed' ? '<span style="margin-left:8px;color:#3bff6b;font-size:11px;font-weight:600;">✓ COMPLETED</span>' : ''}
+        </div>
+        ${mission.desc ? `<div style="color: var(--muted); margin-bottom: 12px; font-size: 13px;">${escapeHtml(mission.desc)}</div>` : ''}
+        <div style="font-size: 11px; color: var(--muted); border-top: 1px solid var(--border); padding-top: 12px; margin-top: 12px;">
+          <div><strong>Due:</strong> ${dueText}</div>
+          ${completedText ? `<div style="margin-top: 4px;"><strong>Completed:</strong> ${completedText}</div>` : ''}
+        </div>
+        <div class="confirm-modal-buttons" style="margin-top: 16px;">
+          <button class="btn primary mission-detail-close">Close</button>
+        </div>
+      </div>
+    `;
+    
+    document.body.appendChild(overlay);
+    
+    overlay.querySelector('.mission-detail-close').addEventListener('click', () => overlay.remove());
+    overlay.addEventListener('click', (e) => {
+      if (e.target === overlay) overlay.remove();
+    });
   }
 
   function closeWhoModal() {
@@ -3932,6 +4162,33 @@ const DAILY_EMOTICONS = [
       const customField = $("customTagField");
       if (e.target.value === "custom" && customField) customField.classList.remove("hidden");
       else if (customField) customField.classList.add("hidden");
+    });
+  }
+  
+  // [FIX] Clear Fields button - reset all form fields including tag
+  const btnClearFieldsEl = $("btnClearFields");
+  if (btnClearFieldsEl) {
+    btnClearFieldsEl.addEventListener("click", () => {
+      const titleEl = $("newTitle");
+      const descEl = $("newDesc");
+      const tagEl = $("newTag");
+      const customTagEl = $("customTagInput");
+      const customFieldEl = $("customTagField");
+      const dueDateEl = $("newDueDate");
+      
+      // Clear all fields
+      if (titleEl) titleEl.value = "";
+      if (descEl) descEl.value = "";
+      if (dueDateEl) dueDateEl.value = "";
+      if (customTagEl) customTagEl.value = "";
+      
+      // Reset tag to empty/unselected state
+      if (tagEl) tagEl.value = "";
+      
+      // Hide custom tag field
+      if (customFieldEl) customFieldEl.classList.add("hidden");
+      
+      showToast("Fields cleared");
     });
   }
 
@@ -5960,31 +6217,57 @@ ${completed.map(i => `[X] ${i.title}  ${i.desc} (#${i.tag})`).join("\n")}
         if (!idea) return;
         
         if (action === 'edit') {
-          // Close import modal and open simple form with edit
+          // Close import modal and open Planning Board Advanced Modal
           closeImportModal();
           
-          // Fill the mission form with idea data
-          var newTitle = document.getElementById('newTitle');
-          var newDesc = document.getElementById('newDesc');
-          var newTag = document.getElementById('newTag');
-          var customTagField = document.getElementById('customTagField');
-          var customTagInput = document.getElementById('customTagInput');
-          
-          if (newTitle) newTitle.value = idea.title;
-          if (newDesc) newDesc.value = idea.desc || '';
-          if (newTag && idea.tag) {
-            var tagExists = Array.from(newTag.options).some(function(opt) { return opt.value === idea.tag; });
-            if (tagExists) {
-              newTag.value = idea.tag;
-              if (customTagField) customTagField.classList.add('hidden');
-            } else {
-              newTag.value = 'custom';
-              if (customTagField) customTagField.classList.remove('hidden');
-              if (customTagInput) customTagInput.value = idea.tag;
+          // Open Planning Board add modal with pre-filled data
+          var pbAddModal = $('pbAddModal');
+          if (pbAddModal) {
+            pbAddModal.classList.remove('hidden');
+            pbAddModal.classList.add('active');
+            
+            // Pre-fill the Planning Board form
+            var pbTitle = document.getElementById('pbFormTitle');
+            var pbDesc = document.getElementById('pbFormDesc');
+            var pbTag = document.getElementById('pbFormTag');
+            var pbMonth = document.getElementById('pbFormMonth');
+            var pbPriority = document.getElementById('pbFormPriority');
+            
+            if (pbTitle) pbTitle.value = idea.title || '';
+            if (pbDesc) pbDesc.value = idea.desc || '';
+            if (pbTag && idea.tag) {
+              var tagExists = Array.from(pbTag.options).some(function(opt) { return opt.value === idea.tag; });
+              if (tagExists) {
+                pbTag.value = idea.tag;
+              }
             }
+            if (pbMonth && idea.targetMonth) pbMonth.value = idea.targetMonth;
+            if (pbPriority && idea.priority) pbPriority.value = idea.priority;
+            
+            showToast("Edit in Advanced Mode - Add when ready!");
+          } else {
+            // Fallback to simple form if Planning Board modal not available
+            var newTitle = document.getElementById('newTitle');
+            var newDesc = document.getElementById('newDesc');
+            var newTag = document.getElementById('newTag');
+            var customTagField = document.getElementById('customTagField');
+            var customTagInput = document.getElementById('customTagInput');
+            
+            if (newTitle) newTitle.value = idea.title;
+            if (newDesc) newDesc.value = idea.desc || '';
+            if (newTag && idea.tag) {
+              var tagExists = Array.from(newTag.options).some(function(opt) { return opt.value === idea.tag; });
+              if (tagExists) {
+                newTag.value = idea.tag;
+                if (customTagField) customTagField.classList.add('hidden');
+              } else {
+                newTag.value = 'custom';
+                if (customTagField) customTagField.classList.remove('hidden');
+                if (customTagInput) customTagInput.value = idea.tag;
+              }
+            }
+            showToast("Edit the mission details and click Add!");
           }
-          
-          showToast("Edit the mission details and click Add!");
         } else {
           // Default: Select and fill form
           var newTitle = document.getElementById('newTitle');
