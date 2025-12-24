@@ -3688,8 +3688,8 @@ html[data-theme="light"] .footer::before {
 
 
 /* ============================================
-   RETRO WINDOWS 95 THEME (v1.6.2)
-   Authentic pixel art aesthetic
+   RETRO WINDOWS 95 THEME (v1.6.3)
+   Authentic pixel art aesthetic - IMPROVED
    ============================================ */
 
 /* Retro theme keyframe animations */
@@ -3714,6 +3714,12 @@ html[data-theme="light"] .footer::before {
   100% { transform: translateX(-100%); }
 }
 
+/* Retro boot progress bar animation */
+@keyframes retroProgressPulse {
+  0%, 100% { box-shadow: 0 0 5px #00FF00; }
+  50% { box-shadow: 0 0 15px #00FF00, 0 0 25px #00FF00; }
+}
+
 /* Retro body and background */
 html[data-theme="retro"] body {
   font-family: 'Silkscreen', cursive !important;
@@ -3721,6 +3727,7 @@ html[data-theme="retro"] body {
   background: #008081 !important;
   image-rendering: pixelated;
   image-rendering: crisp-edges;
+  font-size: 14px !important;
 }
 
 /* Pixel grid overlay */
@@ -3739,10 +3746,15 @@ html[data-theme="retro"] body::before {
   opacity: 0.5;
 }
 
-/* All text uses pixel font */
+/* All text uses pixel font - INCREASED SIZE */
 html[data-theme="retro"] * {
   font-family: 'Silkscreen', cursive !important;
   border-radius: 0 !important;
+}
+
+/* Base text size increase */
+html[data-theme="retro"] .wrap {
+  font-size: 14px !important;
 }
 
 /* Retro cards - Windows 95 window style */
@@ -3783,20 +3795,77 @@ html[data-theme="retro"] .card::after {
 /* Retro card header - Title bar style */
 html[data-theme="retro"] .cardHeader {
   background: #1C419F !important;
-  padding: 10px 8px 10px 6px !important;
-  margin: -6px -6px 6px -6px !important;
+  padding: 12px 10px !important;
+  margin: -6px -6px 8px -6px !important;
   border-bottom: none !important;
 }
 
 html[data-theme="retro"] .cardHeader h2 {
   color: #FFF !important;
-  font-size: 14px !important;
+  font-size: 16px !important;
   text-transform: none !important;
-  letter-spacing: 0 !important;
+  letter-spacing: 1px !important;
 }
 
 html[data-theme="retro"] .cardHeader h2::before {
   content: none !important;
+}
+
+/* FIX: Notes and system messages - WHITE BACKGROUND for contrast */
+html[data-theme="retro"] .note {
+  background: #FFF !important;
+  border: 2px solid #353535 !important;
+  padding: 10px 12px !important;
+  color: #1C419F !important;
+  font-size: 13px !important;
+  margin-bottom: 12px !important;
+}
+
+/* FIX: Topbar pills - better visibility */
+html[data-theme="retro"] .topbar .pill {
+  background: #FFF !important;
+  border: 2px solid #353535 !important;
+  color: #1C419F !important;
+  font-size: 12px !important;
+  padding: 8px 14px !important;
+  display: flex !important;
+  align-items: center !important;
+  gap: 8px !important;
+}
+
+html[data-theme="retro"] .topbar .pill:hover {
+  background: #FF98F5 !important;
+}
+
+/* FIX: Icons in pills - ensure visibility */
+html[data-theme="retro"] .topbar .pill i,
+html[data-theme="retro"] .topbar .pill .fa-regular,
+html[data-theme="retro"] .topbar .pill .fa-solid,
+html[data-theme="retro"] .topbar .pill svg {
+  color: #1C419F !important;
+  font-size: 14px !important;
+}
+
+/* FIX: Dot indicators in pills */
+html[data-theme="retro"] .dot {
+  width: 10px !important;
+  height: 10px !important;
+  border: 2px solid #353535 !important;
+}
+
+html[data-theme="retro"] .dot.green {
+  background: #00FF00 !important;
+}
+
+html[data-theme="retro"] .dot.gray {
+  background: #999 !important;
+}
+
+/* FIX: Brand text in topbar */
+html[data-theme="retro"] .brand span {
+  color: #1C419F !important;
+  font-size: 14px !important;
+  font-weight: bold !important;
 }
 
 /* Retro inner containers */
@@ -3813,14 +3882,14 @@ html[data-theme="retro"] .mini-cal {
     0px -3px #353535 !important;
 }
 
-/* Retro buttons - Windows 95 style */
+/* Retro buttons - Windows 95 style - INCREASED SIZE */
 html[data-theme="retro"] .btn,
 html[data-theme="retro"] button {
   background: #FFCDFA !important;
-  color: #000 !important;
+  color: #1C419F !important;
   border: none !important;
-  padding: 8px 16px !important;
-  font-size: 14px !important;
+  padding: 10px 18px !important;
+  font-size: 13px !important;
   cursor: pointer;
   transition: none !important;
   box-shadow: 
@@ -3834,6 +3903,7 @@ html[data-theme="retro"] button {
 html[data-theme="retro"] .btn:hover,
 html[data-theme="retro"] button:hover {
   background: #FF98F5 !important;
+  color: #000 !important;
 }
 
 html[data-theme="retro"] .btn:active,
@@ -3854,10 +3924,11 @@ html[data-theme="retro"] .btn::before {
 
 /* Retro pills */
 html[data-theme="retro"] .pill {
-  background: #FFCDFA !important;
+  background: #FFF !important;
   border: 2px solid #353535 !important;
-  color: #000 !important;
-  padding: 6px 12px !important;
+  color: #1C419F !important;
+  padding: 8px 14px !important;
+  font-size: 12px !important;
 }
 
 html[data-theme="retro"] .pill:hover {
@@ -3870,15 +3941,16 @@ html[data-theme="retro"] .pill.active {
   border-color: #1C419F !important;
 }
 
-/* Retro items/list items */
+/* Retro items/list items - BETTER CONTRAST */
 html[data-theme="retro"] .item {
   background: #FFF !important;
   border: 2px solid #353535 !important;
-  border-left: 2px solid #353535 !important;
+  border-left: 4px solid #1C419F !important;
   color: #000 !important;
-  padding: 10px !important;
-  margin-bottom: 8px !important;
+  padding: 12px !important;
+  margin-bottom: 10px !important;
   transition: none !important;
+  font-size: 13px !important;
 }
 
 html[data-theme="retro"] .item::before {
@@ -3903,9 +3975,10 @@ html[data-theme="retro"] .mini-cal {
 html[data-theme="retro"] .mini-cal-header {
   background: #1C419F !important;
   color: #FFF !important;
-  padding: 8px !important;
+  padding: 10px !important;
   margin: -12px -12px 12px -12px !important;
   border-bottom: none !important;
+  font-size: 14px !important;
 }
 
 html[data-theme="retro"] .mini-cal-header::before {
@@ -3918,7 +3991,7 @@ html[data-theme="retro"] .mini-cal-day {
   color: #000 !important;
   cursor: pointer;
   transition: none !important;
-  font-size: 12px !important;
+  font-size: 13px !important;
 }
 
 html[data-theme="retro"] .mini-cal-day:hover {
@@ -3937,21 +4010,35 @@ html[data-theme="retro"] .mini-cal-day.today {
 html[data-theme="retro"] .mini-cal-day.has-event::after {
   content: '●';
   color: #FF98F5 !important;
-  font-size: 8px !important;
+  font-size: 10px !important;
   animation: retroBlink 1.5s step-end infinite;
 }
 
 html[data-theme="retro"] .calendar-day-name {
   color: #353535 !important;
   font-weight: bold !important;
+  font-size: 12px !important;
+}
+
+/* FIX: Calendar in message log - system message contrast */
+html[data-theme="retro"] .calendar__system-msg {
+  background: #FFF !important;
+  border: 2px solid #353535 !important;
+  padding: 8px 12px !important;
+  margin-bottom: 12px !important;
+}
+
+html[data-theme="retro"] .calendar__system-msg span {
+  color: #1C419F !important;
+  font-size: 12px !important;
 }
 
 /* Retro message log */
 html[data-theme="retro"] .message-log {
   background: #000 !important;
   border: none !important;
-  border-top: 4px solid #FF98F5 !important;
-  border-left: 4px solid #FF98F5 !important;
+  border-top: 4px solid #00FF00 !important;
+  border-left: 4px solid #00FF00 !important;
   box-shadow: 
     3px 0px #FFF,
     0px 3px #FFF !important;
@@ -3960,28 +4047,32 @@ html[data-theme="retro"] .message-log {
 
 html[data-theme="retro"] .message-log-item {
   background: transparent !important;
-  border-bottom: 1px dashed #FF98F5 !important;
-  padding: 10px 0 !important;
-  color: #FFF !important;
+  border-bottom: 1px dashed #00FF00 !important;
+  padding: 12px 0 !important;
+  color: #00FF00 !important;
   animation: retroFadeIn 0.3s ease-out;
+  font-size: 13px !important;
 }
 
 html[data-theme="retro"] .message-from-name {
-  color: #FF98F5 !important;
+  color: #00FF00 !important;
+  font-size: 14px !important;
 }
 
 html[data-theme="retro"] .message-from-name::before {
   content: '▸ ' !important;
-  color: #FF98F5 !important;
+  color: #00FF00 !important;
   animation: retroBlink 1s step-end infinite;
 }
 
 html[data-theme="retro"] .message-text {
   color: #FFF !important;
+  font-size: 13px !important;
 }
 
 html[data-theme="retro"] .message-time {
-  color: #008081 !important;
+  color: #00FF00 !important;
+  opacity: 0.7;
 }
 
 /* Retro input fields */
@@ -4314,6 +4405,332 @@ html[data-theme="retro"] .settings-section h4::first-letter {
   text-decoration: underline;
   text-underline-offset: 2px;
   text-decoration-thickness: 2px;
+}
+
+/* ============================================
+   RETRO THEME - ADDITIONAL FIXES (v1.6.4)
+   Better visibility, icons, and contrast
+   ============================================ */
+
+/* FIX: Tracker grid boxes - better contrast */
+html[data-theme="retro"] .tracker-grid {
+  gap: 10px !important;
+}
+
+html[data-theme="retro"] .tracker-box {
+  background: #FFF !important;
+  border: 3px solid #353535 !important;
+  padding: 15px !important;
+  box-shadow: 
+    inset -3px -3px #FFCDFA,
+    inset 3px 3px #FFF,
+    4px 4px 0 #353535 !important;
+}
+
+html[data-theme="retro"] .tracker-label {
+  color: #1C419F !important;
+  font-size: 11px !important;
+  text-transform: uppercase !important;
+  letter-spacing: 1px !important;
+  margin-bottom: 8px !important;
+}
+
+html[data-theme="retro"] .tracker-value {
+  color: #1C419F !important;
+  font-size: 16px !important;
+  font-weight: bold !important;
+}
+
+/* FIX: Progress tracker bar */
+html[data-theme="retro"] .tracker-bar {
+  background: #FFF !important;
+  border: 3px solid #353535 !important;
+  height: 20px !important;
+  box-shadow: inset 3px 3px #FFCDFA !important;
+}
+
+html[data-theme="retro"] .tracker-fill {
+  background: linear-gradient(180deg, #00FF00 0%, #00AA00 50%, #008800 100%) !important;
+  box-shadow: inset 0 2px 0 rgba(255,255,255,0.3) !important;
+}
+
+/* FIX: Calendar header DUO button with proper icon */
+html[data-theme="retro"] .calendar__header {
+  background: #1C419F !important;
+  padding: 10px 12px !important;
+}
+
+html[data-theme="retro"] .calendar__header-left span {
+  color: #FFF !important;
+  font-size: 14px !important;
+}
+
+html[data-theme="retro"] .calendar__duo-btn {
+  background: #FFF !important;
+  border: 2px solid #353535 !important;
+  color: #1C419F !important;
+  padding: 6px 12px !important;
+  font-size: 12px !important;
+  display: flex !important;
+  align-items: center !important;
+  gap: 6px !important;
+  box-shadow: 
+    -2px 0px #FFF,
+    0px -2px #FFF,
+    2px 0px #353535,
+    0px 2px #353535,
+    inset -2px -2px #FFCDFA !important;
+}
+
+html[data-theme="retro"] .calendar__duo-btn:hover {
+  background: #FF98F5 !important;
+}
+
+html[data-theme="retro"] .calendar__duo-btn i {
+  color: #1C419F !important;
+  font-size: 14px !important;
+}
+
+/* FIX: Envelope container/DUO button in message log */
+html[data-theme="retro"] .envelope-container {
+  background: #FFF !important;
+  border: 2px solid #353535 !important;
+  color: #1C419F !important;
+  padding: 8px 14px !important;
+  box-shadow: 
+    -2px 0px #FFF,
+    0px -2px #FFF,
+    2px 0px #353535,
+    0px 2px #353535,
+    inset -2px -2px #FFCDFA !important;
+}
+
+html[data-theme="retro"] .envelope-container:hover {
+  background: #FF98F5 !important;
+}
+
+html[data-theme="retro"] .envelope-container i {
+  color: #1C419F !important;
+  font-size: 16px !important;
+}
+
+html[data-theme="retro"] #envelopeLabel {
+  color: #1C419F !important;
+  font-size: 12px !important;
+}
+
+/* FIX: Mission tabs */
+html[data-theme="retro"] .mission-tabs {
+  background: #FFF !important;
+  border: 2px solid #353535 !important;
+  padding: 0 !important;
+  margin-bottom: 15px !important;
+}
+
+html[data-theme="retro"] .mission-tab {
+  background: #FFCDFA !important;
+  color: #1C419F !important;
+  border: none !important;
+  border-right: 2px solid #353535 !important;
+  padding: 10px 15px !important;
+  font-size: 12px !important;
+}
+
+html[data-theme="retro"] .mission-tab:last-child {
+  border-right: none !important;
+}
+
+html[data-theme="retro"] .mission-tab:hover {
+  background: #FF98F5 !important;
+}
+
+html[data-theme="retro"] .mission-tab.active {
+  background: #1C419F !important;
+  color: #FFF !important;
+}
+
+/* FIX: Labels in forms */
+html[data-theme="retro"] label {
+  color: #1C419F !important;
+  font-size: 12px !important;
+  text-transform: uppercase !important;
+  letter-spacing: 1px !important;
+}
+
+html[data-theme="retro"] .field label {
+  margin-bottom: 6px !important;
+  display: block !important;
+}
+
+/* FIX: Actions buttons container */
+html[data-theme="retro"] .actions {
+  gap: 10px !important;
+}
+
+html[data-theme="retro"] .actions-inline {
+  flex-wrap: wrap !important;
+}
+
+/* FIX: Primary buttons */
+html[data-theme="retro"] .btn.primary {
+  background: #1C419F !important;
+  color: #FFF !important;
+  box-shadow: 
+    -2px 0px #FFF,
+    0px -2px #FFF,
+    2px 0px #353535,
+    0px 2px #353535,
+    inset -3px -3px #0D2A6B !important;
+}
+
+html[data-theme="retro"] .btn.primary:hover {
+  background: #2A52B8 !important;
+}
+
+/* FIX: Footer text */
+html[data-theme="retro"] .footer {
+  color: #1C419F !important;
+  font-size: 11px !important;
+  text-align: center !important;
+  padding: 15px !important;
+  border-top: 2px dashed #FF98F5 !important;
+}
+
+/* FIX: Calendar navigation buttons */
+html[data-theme="retro"] .calendar__nav {
+  background: #FFF !important;
+  border: 2px solid #353535 !important;
+  color: #1C419F !important;
+  width: 32px !important;
+  height: 32px !important;
+  box-shadow: 
+    -2px 0px #FFF,
+    0px -2px #FFF,
+    2px 0px #353535,
+    0px 2px #353535 !important;
+}
+
+html[data-theme="retro"] .calendar__nav:hover {
+  background: #FF98F5 !important;
+}
+
+html[data-theme="retro"] .calendar__select {
+  background: #FFF !important;
+  border: 2px solid #353535 !important;
+  color: #1C419F !important;
+  font-size: 12px !important;
+  padding: 6px 10px !important;
+}
+
+/* FIX: Calendar days grid */
+html[data-theme="retro"] .calendar__days {
+  gap: 3px !important;
+}
+
+html[data-theme="retro"] .calendar__days > div {
+  background: #FFF !important;
+  border: 1px solid #353535 !important;
+  color: #000 !important;
+  font-size: 12px !important;
+  padding: 8px 4px !important;
+}
+
+html[data-theme="retro"] .calendar__days > div:first-child,
+html[data-theme="retro"] .calendar__days > div:nth-child(2),
+html[data-theme="retro"] .calendar__days > div:nth-child(3),
+html[data-theme="retro"] .calendar__days > div:nth-child(4),
+html[data-theme="retro"] .calendar__days > div:nth-child(5),
+html[data-theme="retro"] .calendar__days > div:nth-child(6),
+html[data-theme="retro"] .calendar__days > div:nth-child(7) {
+  background: #1C419F !important;
+  color: #FFF !important;
+  font-weight: bold !important;
+}
+
+html[data-theme="retro"] .calendar__day {
+  cursor: pointer !important;
+}
+
+html[data-theme="retro"] .calendar__day:hover {
+  background: #FF98F5 !important;
+}
+
+html[data-theme="retro"] .calendar__day.today {
+  background: #1C419F !important;
+  color: #FFF !important;
+  font-weight: bold !important;
+}
+
+html[data-theme="retro"] .calendar__day.has-event::after {
+  background: #00FF00 !important;
+  width: 6px !important;
+  height: 6px !important;
+}
+
+/* FIX: Notification bell icon */
+html[data-theme="retro"] .notification-bell {
+  background: #FFF !important;
+  border: 2px solid #353535 !important;
+  padding: 6px !important;
+  box-shadow: 
+    -2px 0px #FFF,
+    0px -2px #FFF,
+    2px 0px #353535,
+    0px 2px #353535 !important;
+}
+
+html[data-theme="retro"] .notification-bell svg {
+  fill: #1C419F !important;
+}
+
+html[data-theme="retro"] .notification-bell:hover {
+  background: #FF98F5 !important;
+}
+
+html[data-theme="retro"] .notification-badge {
+  background: #FF0000 !important;
+  color: #FFF !important;
+  border: 2px solid #FFF !important;
+}
+
+/* FIX: Notification dropdown */
+html[data-theme="retro"] .notification-dropdown {
+  background: #FFCDFA !important;
+  border: 3px solid #353535 !important;
+  box-shadow: 6px 6px 0 #353535 !important;
+}
+
+html[data-theme="retro"] .notification-header {
+  background: #1C419F !important;
+  color: #FFF !important;
+  padding: 10px !important;
+  margin: -3px -3px 0 -3px !important;
+}
+
+/* FIX: Game clips and expandable sections */
+html[data-theme="retro"] .game-clips-header,
+html[data-theme="retro"] .expandable-header {
+  background: #1C419F !important;
+  color: #FFF !important;
+  padding: 10px 12px !important;
+}
+
+html[data-theme="retro"] .game-clips-content,
+html[data-theme="retro"] .expandable-content {
+  background: #FFF !important;
+  border: 2px solid #353535 !important;
+  border-top: none !important;
+}
+
+/* FIX: Example/tag badges */
+html[data-theme="retro"] .item .tag,
+html[data-theme="retro"] .badge {
+  background: #1C419F !important;
+  color: #FFF !important;
+  font-size: 10px !important;
+  padding: 3px 8px !important;
+  border: none !important;
+  box-shadow: 2px 2px 0 #353535 !important;
 }
 
 
@@ -5495,45 +5912,129 @@ html[data-theme="light"] .pb-close-btn:hover {
   color: #f44336;
 }
 
-/* --- RETRO THEME --- */
+/* --- RETRO THEME - DOS INSTALLER STYLE --- */
 html[data-theme="retro"] .pb-boot-screen {
-  background: #008081;
+  background: #000080 !important;
+  font-family: 'Silkscreen', 'Courier New', monospace !important;
+}
+
+/* DOS-style blue background with box */
+html[data-theme="retro"] .pb-boot-content {
+  background: #0000AA !important;
+  border: 3px double #00FFFF !important;
+  padding: 30px 40px !important;
+  box-shadow: 
+    8px 8px 0 rgba(0,0,0,0.5),
+    inset 0 0 0 2px #000080 !important;
+  max-width: 650px !important;
 }
 
 html[data-theme="retro"] .pb-boot-title {
-  color: #FFCDFA;
-  font-family: 'Silkscreen', cursive !important;
-  text-shadow: 3px 3px 0 #353535;
+  color: #FFFF00 !important;
+  font-family: 'Silkscreen', 'Courier New', monospace !important;
+  text-shadow: 2px 2px 0 #000 !important;
+  font-size: clamp(20px, 4vw, 28px) !important;
+  letter-spacing: 2px !important;
+  text-align: center !important;
+  margin-bottom: 10px !important;
+}
+
+html[data-theme="retro"] .pb-boot-title::before {
+  content: '╔══════════════════════════════════════╗' !important;
+  display: block !important;
+  color: #00FFFF !important;
+  font-size: 12px !important;
+  margin-bottom: 10px !important;
+}
+
+html[data-theme="retro"] .pb-boot-title::after {
+  content: '╚══════════════════════════════════════╝' !important;
+  display: block !important;
+  color: #00FFFF !important;
+  font-size: 12px !important;
+  margin-top: 10px !important;
 }
 
 html[data-theme="retro"] .pb-boot-line {
-  background: #FFCDFA;
-  height: 4px;
+  background: #00FFFF !important;
+  height: 2px !important;
+  margin: 20px 0 !important;
 }
 
 html[data-theme="retro"] .pb-boot-log {
-  color: #FFCDFA;
+  color: #FFFFFF !important;
+  font-size: 13px !important;
+  line-height: 2.2 !important;
+  text-align: left !important;
+  background: #000080 !important;
+  border: 1px solid #00FFFF !important;
+  padding: 15px !important;
+  margin-bottom: 20px !important;
+}
+
+html[data-theme="retro"] .pb-boot-log-item {
+  color: #C0C0C0 !important;
+}
+
+html[data-theme="retro"] .pb-boot-log-item::before {
+  content: 'C:\\> ' !important;
+  color: #00FF00 !important;
 }
 
 html[data-theme="retro"] .pb-boot-log-item.success {
-  color: #FFF;
+  color: #00FF00 !important;
 }
 
+html[data-theme="retro"] .pb-boot-log-item.success::before {
+  content: '✓ ' !important;
+  color: #00FF00 !important;
+}
+
+/* DOS-style progress bar - blocky green segments */
 html[data-theme="retro"] .pb-boot-progress {
-  border: 3px solid #353535;
-  background: #FFCDFA;
+  border: 3px solid #00FFFF !important;
+  background: #000080 !important;
+  height: 28px !important;
+  padding: 3px !important;
+  box-shadow: inset 2px 2px 0 #000 !important;
 }
 
 html[data-theme="retro"] .pb-boot-progress-bar {
-  background: #1C419F;
+  background: repeating-linear-gradient(
+    90deg,
+    #00FF00 0px,
+    #00FF00 12px,
+    #008800 12px,
+    #008800 14px
+  ) !important;
+  box-shadow: 
+    inset 0 2px 0 #00FF88,
+    inset 0 -2px 0 #006600 !important;
+  animation: retroProgressPulse 0.5s ease-in-out infinite !important;
+}
+
+@keyframes retroProgressPulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.85; }
 }
 
 html[data-theme="retro"] .pb-boot-status {
-  color: #FFCDFA;
+  color: #FFFF00 !important;
+  font-size: 12px !important;
+  text-transform: uppercase !important;
+  letter-spacing: 2px !important;
+  margin-top: 15px !important;
 }
 
+html[data-theme="retro"] .pb-boot-status::before {
+  content: '► ' !important;
+  color: #00FF00 !important;
+  animation: retroBlink 0.5s step-end infinite !important;
+}
+
+/* Planning Board overlay */
 html[data-theme="retro"] .planning-board-overlay {
-  background: #008081;
+  background: #008081 !important;
 }
 
 html[data-theme="retro"] .planning-board-btn {

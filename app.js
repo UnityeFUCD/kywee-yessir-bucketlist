@@ -4758,14 +4758,31 @@ ${completed.map(i => `[X] ${i.title}  ${i.desc} (#${i.tag})`).join("\n")}
       elLog.innerHTML = '';
       elProgress.style.width = '0%';
       
-      const bootMessages = [
-        { text: '[OK] Initializing Planning Board...', delay: 200 },
-        { text: '[OK] Loading year calendar...', delay: 400 },
-        { text: '[OK] Syncing idea database...', delay: 600 },
-        { text: '[OK] Preparing card navigator...', delay: 800 },
-        { text: '[OK] Loading theme assets...', delay: 1000 },
-        { text: '[OK] All systems ready', delay: 1200, success: true },
-      ];
+      // Get current theme for themed boot messages
+      const currentTheme = document.documentElement.getAttribute('data-theme') || 'system';
+      
+      // Theme-specific boot messages
+      let bootMessages;
+      if (currentTheme === 'retro') {
+        bootMessages = [
+          { text: 'PLANBOARD.EXE Version 2.026', delay: 150 },
+          { text: 'Loading CONFIG.SYS...', delay: 350 },
+          { text: 'HIMEM.SYS loaded successfully', delay: 550 },
+          { text: 'Reading CALENDAR.DAT...', delay: 750 },
+          { text: 'Mounting IDEAS drive D:\\', delay: 950 },
+          { text: 'Memory check: 640K OK', delay: 1100 },
+          { text: 'READY.', delay: 1300, success: true },
+        ];
+      } else {
+        bootMessages = [
+          { text: '[OK] Initializing Planning Board...', delay: 200 },
+          { text: '[OK] Loading year calendar...', delay: 400 },
+          { text: '[OK] Syncing idea database...', delay: 600 },
+          { text: '[OK] Preparing card navigator...', delay: 800 },
+          { text: '[OK] Loading theme assets...', delay: 1000 },
+          { text: '[OK] All systems ready', delay: 1200, success: true },
+        ];
+      }
       
       let progress = 0;
       const progressInterval = setInterval(function() {
@@ -4781,14 +4798,19 @@ ${completed.map(i => `[X] ${i.title}  ${i.desc} (#${i.tag})`).join("\n")}
           elItem.className = 'pb-boot-log-item' + (msg.success ? ' success' : '');
           elItem.textContent = msg.text;
           elLog.appendChild(elItem);
-          elStatus.textContent = msg.text.replace('[OK] ', '');
+          // Update status text based on theme
+          if (currentTheme === 'retro') {
+            elStatus.textContent = msg.success ? 'Press any key to continue...' : msg.text;
+          } else {
+            elStatus.textContent = msg.text.replace('[OK] ', '');
+          }
         }, msg.delay);
       });
       
       setTimeout(function() {
         clearInterval(progressInterval);
         elProgress.style.width = '100%';
-        elStatus.textContent = 'Launching...';
+        elStatus.textContent = currentTheme === 'retro' ? 'Starting PLANBOARD.EXE...' : 'Launching...';
         
         setTimeout(function() {
           elBoot.classList.add('hidden');
