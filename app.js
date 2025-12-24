@@ -481,14 +481,18 @@ const DAILY_EMOTICONS = [
     const container = ensureToastContainer();
     const toast = document.createElement("div");
     toast.className = `toast toast-${type}`;
-    toast.textContent = message;
+    
+    // Use innerHTML to support icon HTML in message
+    toast.innerHTML = message;
     container.appendChild(toast);
     
-    // Auto remove after 3s
+    // Event toasts stay longer (6s), others 3.5s
+    const duration = type === "event" ? 6000 : 3500;
+    
     setTimeout(() => {
       toast.classList.add("toast-exit");
       setTimeout(() => toast.remove(), 300);
-    }, 3000);
+    }, duration);
   }
 
   // [NEW] Confetti animation on mission completion
@@ -1374,28 +1378,57 @@ const DAILY_EMOTICONS = [
     schedulePush();
   }
 
-  function renderSystemMessage(msg) {
+  // [FIX] Track if system message has been animated to prevent spam
+  let systemMessageAnimated = false;
+  let lastSystemMessageText = "";
+
+  function renderSystemMessage(msg, forceAnimate = false) {
     const herName = $("herName");
+    const text = msg || "MY LOVE";
+    
     if (herName) {
-      // Typewriter effect
-      const text = msg || "MY LOVE";
-      herName.textContent = "";
-      let i = 0;
-      const typeInterval = setInterval(() => {
-        if (i < text.length) {
-          herName.textContent += text[i];
-          i++;
-        } else {
-          clearInterval(typeInterval);
-        }
-      }, 80);
+      // Only animate if: forced, first time, or text changed
+      const shouldAnimate = forceAnimate || !systemMessageAnimated || lastSystemMessageText !== text;
+      
+      if (shouldAnimate) {
+        systemMessageAnimated = true;
+        lastSystemMessageText = text;
+        
+        // Clear and do typewriter effect
+        herName.textContent = "";
+        let i = 0;
+        const typeInterval = setInterval(() => {
+          if (i < text.length) {
+            herName.textContent += text[i];
+            i++;
+          } else {
+            clearInterval(typeInterval);
+          }
+        }, 80);
+      }
+      // If not animating but text is same, just ensure it's set correctly
+      else if (herName.textContent !== text) {
+        herName.textContent = text;
+      }
     }
     
     const loveNote = $("loveNote");
     if (loveNote) {
-      loveNote.textContent = `// SYSTEM MESSAGE: ${msg || "MY LOVE"}`;
+      loveNote.textContent = `// SYSTEM MESSAGE: ${text}`;
     }
   }
+  
+  // [FIX] Re-animate system message on visibility change (tab back in)
+  document.addEventListener("visibilitychange", () => {
+    if (document.visibilityState === "visible") {
+      // Re-render to ensure text isn't broken
+      const msg = loadSystemMessage();
+      const herName = $("herName");
+      if (herName && herName.textContent !== msg) {
+        renderSystemMessage(msg, true);
+      }
+    }
+  });
 
   function loadTheme() { return localStorage.getItem(KEY_THEME) || "system"; }
   function saveTheme(t) { localStorage.setItem(KEY_THEME, t); }

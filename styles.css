@@ -1063,13 +1063,14 @@
     /* ✅ Toast Container for stacking */
     #toastContainer {
       position: fixed;
-      bottom: 20px;
+      bottom: 90px; /* Offset above bug button */
       right: 20px;
-      z-index: 3000;
+      z-index: 10000; /* Above bug button (9000) */
       display: flex;
       flex-direction: column-reverse;
       gap: 10px;
       pointer-events: none;
+      max-width: 350px;
     }
 
     .toast {
@@ -1093,6 +1094,18 @@
 
     .toast-event {
       border-color: #3bff6b;
+      color: #3bff6b;
+    }
+    
+    /* Toast icon styling */
+    .toast i.fas,
+    .toast i.far {
+      margin-right: 8px;
+      font-size: 14px;
+    }
+    
+    .toast-event i.fas,
+    .toast-event i.far {
       color: #3bff6b;
     }
 
@@ -3472,6 +3485,28 @@ html[data-theme="light"] .btn:active {
   transform: scale(0.98);
 }
 
+/* Light theme - Secondary/muted buttons (like Log Off) */
+html[data-theme="light"] .who-actions .btn {
+  border: 2px solid #999;
+  color: #666;
+  background: transparent;
+}
+
+html[data-theme="light"] .who-actions .btn::before {
+  background: #666;
+}
+
+html[data-theme="light"] .who-actions .btn:hover {
+  border-color: #666;
+  color: #fff;
+  background: #666;
+}
+
+/* Ensure btn::before works correctly */
+html[data-theme="light"] .who-actions .btn:hover::before {
+  left: 0;
+}
+
 /* Light theme pills */
 html[data-theme="light"] .pill {
   border: 2px solid var(--border);
@@ -3707,23 +3742,49 @@ html[data-theme="light"] .tracker-fill {
 
 /* Light theme theme dropdown */
 html[data-theme="light"] .theme-dropdown {
-  background: var(--bg-card);
+  background: #fff;
   border: 2px solid var(--border);
   box-shadow: 0 4px 20px rgba(0, 0, 0, 0.15);
 }
 
 html[data-theme="light"] .theme-option {
   transition: all 0.15s ease;
+  color: #333;
+  background: transparent;
 }
 
+/* Light theme - Theme-specific hover colors */
 html[data-theme="light"] .theme-option:hover {
-  background: rgba(233, 30, 99, 0.08);
+  background: rgba(233, 30, 99, 0.1);
+  color: #333;
   padding-left: 14px;
+}
+
+html[data-theme="light"] .theme-option[data-theme="system"]:hover {
+  background: rgba(233, 30, 99, 0.12);
+  color: #e91e63;
+}
+
+html[data-theme="light"] .theme-option[data-theme="light"]:hover {
+  background: rgba(233, 30, 99, 0.15);
+  color: #c2185b;
+}
+
+html[data-theme="light"] .theme-option[data-theme="dark"]:hover {
+  background: rgba(205, 228, 122, 0.2);
+  color: #558b2f;
+}
+
+html[data-theme="light"] .theme-option[data-theme="christmas"]:hover {
+  background: rgba(255, 82, 82, 0.15);
+  color: #c62828;
 }
 
 html[data-theme="light"] .theme-option.active {
   background: rgba(233, 30, 99, 0.12);
   border-left: 3px solid var(--accent);
+  color: var(--accent);
+  font-weight: 700;
 }
 
 /* Light theme toast notifications */
@@ -6881,30 +6942,33 @@ html[data-theme="marathon"] .modal-header h3:hover {
   }
 }
 
-/* Floating Bug Report Button (FAB) */
+/* Floating Bug Report Button (FAB) - Subtle & Theme-Adaptive */
 .fab-bug-report {
   position: fixed;
   bottom: 24px;
   right: 24px;
-  width: 56px;
-  height: 56px;
+  width: 44px;
+  height: 44px;
   border-radius: 50%;
-  background: var(--accent);
-  color: #fff;
-  border: none;
+  background: transparent;
+  color: var(--accent);
+  border: 1.5px solid var(--accent);
   cursor: pointer;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3), 0 0 20px rgba(255, 107, 157, 0.3);
+  box-shadow: none;
   display: flex;
   align-items: center;
   justify-content: center;
-  font-size: 22px;
+  font-size: 18px;
   z-index: 9000;
   transition: all 0.2s ease;
+  opacity: 0.4;
 }
 
 .fab-bug-report:hover {
-  transform: scale(1.1);
-  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.4), 0 0 30px rgba(255, 107, 157, 0.5);
+  opacity: 1;
+  transform: scale(1.05);
+  background: rgba(255, 107, 157, 0.1);
+  box-shadow: 0 0 15px rgba(255, 107, 157, 0.3);
 }
 
 .fab-bug-report:active {
@@ -6916,14 +6980,61 @@ html[data-theme="marathon"] .modal-header h3:hover {
   display: none;
 }
 
+/* Light Theme Bug Button */
+html[data-theme="light"] .fab-bug-report {
+  color: #666;
+  border-color: #999;
+  opacity: 0.35;
+}
+
+html[data-theme="light"] .fab-bug-report:hover {
+  color: var(--accent);
+  border-color: var(--accent);
+  opacity: 1;
+  background: rgba(233, 30, 99, 0.08);
+}
+
+/* Dark/Marathon Theme Bug Button */
+html[data-theme="marathon"] .fab-bug-report {
+  color: #cde47a;
+  border-color: #cde47a;
+  opacity: 0.3;
+}
+
+html[data-theme="marathon"] .fab-bug-report:hover {
+  opacity: 1;
+  background: rgba(205, 228, 122, 0.1);
+  box-shadow: 0 0 15px rgba(205, 228, 122, 0.3);
+}
+
+/* Christmas Theme Bug Button */
+html[data-theme="christmas"] .fab-bug-report {
+  color: #ff6b6b;
+  border-color: #ff6b6b;
+  opacity: 0.35;
+}
+
+html[data-theme="christmas"] .fab-bug-report:hover {
+  opacity: 1;
+  background: rgba(255, 107, 107, 0.1);
+  box-shadow: 0 0 15px rgba(255, 107, 107, 0.3);
+}
+
 /* Mobile responsive */
 @media (max-width: 600px) {
   .fab-bug-report {
     bottom: 16px;
     right: 16px;
-    width: 48px;
-    height: 48px;
-    font-size: 18px;
+    width: 40px;
+    height: 40px;
+    font-size: 16px;
+  }
+  
+  #toastContainer {
+    bottom: 70px;
+    right: 16px;
+    left: 16px;
+    max-width: none;
   }
 }
 
@@ -7347,4 +7458,106 @@ html[data-theme="marathon"] .ascii-ripple-target::selection {
     opacity: 0;
     filter: blur(10px);
   }
+}
+
+/* ============================================
+   FIX 6: Mobile Layout & Truncation Fixes
+   ============================================ */
+
+/* Mobile brand - prevent truncation, show full .exe */
+@media (max-width: 480px) {
+  .brand {
+    font-size: 10px !important;
+    letter-spacing: 0.5px;
+    white-space: nowrap;
+    overflow: visible;
+  }
+  
+  /* Marathon theme mobile brand */
+  html[data-theme="marathon"] .brand {
+    font-size: 10px !important;
+    letter-spacing: 1px;
+  }
+  
+  /* System Message scaling for mobile */
+  .big {
+    font-size: clamp(22px, 6vw, 42px) !important;
+    padding: 0 10px;
+    word-break: break-word;
+    line-height: 1.2;
+  }
+  
+  /* Marathon System Message mobile */
+  html[data-theme="marathon"] .big {
+    font-size: clamp(20px, 5.5vw, 38px) !important;
+    padding: 0 15px;
+    text-align: center;
+  }
+  
+  /* Hero section mobile padding */
+  .hero {
+    padding: 20px 10px;
+  }
+  
+  html[data-theme="marathon"] .hero {
+    padding: 15px 10px;
+  }
+}
+
+/* Small mobile (below 380px) */
+@media (max-width: 380px) {
+  .brand {
+    font-size: 9px !important;
+  }
+  
+  .big {
+    font-size: clamp(18px, 5vw, 32px) !important;
+  }
+  
+  html[data-theme="marathon"] .big {
+    font-size: clamp(16px, 4.5vw, 28px) !important;
+  }
+}
+
+/* Tablet and small desktop */
+@media (min-width: 481px) and (max-width: 768px) {
+  .big {
+    font-size: clamp(28px, 5vw, 44px);
+  }
+}
+
+/* Christmas theme event toast */
+html[data-theme="christmas"] .toast-event {
+  border-color: #ff6b6b;
+  color: #ff6b6b;
+  background: rgba(255, 107, 107, 0.1);
+}
+
+html[data-theme="christmas"] .toast-event i.fas,
+html[data-theme="christmas"] .toast-event i.far {
+  color: #ff6b6b;
+}
+
+/* Marathon theme event toast */
+html[data-theme="marathon"] .toast-event {
+  border-color: #cde47a;
+  color: #cde47a;
+  background: rgba(205, 228, 122, 0.05);
+}
+
+html[data-theme="marathon"] .toast-event i.fas,
+html[data-theme="marathon"] .toast-event i.far {
+  color: #cde47a;
+}
+
+/* Light theme event toast */
+html[data-theme="light"] .toast-event {
+  border-color: #4caf50;
+  color: #2e7d32;
+  background: rgba(76, 175, 80, 0.08);
+}
+
+html[data-theme="light"] .toast-event i.fas,
+html[data-theme="light"] .toast-event i.far {
+  color: #4caf50;
 }
