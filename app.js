@@ -5637,38 +5637,17 @@ ${completed.map(i => `[X] ${i.title}  ${i.desc} (#${i.tag})`).join("\n")}
       // Get current theme for themed boot messages
       const currentTheme = document.documentElement.getAttribute('data-theme') || 'system';
       
-      // Add blizzard effect for Christmas theme
-      let blizzardEl = null;
-      if (currentTheme === 'christmas') {
-        blizzardEl = document.createElement('div');
-        blizzardEl.className = 'christmas-blizzard';
-        blizzardEl.innerHTML = `
-          <div class="blizzard-layer blizzard-layer-1"></div>
-          <div class="blizzard-layer blizzard-layer-2"></div>
-          <div class="blizzard-layer blizzard-layer-3"></div>
-        `;
-        elBoot.appendChild(blizzardEl);
-        
-        // Intensify blizzard over time
-        setTimeout(() => blizzardEl.classList.add('intensifying'), 500);
-        setTimeout(() => blizzardEl.classList.add('peak'), 1200);
-      }
-      
       // Theme-specific boot messages
       let bootMessages;
       let bootDuration = 1800;
       
       if (currentTheme === 'christmas') {
-        bootDuration = 2500; // Slower, more dramatic for Christmas
+        bootDuration = 1500; // Quick and festive
         bootMessages = [
-          { text: 'Braving the winter storm...', delay: 200 },
-          { text: 'Checking naughty/nice list...', delay: 500 },
-          { text: 'Warming up the hot cocoa...', delay: 800 },
-          { text: 'Counting presents under tree...', delay: 1100 },
-          { text: 'Feeding the reindeer...', delay: 1400 },
-          { text: 'Polishing the sleigh bells...', delay: 1700 },
-          { text: 'Spreading holiday cheer...', delay: 2000 },
-          { text: 'Ho ho ho! Ready!', delay: 2300, success: true },
+          { text: '🎄 Loading holiday magic...', delay: 200 },
+          { text: '🎁 Unwrapping ideas...', delay: 500 },
+          { text: '⭐ Spreading cheer...', delay: 800 },
+          { text: '🎅 Ready to plan!', delay: 1100, success: true },
         ];
       } else {
         bootMessages = [
@@ -5697,7 +5676,7 @@ ${completed.map(i => `[X] ${i.title}  ${i.desc} (#${i.tag})`).join("\n")}
           elLog.appendChild(elItem);
           // Update status text based on theme
           if (currentTheme === 'christmas') {
-            elStatus.textContent = msg.success ? 'Merry Planning!' : msg.text;
+            elStatus.textContent = msg.success ? '🎄 Merry Planning!' : msg.text.replace(/^[🎄🎁⭐🎅]\s*/, '');
           } else {
             elStatus.textContent = msg.text.replace('[OK] ', '');
           }
@@ -5708,17 +5687,12 @@ ${completed.map(i => `[X] ${i.title}  ${i.desc} (#${i.tag})`).join("\n")}
         clearInterval(progressInterval);
         elProgress.style.width = '100%';
         if (currentTheme === 'christmas') {
-          elStatus.textContent = 'Unwrapping your plans...';
-          // Fade blizzard
-          if (blizzardEl) {
-            blizzardEl.classList.add('fading');
-          }
+          elStatus.textContent = '✨ Opening Planning Board...';
         } else {
           elStatus.textContent = 'Launching...';
         }
         
         setTimeout(function() {
-          if (blizzardEl) blizzardEl.remove();
           elBoot.classList.add('hidden');
           resolve();
         }, 500);

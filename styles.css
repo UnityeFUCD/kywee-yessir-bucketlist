@@ -2615,6 +2615,7 @@ input[type="date"]::-webkit-calendar-picker-indicator {
 
 .medal-modal-info {
   padding: 16px;
+  padding-right: 56px; /* Make room for close button */
   display: flex;
   align-items: center;
   justify-content: space-between;
@@ -4925,6 +4926,62 @@ html[data-theme="light"] .pb-boot-progress-bar {
 
 html[data-theme="light"] .pb-boot-status {
   color: #666;
+}
+
+/* Christmas Theme Planning Board Boot Screen */
+html[data-theme="christmas"] .pb-boot-screen {
+  background: linear-gradient(180deg, #0f1e14 0%, #1a2e1f 50%, #0f1e14 100%);
+}
+
+html[data-theme="christmas"] .pb-boot-title {
+  color: #e74c3c;
+  text-shadow: 0 0 20px rgba(231, 76, 60, 0.4);
+  font-family: 'Roboto Mono', monospace;
+}
+
+html[data-theme="christmas"] .pb-boot-line {
+  background: linear-gradient(90deg, transparent, #e74c3c, transparent);
+}
+
+html[data-theme="christmas"] .pb-boot-log {
+  color: #a8b5ac;
+}
+
+html[data-theme="christmas"] .pb-boot-log-item.success {
+  color: #27ae60;
+}
+
+html[data-theme="christmas"] .pb-boot-progress {
+  background: #1a2e1f;
+  border: 2px solid #2d4a35;
+  border-radius: 10px;
+  height: 12px;
+  overflow: hidden;
+}
+
+/* Candy Cane Progress Bar */
+html[data-theme="christmas"] .pb-boot-progress-bar {
+  height: 100%;
+  background: repeating-linear-gradient(
+    45deg,
+    #e74c3c,
+    #e74c3c 10px,
+    #ffffff 10px,
+    #ffffff 20px
+  );
+  background-size: 28px 100%;
+  animation: candyCaneMove 0.5s linear infinite;
+  border-radius: 8px;
+}
+
+@keyframes candyCaneMove {
+  0% { background-position: 0 0; }
+  100% { background-position: 28px 0; }
+}
+
+html[data-theme="christmas"] .pb-boot-status {
+  color: #27ae60;
+  text-shadow: 0 0 10px rgba(39, 174, 96, 0.3);
 }
 
 html[data-theme="light"] .pb-stat-card,
@@ -7590,6 +7647,20 @@ html[data-theme="christmas"] .toast-event {
 html[data-theme="christmas"] .toast-event i.fas,
 html[data-theme="christmas"] .toast-event i.far {
   color: #ff6b6b;
+}
+
+/* Christmas theme item hover - use green glow */
+html[data-theme="christmas"] .item:hover {
+  border-color: var(--accent-secondary);
+  box-shadow: 0 0 20px rgba(39, 174, 96, 0.3);
+}
+
+html[data-theme="christmas"] .item::before {
+  background: var(--accent-secondary);
+}
+
+html[data-theme="christmas"] .item:hover::before {
+  opacity: 1;
 }
 
 /* Marathon theme event toast */
