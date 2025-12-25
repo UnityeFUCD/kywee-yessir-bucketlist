@@ -2660,10 +2660,40 @@ const DAILY_EMOTICONS = [
     const isMarathonTheme = (theme === "dark" || theme === "marathon");
     const wasMarathonTheme = (previousTheme === "dark" || previousTheme === "marathon");
     
-    if (isMarathonTheme && !wasMarathonTheme && previousTheme) {
-      // Trigger terminal scramble transition
-      triggerTerminalTransition();
+    const bootScreen = $("bootScreen");
+    if (bootScreen && isMarathonTheme) {
+      if (!previousTheme) {
+        // Initial page load - run boot animation then hide
+        runBootAnimation();
+      } else if (!wasMarathonTheme) {
+        // Switching TO marathon from another theme - hide immediately
+        bootScreen.classList.add("hidden");
+        // Trigger screen glitch transition
+        triggerTerminalTransition();
+      }
     }
+  }
+  
+  // [NEW] Boot animation sequence for initial load
+  function runBootAnimation() {
+    const bootScreen = $("bootScreen");
+    const bootItems = document.querySelectorAll('.boot-item');
+    
+    if (!bootScreen || bootItems.length === 0) return;
+    
+    // Animate each boot item with delay
+    bootItems.forEach((item, index) => {
+      const delay = parseInt(item.dataset.delay) || (index * 400);
+      setTimeout(() => {
+        item.classList.add('visible');
+      }, delay);
+    });
+    
+    // Hide boot screen after animation completes
+    const totalDelay = 2400; // After all items visible + small pause
+    setTimeout(() => {
+      bootScreen.classList.add('hidden');
+    }, totalDelay);
   }
   
   // [NEW] Screen Glitch Transition Effect - quick glitch into marathon theme

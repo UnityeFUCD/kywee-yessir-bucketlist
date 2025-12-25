@@ -7901,38 +7901,11 @@ html[data-theme="marathon"] .calendar-day-mission-tag {
 }
 
 /* ============================================
-   FIX 9: Theme Dropdown Animation Fix
+   FIX 9: Theme Dropdown Background Colors
    ============================================ */
-.theme-dropdown {
-  position: absolute;
-  top: calc(100% + 8px);
-  right: 0;
-  background: #0a0a0a;
-  border: 2px solid var(--border-bright);
-  box-shadow: var(--shadow);
-  min-width: 180px;
-  z-index: 100;
-  opacity: 0;
-  visibility: hidden;
-  pointer-events: none;
-  transform: translateY(-10px);
-  transition: opacity 0.2s ease, transform 0.2s ease, visibility 0.2s ease;
-}
-
-.theme-dropdown.active {
-  opacity: 1;
-  visibility: visible;
-  pointer-events: auto;
-  transform: translateY(0);
-}
-
-/* Ensure dark background in all themes */
+/* Ensure correct background in all themes */
 html[data-theme="light"] .theme-dropdown {
   background: #ffffff;
-}
-
-html[data-theme="marathon"] .theme-dropdown {
-  background: #0c0d11;
 }
 
 html[data-theme="christmas"] .theme-dropdown {
