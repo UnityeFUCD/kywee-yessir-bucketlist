@@ -3474,6 +3474,16 @@ const DAILY_EMOTICONS = [
   function renderActive() {
     const items = loadActive();
     const container = $("itemsActive");
+    
+    // [FIX] Save expanded state before re-render
+    const expandedItems = {};
+    container.querySelectorAll('.item.expanded').forEach(item => {
+      const titleEl = item.querySelector('.ititle span');
+      if (titleEl) {
+        expandedItems[titleEl.textContent] = true;
+      }
+    });
+    
     container.innerHTML = "";
 
     // Add example item first
@@ -3481,7 +3491,10 @@ const DAILY_EMOTICONS = [
 
     withExample.forEach((it, idx) => {
       const el = document.createElement("div");
-      el.className = "item" + (it.isExample ? " example" : "");
+      
+      // [FIX] Check if this item was expanded before re-render
+      const wasExpanded = expandedItems[it.title] === true;
+      el.className = "item" + (it.isExample ? " example" : "") + (wasExpanded ? " expanded" : "");
       
       // [OK] Calculate urgency for due dates
       const daysLeft = it.dueDate ? daysUntil(it.dueDate) : Infinity;
@@ -3510,10 +3523,10 @@ const DAILY_EMOTICONS = [
             <span class="itag">${escapeHtml(it.tag || "idea")}</span>
             ${dateDisplay}
             ${urgencyIndicator}
-            <i class="fas fa-chevron-down expand-icon"></i>
+            <i class="fas ${wasExpanded ? 'fa-chevron-up' : 'fa-chevron-down'} expand-icon"></i>
           </div>
           <p class="idesc">${escapeHtml(it.desc || "")}</p>
-          <div class="expanded-details hidden">
+          <div class="expanded-details ${wasExpanded ? '' : 'hidden'}">
             ${it.dueDate ? `<div class="expanded-detail"><i class="fas fa-calendar"></i> Due: ${formatMissionDate(it.dueDate)}</div>` : ''}
             ${it.dueDate && daysLeft !== Infinity ? `<div class="expanded-detail"><i class="fas fa-clock"></i> ${daysLeft <= 0 ? 'Overdue!' : daysLeft + ' days left'}</div>` : ''}
             <div class="expanded-detail"><i class="fas fa-tag"></i> Tag: ${escapeHtml(it.tag || "idea")}</div>
@@ -3594,13 +3607,26 @@ const DAILY_EMOTICONS = [
   function renderCompleted() {
     const items = loadCompleted();
     const container = $("itemsCompleted");
+    
+    // [FIX] Save expanded state before re-render
+    const expandedItems = {};
+    container.querySelectorAll('.completed-item.expanded').forEach(item => {
+      const titleEl = item.querySelector('.ititle span');
+      if (titleEl) {
+        expandedItems[titleEl.textContent] = true;
+      }
+    });
+    
     container.innerHTML = "";
 
     const withExample = [exampleCompleted, ...items];
 
     withExample.forEach((it, idx) => {
       const el = document.createElement("div");
-      el.className = "item completed-item" + (it.isExample ? " example" : "");
+      
+      // [FIX] Check if this item was expanded before re-render
+      const wasExpanded = expandedItems[it.title] === true;
+      el.className = "item completed-item" + (it.isExample ? " example" : "") + (wasExpanded ? " expanded" : "");
       
       // Build expanded details section
       const dueInfo = it.dueDate ? `<div class="expanded-detail"><i class="fas fa-calendar"></i> Due: ${formatMissionDate(it.dueDate)}</div>` : '';
@@ -3611,10 +3637,10 @@ const DAILY_EMOTICONS = [
           <div class="ititle">
             <span>${escapeHtml(it.title)}</span>
             <span class="itag">${escapeHtml(it.tag || "idea")}</span>
-            <i class="fas fa-chevron-down expand-icon"></i>
+            <i class="fas ${wasExpanded ? 'fa-chevron-up' : 'fa-chevron-down'} expand-icon"></i>
           </div>
           <p class="idesc">${escapeHtml(it.desc || "")}</p>
-          <div class="expanded-details hidden">
+          <div class="expanded-details ${wasExpanded ? '' : 'hidden'}">
             ${dueInfo}
             ${completedInfo}
             <div class="expanded-detail"><i class="fas fa-tag"></i> Tag: ${escapeHtml(it.tag || "idea")}</div>
