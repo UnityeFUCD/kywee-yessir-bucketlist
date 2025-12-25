@@ -229,10 +229,16 @@
       box-shadow: var(--shadow);
       min-width: 180px;
       z-index: 100;
-      display: none;
+      opacity: 0;
+      visibility: hidden;
+      pointer-events: none;
     }
 
-    .theme-dropdown.active { display: block; }
+    .theme-dropdown.active { 
+      opacity: 1;
+      visibility: visible;
+      pointer-events: auto;
+    }
 
     .theme-option {
       padding: 12px 16px;
@@ -680,7 +686,7 @@
       transition: opacity 0.15s ease;
     }
 
-    .item:hover { border-color: var(--accent); box-shadow: 0 0 20px rgba(255,107,157,.2); }
+    .item:hover { border-color: var(--accent); box-shadow: 0 0 20px var(--hover-glow, rgba(255,107,157,.2)); }
     .item:hover::before { opacity: 1; }
 
     .item input[type="checkbox"] {
@@ -5372,8 +5378,8 @@ html[data-theme="marathon"] .item::before {
 }
 
 html[data-theme="marathon"] .item:hover {
-  border-color: #cde47a;
-  box-shadow: 0 0 10px rgba(205, 228, 122, 0.3);
+  border-color: #cde47a !important;
+  box-shadow: 0 0 10px rgba(205, 228, 122, 0.3) !important;
 }
 
 html[data-theme="marathon"] .item:hover::before {
@@ -7606,66 +7612,79 @@ html[data-theme="light"] .toast-event i.far {
 /* ============================================
    TERMINAL SCRAMBLE TRANSITION EFFECT
    ============================================ */
-.terminal-transition-overlay {
+/* ============================================
+   SCREEN GLITCH TRANSITION (Marathon Theme)
+   Quick glitch effect when switching to marathon
+   ============================================ */
+@keyframes screenGlitch {
+  0% {
+    transform: translate(0);
+    filter: none;
+  }
+  10% {
+    transform: translate(-2px, 1px);
+    filter: hue-rotate(90deg);
+  }
+  20% {
+    transform: translate(2px, -1px);
+    filter: hue-rotate(-90deg) saturate(2);
+  }
+  30% {
+    transform: translate(-1px, 2px);
+    filter: none;
+    opacity: 0.8;
+  }
+  40% {
+    transform: translate(1px, -2px);
+    filter: hue-rotate(180deg);
+  }
+  50% {
+    transform: translate(-2px, -1px);
+    filter: none;
+    opacity: 1;
+  }
+  60% {
+    transform: translate(2px, 1px);
+    filter: saturate(0.5);
+  }
+  70% {
+    transform: translate(0);
+    filter: hue-rotate(45deg);
+  }
+  80% {
+    transform: translate(-1px, 1px);
+    filter: none;
+  }
+  90% {
+    transform: translate(1px, 0);
+    filter: brightness(1.2);
+  }
+  100% {
+    transform: translate(0);
+    filter: none;
+  }
+}
+
+.screen-glitch::before {
+  content: "";
   position: fixed;
   top: 0;
   left: 0;
   right: 0;
   bottom: 0;
-  background: #07080c;
-  z-index: 99999;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  animation: terminalFlashIn 0.15s ease-out;
-}
-
-.terminal-transition-overlay.fade-out {
-  animation: terminalFadeOut 0.4s ease-out forwards;
-}
-
-@keyframes terminalFlashIn {
-  0% { opacity: 0; }
-  50% { opacity: 1; background: #1a1d24; }
-  100% { opacity: 1; background: #07080c; }
-}
-
-@keyframes terminalFadeOut {
-  0% { opacity: 1; }
-  100% { opacity: 0; visibility: hidden; }
-}
-
-.terminal-scanlines {
-  position: absolute;
-  top: 0;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  background: repeating-linear-gradient(
-    0deg,
-    transparent,
-    transparent 2px,
-    rgba(205, 228, 122, 0.03) 2px,
-    rgba(205, 228, 122, 0.03) 4px
+  background: linear-gradient(
+    transparent 0%,
+    rgba(205, 228, 122, 0.03) 50%,
+    transparent 100%
   );
+  animation: glitchScanline 0.1s linear;
   pointer-events: none;
-  animation: scanlineMove 0.1s linear infinite;
+  z-index: 99999;
 }
 
-@keyframes scanlineMove {
-  0% { transform: translateY(0); }
-  100% { transform: translateY(4px); }
-}
-
-.terminal-scramble-text {
-  font-family: 'Courier New', monospace;
-  font-size: 14px;
-  color: #cde47a;
-  text-transform: uppercase;
-  letter-spacing: 2px;
-  white-space: pre-wrap;
-  text-shadow: 0 0 10px rgba(205, 228, 122, 0.5);
-  z-index: 1;
+@keyframes glitchScanline {
+  0% { transform: translateY(-100%); }
+  100% { transform: translateY(100%); }
 }
 
 /* ============================================
@@ -7895,14 +7914,15 @@ html[data-theme="marathon"] .calendar-day-mission-tag {
   z-index: 100;
   opacity: 0;
   visibility: hidden;
+  pointer-events: none;
   transform: translateY(-10px);
   transition: opacity 0.2s ease, transform 0.2s ease, visibility 0.2s ease;
 }
 
 .theme-dropdown.active {
-  display: block;
   opacity: 1;
   visibility: visible;
+  pointer-events: auto;
   transform: translateY(0);
 }
 

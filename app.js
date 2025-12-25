@@ -2666,71 +2666,24 @@ const DAILY_EMOTICONS = [
     }
   }
   
-  // [NEW] Terminal Scramble Transition Effect
-  const TERMINAL_CHARS = '░▒▓█▀▄▌▐■□●○◐◑◒◓◔◕0123456789ABCDEF';
-  
+  // [NEW] Screen Glitch Transition Effect - quick glitch into marathon theme
   function triggerTerminalTransition() {
-    // Create overlay
-    const overlay = document.createElement('div');
-    overlay.className = 'terminal-transition-overlay';
-    overlay.innerHTML = `
-      <div class="terminal-scanlines"></div>
-      <div class="terminal-scramble-text" id="terminalScrambleText"></div>
-    `;
-    document.body.appendChild(overlay);
+    // Add glitch class to body for CSS-based glitch effect
+    document.body.classList.add('screen-glitch');
     
-    const textEl = overlay.querySelector('#terminalScrambleText');
-    const lines = [
-      '[TERMINAL] INITIATING THEME SWITCH...',
-      '[SYNC] LOADING MARATHON PROTOCOL...',
-      '[OK] SYSTEM READY'
-    ];
+    // Quick flicker effect
+    const wrap = document.querySelector('.wrap');
+    if (wrap) {
+      wrap.style.animation = 'screenGlitch 0.3s ease-out';
+    }
     
-    let lineIndex = 0;
-    let charIndex = 0;
-    let scrambleCount = 0;
-    
-    // Quick scramble effect
-    const scrambleInterval = setInterval(() => {
-      if (lineIndex < lines.length) {
-        const currentLine = lines[lineIndex];
-        let displayText = '';
-        
-        for (let i = 0; i < currentLine.length; i++) {
-          if (i < charIndex) {
-            displayText += currentLine[i];
-          } else if (i === charIndex) {
-            displayText += TERMINAL_CHARS[Math.floor(Math.random() * TERMINAL_CHARS.length)];
-          }
-        }
-        
-        textEl.textContent = displayText;
-        
-        scrambleCount++;
-        if (scrambleCount > 2) {
-          scrambleCount = 0;
-          charIndex++;
-          if (charIndex > currentLine.length) {
-            charIndex = 0;
-            lineIndex++;
-            textEl.textContent += '\n';
-          }
-        }
-      } else {
-        clearInterval(scrambleInterval);
-        // Fade out
-        overlay.classList.add('fade-out');
-        setTimeout(() => overlay.remove(), 400);
-      }
-    }, 15);
-    
-    // Safety timeout
+    // Remove glitch class after animation
     setTimeout(() => {
-      if (overlay.parentNode) {
-        overlay.classList.add('fade-out');
-        setTimeout(() => overlay.remove(), 400);
+      document.body.classList.remove('screen-glitch');
+      if (wrap) {
+        wrap.style.animation = '';
       }
-    }, 1200);
+    }, 300);
   }
 
   // ---------- 2026 tracker ----------
@@ -5151,14 +5104,16 @@ ${completed.map(i => `[X] ${i.title}  ${i.desc} (#${i.tag})`).join("\n")}
 
   const themeBtnEl = $("themeBtn");
   if (themeBtnEl) {
-    themeBtnEl.addEventListener("click", () => {
+    themeBtnEl.addEventListener("click", (e) => {
+      e.stopPropagation(); // Prevent document click handler from firing
       const dropdown = $("themeDropdown");
       if (dropdown) dropdown.classList.toggle("active");
     });
   }
 
   document.querySelectorAll(".theme-option").forEach(option => {
-    option.addEventListener("click", () => {
+    option.addEventListener("click", (e) => {
+      e.stopPropagation(); // Prevent document click handler from firing
       const theme = option.dataset.theme;
       saveTheme(theme);
       applyTheme(theme);
