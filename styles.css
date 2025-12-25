@@ -1139,6 +1139,13 @@
       z-index: 5;
     }
     
+    /* Foreground snowflakes - larger, closer, in front of content */
+    .snowflake-foreground {
+      z-index: 9999;
+      text-shadow: 0 0 10px rgba(255, 255, 255, 0.7), 0 0 20px rgba(255, 255, 255, 0.3);
+      filter: blur(1px);
+    }
+    
     /* Christmas Lights for Navbar - Cleaner integrated design */
     .christmas-lights {
       position: absolute;

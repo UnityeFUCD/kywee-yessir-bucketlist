@@ -1338,21 +1338,32 @@ const DAILY_EMOTICONS = [
         sourceLabel = isImage ? 'IMAGE' : 'VIDEO';
       }
       
-      // Thumbnail: use actual thumbnail from Medal or uploaded clip
-      const thumbStyle = clip.thumbnail 
-        ? `background-image: url('${escapeHtml(clip.thumbnail)}'); background-size: cover; background-position: center;`
-        : `background: linear-gradient(135deg, var(--accent) 0%, var(--accent-secondary) 100%)`;
+      // Thumbnail: use Medal thumbnail, or for uploads use the URL itself as thumbnail
+      let thumbStyle;
+      if (clip.thumbnail) {
+        thumbStyle = `background-image: url('${escapeHtml(clip.thumbnail)}'); background-size: cover; background-position: center;`;
+      } else if (isUpload && clip.url) {
+        // For uploaded images, use the image URL as background
+        // For videos, show a gradient placeholder (video poster would need extra work)
+        if (isImage) {
+          thumbStyle = `background-image: url('${escapeHtml(clip.url)}'); background-size: cover; background-position: center;`;
+        } else {
+          thumbStyle = `background: linear-gradient(135deg, #1a1a2e 0%, #16213e 50%, #0f3460 100%)`;
+        }
+      } else {
+        thumbStyle = `background: linear-gradient(135deg, var(--accent) 0%, var(--accent-secondary) 100%)`;
+      }
       
       card.innerHTML = `
         <div class="medal-thumb" style="${thumbStyle}">
           <div class="medal-play"><i class="fas ${isImage ? 'fa-image' : 'fa-play'}"></i></div>
           <span class="clip-source-tag ${isMedal ? 'medal-tag' : (isImage ? 'image-tag' : 'upload-tag')}">${sourceLabel}</span>
+          ${isUpload ? `<button class="medal-delete guest-disabled" data-idx="${clip.uploadIdx}" title="Delete clip"><i class="fas fa-times"></i></button>` : ''}
         </div>
         <div class="medal-info">
           <div class="medal-title">${escapeHtml(clip.title)}</div>
           <div class="medal-game">${escapeHtml(clip.categoryName || clip.date || '')}</div>
         </div>
-        ${isUpload ? `<button class="medal-delete guest-disabled" data-idx="${clip.uploadIdx}" title="Delete clip"><i class="fas fa-times"></i></button>` : ''}
       `;
       
       // [FIX] Hover preview popup
@@ -2518,17 +2529,19 @@ const DAILY_EMOTICONS = [
 
   // ---------- Theme + Snow (christmas only) ----------
   let snowTimer = null;
+  let foregroundSnowTimer = null;
   let activeSnowflakes = 0;
+  let activeForegroundFlakes = 0;
   const snowflakeChars = ['❄', '❅', '❆', '*'];
   let currentSnowLevel = localStorage.getItem(KEY_SNOW_LEVEL) || 'medium';
   
   // Snow level configuration
   const SNOW_LEVELS = {
-    off: { maxFlakes: 0, interval: 0 },
-    light: { maxFlakes: 30, interval: 400 },
-    medium: { maxFlakes: 80, interval: 200 },
-    heavy: { maxFlakes: 150, interval: 100 },
-    blizzard: { maxFlakes: 300, interval: 40 }
+    off: { maxFlakes: 0, interval: 0, foregroundFlakes: 0, foregroundInterval: 0 },
+    light: { maxFlakes: 30, interval: 400, foregroundFlakes: 5, foregroundInterval: 1500 },
+    medium: { maxFlakes: 80, interval: 200, foregroundFlakes: 10, foregroundInterval: 1000 },
+    heavy: { maxFlakes: 150, interval: 100, foregroundFlakes: 20, foregroundInterval: 600 },
+    blizzard: { maxFlakes: 300, interval: 40, foregroundFlakes: 40, foregroundInterval: 300 }
   };
 
   function getSnowConfig() {
@@ -2586,6 +2599,58 @@ const DAILY_EMOTICONS = [
       activeSnowflakes--;
     };
   }
+  
+  // Foreground snow - larger, closer, fewer
+  function createForegroundSnowflake() {
+    const config = getSnowConfig();
+    if (activeForegroundFlakes >= config.foregroundFlakes) return;
+    
+    const s = document.createElement('div');
+    s.className = 'snowflake snowflake-foreground';
+    
+    // Only use larger snowflake characters for foreground
+    s.textContent = snowflakeChars[Math.floor(Math.random() * 2)]; // ❄ or ❅
+    
+    // Larger size for foreground (28-48px)
+    const sizeMultiplier = currentSnowLevel === 'blizzard' ? 1.4 : 1;
+    const size = (28 + Math.random() * 20) * sizeMultiplier;
+    s.style.fontSize = size + 'px';
+    
+    // Random starting position
+    const startX = Math.random() * window.innerWidth;
+    s.style.left = startX + 'px';
+    
+    // Higher opacity for foreground, but still slightly transparent
+    const opacity = 0.4 + Math.random() * 0.3;
+    s.style.opacity = opacity;
+    
+    document.body.appendChild(s);
+    activeForegroundFlakes++;
+    
+    // Faster animation for foreground (closer = faster perceived speed)
+    const speedMultiplier = currentSnowLevel === 'blizzard' ? 0.5 : 0.7;
+    const duration = (2.5 + Math.random() * 2) * 1000 * speedMultiplier;
+    const swayDistance = (Math.random() - 0.5) * (currentSnowLevel === 'blizzard' ? 350 : 200);
+    const rotationAmount = Math.random() * 180;
+    
+    const keyframes = [
+      { transform: 'translate(0, -50px) rotate(0deg)', opacity: 0 },
+      { transform: `translate(${swayDistance * 0.3}px, ${window.innerHeight * 0.3}px) rotate(${rotationAmount * 0.3}deg)`, opacity: opacity, offset: 0.1 },
+      { transform: `translate(${swayDistance * 0.7}px, ${window.innerHeight * 0.7}px) rotate(${rotationAmount * 0.7}deg)`, opacity: opacity * 0.8, offset: 0.7 },
+      { transform: `translate(${swayDistance}px, ${window.innerHeight + 50}px) rotate(${rotationAmount}deg)`, opacity: 0 }
+    ];
+    
+    const animation = s.animate(keyframes, {
+      duration: duration,
+      easing: 'ease-in',
+      fill: 'forwards'
+    });
+    
+    animation.onfinish = () => {
+      s.remove();
+      activeForegroundFlakes--;
+    };
+  }
 
   function startSnow() {
     const config = getSnowConfig();
@@ -2594,7 +2659,14 @@ const DAILY_EMOTICONS = [
       return;
     }
     if (snowTimer) return;
+    
+    // Start background snow
     snowTimer = setInterval(createSnowflake, config.interval);
+    
+    // Start foreground snow
+    if (config.foregroundFlakes > 0 && !foregroundSnowTimer) {
+      foregroundSnowTimer = setInterval(createForegroundSnowflake, config.foregroundInterval);
+    }
   }
 
   function stopSnow() {
@@ -2602,12 +2674,17 @@ const DAILY_EMOTICONS = [
       clearInterval(snowTimer);
       snowTimer = null;
     }
+    if (foregroundSnowTimer) {
+      clearInterval(foregroundSnowTimer);
+      foregroundSnowTimer = null;
+    }
     // Let existing snowflakes finish their animation naturally
     document.querySelectorAll(".snowflake").forEach(s => {
       s.style.opacity = '0';
       setTimeout(() => s.remove(), 500);
     });
     activeSnowflakes = 0;
+    activeForegroundFlakes = 0;
   }
   
   function setSnowLevel(level) {
