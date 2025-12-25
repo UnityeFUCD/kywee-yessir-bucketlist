@@ -382,22 +382,10 @@
   z-index: 10;
 }
 
-.envelope-flap::after {
-  content: '';
-  position: absolute;
-  bottom: 20%;
-  left: 50%;
-  transform: translateX(-50%);
-  width: 40px;
-  height: 40px;
-  background: linear-gradient(135deg, #c0392b 0%, #e74c3c 50%, #c0392b 100%);
-  border-radius: 50%;
-  box-shadow: 0 2px 8px rgba(192, 57, 43, 0.4);
-}
-
 /* Flap opened state */
 .envelope.opened .envelope-flap {
   transform: rotateX(-180deg);
+  z-index: 1;
 }
 
 /* Letter inside envelope */
@@ -406,7 +394,7 @@
   top: 20px;
   left: 20px;
   right: 20px;
-  height: 220px;
+  height: 200px;
   background: linear-gradient(180deg, #fff 0%, #fafafa 100%);
   border-radius: 6px;
   box-shadow: 0 2px 15px rgba(0,0,0,0.1);
@@ -418,7 +406,8 @@
 
 /* Letter slides up when opened */
 .envelope.opened .letter-card {
-  transform: translateY(-240px);
+  transform: translateY(-280px);
+  z-index: 20;
 }
 
 /* Letter content */
@@ -446,17 +435,9 @@
   border-bottom: 1px solid rgba(0,0,0,0.1);
 }
 
-.letter-header .hearts {
-  font-size: 1em;
-  color: #e74c3c;
-  letter-spacing: 6px;
-}
-
 .letter-header .date {
-  display: block;
-  font-size: 0.65em;
+  font-size: 0.7em;
   color: #95a5a6;
-  margin-top: 4px;
   font-family: 'Roboto Mono', monospace;
   letter-spacing: 1px;
 }
@@ -494,18 +475,10 @@
   margin-top: auto;
 }
 
-.letter-signature .closing {
-  font-style: italic;
-  color: #7f8c8d;
-  font-size: 0.85em;
-}
-
 .letter-signature .name {
-  display: block;
-  font-size: 1.2em;
+  font-size: 1.3em;
   font-family: 'Brush Script MT', 'Segoe Script', cursive;
   color: #6c5ce7;
-  margin-top: 3px;
 }
 
 /* Continue button */
@@ -586,22 +559,23 @@
   }
   
   .letter-card {
-    height: 200px;
+    height: 180px;
     left: 15px;
     right: 15px;
     top: 15px;
   }
   
   .envelope.opened .letter-card {
-    transform: translateY(-220px);
+    transform: translateY(-260px);
+    z-index: 20;
   }
   
   .letter-content {
-    padding: 20px 18px;
+    padding: 18px 15px;
   }
   
   .letter-body {
-    font-size: 1em;
+    font-size: 0.95em;
   }
   
   .letter-signature .name {
