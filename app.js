@@ -8,6 +8,10 @@
   const KEY_SYSTEM_MESSAGE = "bucketlist_2026_system_message";
   const KEY_LAST_VERSION_SEEN = "bucketlist_2026_last_version";
   const KEY_PHOTOS = "bucketlist_2026_photos";
+  const KEY_SNOW_LEVEL = "bucketlist_2026_snow_level";
+
+  // [NEW] Guest mode flag - read-only access
+  let isGuestMode = false;
 
   // [OK] VERSION HISTORY for system update notifications
   const VERSION_HISTORY = [
@@ -18,9 +22,10 @@
     { version: "1.4.0", date: "2024-12-20", note: "New: Confetti on completion, delete saved missions" },
     { version: "1.4.1", date: "2024-12-20", note: "Fixed: User switching, undo confirmations, calendar dropdowns, game clips upload" },
     { version: "1.4.2", date: "2024-12-20", note: "Fixed: Gallery dropdowns, preventive login, global notifications, clip hover preview" },
-    { version: "1.4.4", date: "2024-12-21", note: "Fixed: Session gate - conflict overlay shows on attempting device only" }
+    { version: "1.4.4", date: "2024-12-21", note: "Fixed: Session gate - conflict overlay shows on attempting device only" },
+    { version: "1.5.0", date: "2024-12-25", note: "New: Guest login, snow controls, UI improvements" }
   ];
-  const CURRENT_VERSION = "1.4.4";
+  const CURRENT_VERSION = "1.5.0";
 
   // ============================================
   // MARATHON SOUND SYSTEM (v1.6.0)
@@ -720,9 +725,76 @@ const DAILY_EMOTICONS = [
   // ---------- user (SESSION) ----------
   // [FIX] User storage - localStorage for device-wide persistence (like YouTube)
   function loadUser() { return localStorage.getItem(KEY_CURRENT_USER) || ""; }
-  function hasUser() { return !!loadUser().trim(); }
+  function hasUser() { return !!loadUser().trim() || isGuestMode; }
   function saveUser(name) { localStorage.setItem(KEY_CURRENT_USER, name); }
   function clearUser() { localStorage.removeItem(KEY_CURRENT_USER); }
+
+  // [NEW] Guest mode functions - read-only access
+  function setGuestMode(enabled) {
+    isGuestMode = enabled;
+    if (enabled) {
+      clearUser(); // Clear any existing user
+      applyGuestRestrictions();
+      updateUserDuoPills(); // Update UI to show guest status
+    } else {
+      removeGuestRestrictions();
+    }
+  }
+
+  function applyGuestRestrictions() {
+    document.body.classList.add('guest-mode');
+    
+    // List of elements to disable for guests
+    const writeElements = [
+      'btnAdd', 'btnSaveNote', 'photoSelectBtn', 'photoSubmitBtn',
+      'btnEditSystemMessage', 'attachmentInput', 'customNote',
+      'newTitle', 'newDesc', 'newTag', 'newDueDate',
+      'pbAddSimple', 'pbAddDetailed', 'pbQuickInput',
+      'refreshMedal' // This changes to upload button
+    ];
+    
+    writeElements.forEach(id => {
+      const el = $(id);
+      if (el) {
+        el.disabled = true;
+        el.classList.add('guest-disabled');
+        el.title = 'Login as a user to use this feature';
+      }
+    });
+    
+    // Hide upload sections
+    const uploadSections = document.querySelectorAll('.photo-upload-section, .game-clip-upload-modal');
+    uploadSections.forEach(section => section.classList.add('guest-hidden'));
+    
+    // Disable all delete and edit buttons
+    setTimeout(() => {
+      document.querySelectorAll('.item button, .medal-delete, .gallery-delete').forEach(btn => {
+        btn.disabled = true;
+        btn.classList.add('guest-disabled');
+      });
+    }, 500);
+  }
+
+  function removeGuestRestrictions() {
+    document.body.classList.remove('guest-mode');
+    document.querySelectorAll('.guest-disabled').forEach(el => {
+      el.disabled = false;
+      el.classList.remove('guest-disabled');
+      el.title = '';
+    });
+    document.querySelectorAll('.guest-hidden').forEach(el => {
+      el.classList.remove('guest-hidden');
+    });
+  }
+
+  // Check if action is allowed (not in guest mode)
+  function isActionAllowed(showMessage = true) {
+    if (isGuestMode) {
+      if (showMessage) showToast("Login as a user to use this feature");
+      return false;
+    }
+    return true;
+  }
 
   function getDuoName(user) {
     const u = String(user || "").trim().toLowerCase();
@@ -1259,6 +1331,13 @@ const DAILY_EMOTICONS = [
       const isMedal = clip.source === 'medal';
       const isUpload = clip.source === 'upload';
       
+      // [NEW] Determine media type label for uploads
+      const isImage = clip.mediaType === 'image';
+      let sourceLabel = 'Medal';
+      if (isUpload) {
+        sourceLabel = isImage ? 'IMAGE' : 'VIDEO';
+      }
+      
       // Thumbnail: use actual thumbnail from Medal or uploaded clip
       const thumbStyle = clip.thumbnail 
         ? `background-image: url('${escapeHtml(clip.thumbnail)}'); background-size: cover; background-position: center;`
@@ -1266,14 +1345,14 @@ const DAILY_EMOTICONS = [
       
       card.innerHTML = `
         <div class="medal-thumb" style="${thumbStyle}">
-          <div class="medal-play"><i class="fas fa-play"></i></div>
-          <span class="clip-source-tag ${isMedal ? 'medal-tag' : 'upload-tag'}">${isMedal ? 'Medal' : 'Uploaded'}</span>
+          <div class="medal-play"><i class="fas ${isImage ? 'fa-image' : 'fa-play'}"></i></div>
+          <span class="clip-source-tag ${isMedal ? 'medal-tag' : (isImage ? 'image-tag' : 'upload-tag')}">${sourceLabel}</span>
         </div>
         <div class="medal-info">
           <div class="medal-title">${escapeHtml(clip.title)}</div>
           <div class="medal-game">${escapeHtml(clip.categoryName || clip.date || '')}</div>
         </div>
-        ${isUpload ? `<button class="medal-delete" data-idx="${clip.uploadIdx}" title="Delete clip"><i class="fas fa-times"></i></button>` : ''}
+        ${isUpload ? `<button class="medal-delete guest-disabled" data-idx="${clip.uploadIdx}" title="Delete clip"><i class="fas fa-times"></i></button>` : ''}
       `;
       
       // [FIX] Hover preview popup
@@ -1315,16 +1394,34 @@ const DAILY_EMOTICONS = [
     const content = $("medalModalContent");
     if (!modal || !content) return;
     
-    content.innerHTML = `
-      <div class="medal-modal-info">
-        <h4>${escapeHtml(clip.title || 'Game Clip')}</h4>
-        ${clip.date ? `<span style="color: var(--muted); font-size: 11px;">${escapeHtml(clip.date)}</span>` : ''}
-      </div>
-      <video controls autoplay playsinline style="width:100%;max-height:70vh;">
-        <source src="${escapeHtml(clip.url)}" type="video/mp4">
-        Your browser doesn't support video playback.
-      </video>
-    `;
+    // [NEW] Check if it's an image or video
+    const isImage = clip.mediaType === 'image';
+    
+    if (isImage) {
+      // Display image
+      content.innerHTML = `
+        <div class="medal-modal-info">
+          <h4>${escapeHtml(clip.title || 'Game Image')}</h4>
+          ${clip.date ? `<span style="color: var(--muted); font-size: 11px;">${escapeHtml(clip.date)}</span>` : ''}
+        </div>
+        <img src="${escapeHtml(clip.url)}" alt="${escapeHtml(clip.title || 'Image')}" style="width:100%;max-height:70vh;object-fit:contain;">
+        <div class="medal-modal-actions" style="margin-top:15px;text-align:center;">
+          <a href="${escapeHtml(clip.url)}" download class="btn"><i class="fas fa-download"></i> Download</a>
+        </div>
+      `;
+    } else {
+      // Display video
+      content.innerHTML = `
+        <div class="medal-modal-info">
+          <h4>${escapeHtml(clip.title || 'Game Clip')}</h4>
+          ${clip.date ? `<span style="color: var(--muted); font-size: 11px;">${escapeHtml(clip.date)}</span>` : ''}
+        </div>
+        <video controls autoplay playsinline style="width:100%;max-height:70vh;">
+          <source src="${escapeHtml(clip.url)}" type="video/mp4">
+          Your browser doesn't support video playback.
+        </video>
+      `;
+    }
     
     modal.classList.add("active");
     document.body.style.overflow = 'hidden';
@@ -1348,18 +1445,23 @@ const DAILY_EMOTICONS = [
       showToast("Uploading clip...");
       const url = await uploadPhotoToSupabase(file); // Reuse photo upload function
       
+      // [NEW] Detect media type (image or video)
+      const isImage = file.type.startsWith('image/');
+      const mediaType = isImage ? 'image' : 'video';
+      
       const clips = loadGameClips();
       clips.push({
         url,
         title: title || "Untitled Clip",
         date: date || new Date().toISOString().split('T')[0],
         uploadedAt: new Date().toISOString(),
-        uploadedBy: loadUser()
+        uploadedBy: loadUser(),
+        mediaType: mediaType // [NEW] Store media type
       });
       
       saveGameClips(clips);
       renderGameClips();
-      showToast("Clip uploaded!");
+      showToast(isImage ? "Image uploaded!" : "Clip uploaded!");
       return true;
     } catch (err) {
       console.error("Game clip upload error:", err);
@@ -1505,6 +1607,30 @@ const DAILY_EMOTICONS = [
   }
 
   function updateUserDuoPills() {
+    // [NEW] Handle guest mode display
+    if (isGuestMode) {
+      const userTextEl = $("userText");
+      const duoTextEl = $("duoText");
+      const userIcon = $("userIcon");
+      const duoIcon = $("duoIcon");
+      const userDot = $("userDot");
+      const duoDot = $("duoDot");
+      
+      if (userTextEl) userTextEl.textContent = "USER: GUEST";
+      if (duoTextEl) duoTextEl.textContent = "DUO: --";
+      if (userIcon) {
+        userIcon.classList.remove('fa-regular', 'fa-solid', 'user-yasir', 'user-kylee');
+        userIcon.classList.add('fa-regular');
+      }
+      if (duoIcon) {
+        duoIcon.classList.remove('fa-regular', 'fa-solid', 'user-yasir', 'user-kylee');
+        duoIcon.classList.add('fa-regular');
+      }
+      if (userDot) userDot.className = 'dot gray';
+      if (duoDot) duoDot.className = 'dot gray';
+      return;
+    }
+    
     const user = loadUser().trim().toLowerCase();
     const duo = getDuoName(user)?.toLowerCase();
 
@@ -2394,10 +2520,24 @@ const DAILY_EMOTICONS = [
   let snowTimer = null;
   let activeSnowflakes = 0;
   const snowflakeChars = ['❄', '❅', '❆', '*'];
-  const MAX_SNOWFLAKES = 120;
+  let currentSnowLevel = localStorage.getItem(KEY_SNOW_LEVEL) || 'medium';
+  
+  // Snow level configuration
+  const SNOW_LEVELS = {
+    off: { maxFlakes: 0, interval: 0 },
+    light: { maxFlakes: 30, interval: 400 },
+    medium: { maxFlakes: 80, interval: 200 },
+    heavy: { maxFlakes: 150, interval: 100 },
+    blizzard: { maxFlakes: 300, interval: 40 }
+  };
+
+  function getSnowConfig() {
+    return SNOW_LEVELS[currentSnowLevel] || SNOW_LEVELS.medium;
+  }
 
   function createSnowflake() {
-    if (activeSnowflakes >= MAX_SNOWFLAKES) return;
+    const config = getSnowConfig();
+    if (activeSnowflakes >= config.maxFlakes) return;
     
     const s = document.createElement('div');
     s.className = 'snowflake';
@@ -2405,8 +2545,9 @@ const DAILY_EMOTICONS = [
     // Random snowflake character
     s.textContent = snowflakeChars[Math.floor(Math.random() * snowflakeChars.length)];
     
-    // Random size (8-24px)
-    const size = 8 + Math.random() * 16;
+    // Random size (8-24px) - bigger for blizzard
+    const sizeMultiplier = currentSnowLevel === 'blizzard' ? 1.3 : 1;
+    const size = (8 + Math.random() * 16) * sizeMultiplier;
     s.style.fontSize = size + 'px';
     
     // Random starting position
@@ -2420,9 +2561,10 @@ const DAILY_EMOTICONS = [
     document.body.appendChild(s);
     activeSnowflakes++;
     
-    // Animation parameters
-    const duration = (4 + Math.random() * 4) * 1000; // 4-8 seconds
-    const swayDistance = (Math.random() - 0.5) * 150;
+    // Animation parameters - faster for blizzard
+    const speedMultiplier = currentSnowLevel === 'blizzard' ? 0.6 : 1;
+    const duration = (4 + Math.random() * 4) * 1000 * speedMultiplier;
+    const swayDistance = (Math.random() - 0.5) * (currentSnowLevel === 'blizzard' ? 250 : 150);
     const rotationAmount = Math.random() * 360;
     
     // Keyframe animation using Web Animations API
@@ -2446,8 +2588,13 @@ const DAILY_EMOTICONS = [
   }
 
   function startSnow() {
+    const config = getSnowConfig();
+    if (config.maxFlakes === 0) {
+      stopSnow();
+      return;
+    }
     if (snowTimer) return;
-    snowTimer = setInterval(createSnowflake, 150);
+    snowTimer = setInterval(createSnowflake, config.interval);
   }
 
   function stopSnow() {
@@ -2463,32 +2610,15 @@ const DAILY_EMOTICONS = [
     activeSnowflakes = 0;
   }
   
-  // Christmas lights for navbar - cleaner integrated design
-  function addChristmasLights() {
-    // Remove existing lights first
-    removeChristmasLights();
+  function setSnowLevel(level) {
+    currentSnowLevel = level;
+    localStorage.setItem(KEY_SNOW_LEVEL, level);
     
-    const topbar = document.querySelector('.topbar');
-    if (!topbar) return;
-    
-    const lightsContainer = document.createElement('div');
-    lightsContainer.className = 'christmas-lights';
-    
-    // Create lights along the width - more spacing for cleaner look
-    const lightCount = Math.floor(window.innerWidth / 45);
-    for (let i = 0; i < lightCount; i++) {
-      const light = document.createElement('div');
-      light.className = 'christmas-light';
-      light.style.left = (i * 45 + 20) + 'px';
-      lightsContainer.appendChild(light);
+    // Restart snow with new settings
+    stopSnow();
+    if (currentTheme === 'christmas' && level !== 'off') {
+      setTimeout(startSnow, 100);
     }
-    
-    topbar.style.position = 'relative';
-    topbar.appendChild(lightsContainer);
-  }
-  
-  function removeChristmasLights() {
-    document.querySelectorAll('.christmas-lights').forEach(el => el.remove());
   }
 
   function applyTheme(theme) {
@@ -2506,14 +2636,11 @@ const DAILY_EMOTICONS = [
       opt.classList.toggle("active", opt.dataset.theme === theme);
     });
 
-    if (theme === "christmas") startSnow();
-    else stopSnow();
-    
-    // Add/remove Christmas lights
-    if (theme === "christmas") {
-      addChristmasLights();
+    // Handle snow based on theme and level
+    if (theme === "christmas" && currentSnowLevel !== 'off') {
+      startSnow();
     } else {
-      removeChristmasLights();
+      stopSnow();
     }
     
     // Show/hide sound settings based on theme (only for dark/marathon)
@@ -2521,6 +2648,12 @@ const DAILY_EMOTICONS = [
     if (soundSection) {
       const isMarathonTheme = (theme === "dark" || theme === "marathon");
       soundSection.style.display = isMarathonTheme ? "block" : "none";
+    }
+    
+    // Show/hide snow settings based on theme (only for christmas)
+    const snowSection = document.getElementById("snowSettingsSection");
+    if (snowSection) {
+      snowSection.style.display = (theme === "christmas") ? "block" : "none";
     }
     
     // [NEW] Terminal Scramble Transition for Dark/Marathon theme
@@ -3310,18 +3443,42 @@ const DAILY_EMOTICONS = [
       }
       
       el.innerHTML = `
-        <input type="checkbox" ${it.done ? "checked" : ""}>
-        <div class="itext">
+        <input type="checkbox" ${it.done ? "checked" : ""} class="guest-disabled">
+        <div class="itext active-clickable" title="Click to expand">
           <div class="ititle">
             <span>${escapeHtml(it.title)}</span>
             <span class="itag">${escapeHtml(it.tag || "idea")}</span>
             ${dateDisplay}
             ${urgencyIndicator}
+            <i class="fas fa-chevron-down expand-icon"></i>
           </div>
           <p class="idesc">${escapeHtml(it.desc || "")}</p>
+          <div class="expanded-details hidden">
+            ${it.dueDate ? `<div class="expanded-detail"><i class="fas fa-calendar"></i> Due: ${formatMissionDate(it.dueDate)}</div>` : ''}
+            ${it.dueDate && daysLeft !== Infinity ? `<div class="expanded-detail"><i class="fas fa-clock"></i> ${daysLeft <= 0 ? 'Overdue!' : daysLeft + ' days left'}</div>` : ''}
+            <div class="expanded-detail"><i class="fas fa-tag"></i> Tag: ${escapeHtml(it.tag || "idea")}</div>
+          </div>
         </div>
-        ${!it.isExample ? '<button class="btn" style="padding:8px 12px;" title="Remove">[X]</button>' : ""}
+        ${!it.isExample ? '<button class="btn guest-disabled" style="padding:8px 12px;" title="Remove">[X]</button>' : ""}
       `;
+      
+      // [NEW] Add click to expand functionality for active missions
+      const clickable = el.querySelector('.active-clickable');
+      if (clickable) {
+        clickable.addEventListener('click', (e) => {
+          // Don't toggle if clicking on checkbox or button
+          if (e.target.closest('input') || e.target.closest('button')) return;
+          
+          const details = el.querySelector('.expanded-details');
+          const icon = el.querySelector('.expand-icon');
+          if (details && icon) {
+            details.classList.toggle('hidden');
+            icon.classList.toggle('fa-chevron-down');
+            icon.classList.toggle('fa-chevron-up');
+            el.classList.toggle('expanded');
+          }
+        });
+      }
 
       if (!it.isExample) {
         const cb = el.querySelector("input");
@@ -4025,6 +4182,16 @@ const DAILY_EMOTICONS = [
     });
   }
 
+  // [NEW] Guest login button handler
+  const btnWhoGuestEl = $("btnWhoGuest");
+  if (btnWhoGuestEl) {
+    btnWhoGuestEl.addEventListener("click", () => {
+      setGuestMode(true);
+      closeWhoModal();
+      showToast("Logged in as GUEST (view only)");
+    });
+  }
+
   const btnLogOffEl = $("btnLogOff");
   if (btnLogOffEl) {
     btnLogOffEl.addEventListener("click", async () => {
@@ -4113,6 +4280,9 @@ const DAILY_EMOTICONS = [
   const btnAddEl = $("btnAdd");
   if (btnAddEl) {
     btnAddEl.addEventListener("click", () => {
+      // [NEW] Guest mode check
+      if (!isActionAllowed()) return;
+      
       const titleEl = $("newTitle");
       const descEl = $("newDesc");
       const tagEl = $("newTag");
@@ -4443,6 +4613,9 @@ const DAILY_EMOTICONS = [
   const btnSaveNoteEl = $("btnSaveNote");
   if (btnSaveNoteEl) {
     btnSaveNoteEl.addEventListener("click", () => {
+      // [NEW] Guest mode check
+      if (!isActionAllowed()) return;
+      
       if (!hasUser()) { showToast("Pick USER first"); return; }
       
       // [OK] Prevent sending while upload is in progress
@@ -5023,6 +5196,18 @@ ${completed.map(i => `[X] ${i.title}  ${i.desc} (#${i.tag})`).join("\n")}
         settingsModal.classList.remove("active");
         settingsModal.setAttribute("aria-hidden", "true");
       }
+    });
+  }
+  
+  // [NEW] Snow level select handler
+  const snowLevelSelect = $("snowLevelSelect");
+  if (snowLevelSelect) {
+    // Set initial value from localStorage
+    snowLevelSelect.value = currentSnowLevel;
+    
+    snowLevelSelect.addEventListener("change", (e) => {
+      setSnowLevel(e.target.value);
+      showToast(`Snow: ${e.target.value.toUpperCase()}`);
     });
   }
   
@@ -5681,7 +5866,34 @@ ${completed.map(i => `[X] ${i.title}  ${i.desc} (#${i.tag})`).join("\n")}
       contentHtml += '</div>';
     }
     
+    // [NEW] Add delete button for non-example ideas
+    if (!idea.isExample) {
+      contentHtml += '<div class="pb-expanded-actions">' +
+        '<button class="btn danger pb-delete-idea" data-idea-id="' + idea.id + '">' +
+        '<i class="fas fa-trash"></i> Delete Idea</button>' +
+        '</div>';
+    }
+    
     content.innerHTML = contentHtml;
+    
+    // [NEW] Add delete button handler with confirmation
+    const deleteBtn = content.querySelector('.pb-delete-idea');
+    if (deleteBtn) {
+      deleteBtn.addEventListener('click', function() {
+        showConfirmModal('Are you sure you want to delete this idea? This cannot be undone.', function() {
+          // Find and remove the idea
+          const ideaIdx = pbIdeas.findIndex(function(i) { return i.id === ideaId; });
+          if (ideaIdx !== -1) {
+            pbIdeas.splice(ideaIdx, 1);
+            pbSaveIdeas();
+            pbUpdateStats();
+            pbRenderInitialCard();
+            pbCloseExpandedIdea();
+            showToast('Idea deleted');
+          }
+        });
+      });
+    }
     
     // Show overlay
     expanded.classList.remove('hidden');

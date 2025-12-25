@@ -7810,3 +7810,258 @@ html[data-theme="marathon"] .calendar-day-mission-tag {
   background: rgba(205, 228, 122, 0.15);
   color: #cde47a;
 }
+/* ============================================
+   FIX 7: Guest Mode Styles
+   ============================================ */
+.guest-mode .guest-disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+  pointer-events: none;
+}
+
+.guest-mode .guest-hidden {
+  display: none !important;
+}
+
+/* Guest button in who modal */
+.who-guest-section {
+  margin-top: 15px;
+  padding-top: 15px;
+  border-top: 1px dashed var(--border);
+}
+
+.who-btn-guest {
+  background: transparent;
+  border-style: dashed;
+  opacity: 0.8;
+}
+
+.who-btn-guest:hover {
+  opacity: 1;
+  border-color: var(--accent);
+}
+
+.guest-tag {
+  color: var(--muted) !important;
+  font-size: 9px;
+}
+
+/* ============================================
+   FIX 8: Snow Settings Styles
+   ============================================ */
+.snow-level-label {
+  display: block;
+  font-size: 11px;
+  color: var(--muted);
+  margin-bottom: 8px;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+}
+
+.snow-level-select {
+  width: 100%;
+  padding: 10px 12px;
+  background: var(--bg);
+  border: 1px solid var(--border);
+  color: var(--text);
+  font-family: inherit;
+  font-size: 12px;
+  text-transform: uppercase;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.snow-level-select:hover {
+  border-color: var(--accent);
+}
+
+.snow-level-select:focus {
+  outline: none;
+  border-color: var(--accent);
+  box-shadow: 0 0 0 2px rgba(231, 76, 60, 0.2);
+}
+
+/* ============================================
+   FIX 9: Theme Dropdown Animation Fix
+   ============================================ */
+.theme-dropdown {
+  position: absolute;
+  top: calc(100% + 8px);
+  right: 0;
+  background: #0a0a0a;
+  border: 2px solid var(--border-bright);
+  box-shadow: var(--shadow);
+  min-width: 180px;
+  z-index: 100;
+  opacity: 0;
+  visibility: hidden;
+  transform: translateY(-10px);
+  transition: opacity 0.2s ease, transform 0.2s ease, visibility 0.2s ease;
+}
+
+.theme-dropdown.active {
+  display: block;
+  opacity: 1;
+  visibility: visible;
+  transform: translateY(0);
+}
+
+/* Ensure dark background in all themes */
+html[data-theme="light"] .theme-dropdown {
+  background: #ffffff;
+}
+
+html[data-theme="marathon"] .theme-dropdown {
+  background: #0c0d11;
+}
+
+html[data-theme="christmas"] .theme-dropdown {
+  background: #1a2e1f;
+}
+
+/* ============================================
+   FIX 10: Mobile Brand Text Sizing
+   ============================================ */
+@media (max-width: 480px) {
+  .brand {
+    font-size: 9px !important;
+    letter-spacing: 0.3px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    max-width: 180px;
+  }
+  
+  html[data-theme="marathon"] .brand {
+    font-size: 9px !important;
+    max-width: 180px;
+  }
+}
+
+@media (max-width: 360px) {
+  .brand {
+    font-size: 8px !important;
+    max-width: 150px;
+  }
+}
+
+/* ============================================
+   FIX 11: Global Tag Color Consistency
+   ============================================ */
+.itag,
+.pb-idea-card-tag,
+.expanded-detail .itag,
+.calendar-day-mission-tag {
+  /* Default tag style */
+  background: rgba(255, 107, 157, 0.15);
+  color: var(--accent);
+  padding: 2px 8px;
+  font-size: 10px;
+  text-transform: uppercase;
+  border-radius: 2px;
+  font-weight: 600;
+}
+
+/* Tag color mapping - consistent across all components */
+.itag[data-tag="date"], [data-tag="date"] .itag { background: rgba(255, 107, 157, 0.2); color: #ff6b9d; }
+.itag[data-tag="travel"], [data-tag="travel"] .itag { background: rgba(52, 152, 219, 0.2); color: #3498db; }
+.itag[data-tag="food"], [data-tag="food"] .itag { background: rgba(230, 126, 34, 0.2); color: #e67e22; }
+.itag[data-tag="cozy"], [data-tag="cozy"] .itag { background: rgba(155, 89, 182, 0.2); color: #9b59b6; }
+.itag[data-tag="romantic"], [data-tag="romantic"] .itag { background: rgba(231, 76, 60, 0.2); color: #e74c3c; }
+.itag[data-tag="fun"], [data-tag="fun"] .itag { background: rgba(46, 204, 113, 0.2); color: #2ecc71; }
+.itag[data-tag="culture"], [data-tag="culture"] .itag { background: rgba(241, 196, 15, 0.2); color: #f1c40f; }
+.itag[data-tag="home"], [data-tag="home"] .itag { background: rgba(149, 165, 166, 0.2); color: #95a5a6; }
+.itag[data-tag="tradition"], [data-tag="tradition"] .itag { background: rgba(192, 57, 43, 0.2); color: #c0392b; }
+.itag[data-tag="music"], [data-tag="music"] .itag { background: rgba(142, 68, 173, 0.2); color: #8e44ad; }
+.itag[data-tag="new"], [data-tag="new"] .itag { background: rgba(26, 188, 156, 0.2); color: #1abc9c; }
+.itag[data-tag="heart"], [data-tag="heart"] .itag { background: rgba(255, 107, 157, 0.25); color: #ff6b9d; }
+.itag[data-tag="idea"], [data-tag="idea"] .itag { background: rgba(127, 140, 141, 0.2); color: #7f8c8d; }
+
+/* ============================================
+   FIX 12: Image Tag Styling for Game Clips
+   ============================================ */
+.clip-source-tag.image-tag {
+  background: rgba(46, 204, 113, 0.9);
+  color: #000;
+}
+
+/* ============================================
+   FIX 13: Planning Board Delete Button Styles
+   ============================================ */
+.pb-expanded-actions {
+  margin-top: 25px;
+  padding-top: 20px;
+  border-top: 1px solid var(--border);
+  display: flex;
+  justify-content: center;
+  gap: 15px;
+}
+
+.pb-delete-idea {
+  background: transparent;
+  border: 1px solid #e74c3c;
+  color: #e74c3c;
+  padding: 10px 20px;
+  font-size: 12px;
+  transition: all 0.2s ease;
+}
+
+.pb-delete-idea:hover {
+  background: #e74c3c;
+  color: #fff;
+}
+
+/* ============================================
+   FIX 14: Active Mission Expansion Styles
+   ============================================ */
+.active-clickable {
+  cursor: pointer;
+}
+
+.item .expand-icon {
+  margin-left: auto;
+  font-size: 10px;
+  color: var(--muted);
+  transition: transform 0.2s ease;
+}
+
+.item.expanded .expand-icon {
+  transform: rotate(180deg);
+}
+
+.item .expanded-details {
+  margin-top: 10px;
+  padding-top: 10px;
+  border-top: 1px dashed var(--border);
+}
+
+.item .expanded-detail {
+  font-size: 11px;
+  color: var(--muted);
+  margin-bottom: 6px;
+}
+
+.item .expanded-detail i {
+  width: 16px;
+  margin-right: 6px;
+  color: var(--accent);
+}
+
+/* ============================================
+   FIX 15: Beta Tag Static (No Flickering)
+   ============================================ */
+.pb-beta {
+  color: #b8a9c9 !important;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 2px;
+  padding: 3px 10px;
+  background: rgba(184, 169, 201, 0.15) !important;
+  border: 1px solid rgba(184, 169, 201, 0.4) !important;
+  border-radius: 3px;
+  font-size: 10px;
+  opacity: 0.85;
+  /* Ensure no animation */
+  animation: none !important;
+  transition: none !important;
+}
