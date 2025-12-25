@@ -867,39 +867,45 @@
       </div>
     </div>
     
-    <!-- Terminal Card (Retro style) -->
-    <div class="gift-terminal">
-      <div class="terminal-scanline"></div>
-      <div class="code-rain" id="codeRain"></div>
-      <div class="terminal-header">
-        <span class="terminal-title">LOVE.exe</span>
-        <span class="terminal-date">12.25.2025</span>
-      </div>
-      <div class="terminal-content" id="terminalContent">
-        <div class="floating-code">&lt;3 { happiness: infinite; }</div>
-        
-        <p class="terminal-greeting">Pwincess,<span class="terminal-cursor"></span></p>
-        
-        <p class="terminal-message">Wishing you joy, warmth, and all the best into the new year ahead.</p>
-        
-        <div class="terminal-signature">
-          With all my love,
-          <span class="name">Yasir</span>
+    <!-- Letter / Envelope -->
+    <div class="gift-letter">
+      <div class="envelope-wrapper">
+        <div class="envelope">
+          <div class="envelope-body"></div>
+          <div class="envelope-flap"></div>
+          <div class="letter-card">
+            <div class="letter-content">
+              <div class="letter-header">
+                <span class="hearts">♥ ♥ ♥</span>
+                <span class="date">December 25, 2025</span>
+              </div>
+              <p class="letter-greeting">My Dearest Pwincess,</p>
+              <div class="letter-body">
+                <p>Wishing you joy, warmth, and all the best as we step into the new year together.</p>
+                <p>Here's to our adventures, our dreams, and everything we'll build in 2026.</p>
+                <p>You make every moment brighter. ✨</p>
+              </div>
+              <div class="letter-signature">
+                <span class="closing">With all my love,</span>
+                <span class="name">Yasir</span>
+              </div>
+            </div>
+          </div>
+          <button class="letter-continue-btn">Open Your Gift →</button>
         </div>
-        
-        <button class="terminal-btn" id="giftContinueBtn">[ Open Your Gift ]</button>
       </div>
     </div>
   </div>
 
   <link rel="stylesheet" href="gift.css">
+  <script src="confetti.js"></script>
+  <script src="gift.js"></script>
   
   <!-- Floating Bug Report Button -->
   <button class="fab-bug-report" id="fabBugReport" title="Report a Bug">
     <i class="fas fa-bug"></i>
   </button>
   
-  <script src="confetti.js"></script>
   <script src="app.js" defer></script>
 </body>
 </html>

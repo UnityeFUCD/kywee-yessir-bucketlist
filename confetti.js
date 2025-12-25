@@ -1,14 +1,13 @@
 /* ============================================
    CONFETTI STORM
-   Based on Matt Cannon's confetti storm
    Canvas-based particle system with wind, depth, and paper physics
    ============================================ */
 
 (function() {
   'use strict';
   
-  const COUNT = 1100;
-  const SPEED = 2.75;
+  const COUNT = 800;
+  const SPEED = 2.5;
   
   let canvas = null;
   let ctx = null;
@@ -21,14 +20,15 @@
   let animationId = null;
   let isRunning = false;
   
-  // Christmas colors
+  // Festive colors (purple/gold/pink theme)
   const palette = [
-    [220, 53, 69],    // Red
-    [40, 167, 69],    // Green
-    [255, 193, 7],    // Gold
+    [108, 92, 231],   // Purple
+    [168, 85, 247],   // Light purple
+    [255, 234, 167],  // Gold
+    [253, 203, 110],  // Yellow gold
+    [255, 107, 129],  // Pink
     [236, 240, 241],  // White/Silver
-    [192, 57, 43],    // Dark red
-    [39, 174, 96]     // Emerald
+    [116, 185, 255],  // Light blue
   ];
   
   const rand = (a, b) => a + Math.random() * (b - a);
@@ -126,9 +126,9 @@
         : rand(0.22, 0.62);
     
     const rgb = pick(palette);
-    const r = Math.round(rgb[0] * 0.72);
-    const g = Math.round(rgb[1] * 0.72);
-    const b = Math.round(rgb[2] * 0.72);
+    const r = Math.round(rgb[0] * 0.85);
+    const g = Math.round(rgb[1] * 0.85);
+    const b = Math.round(rgb[2] * 0.85);
     
     const aspect = floaty ? rand(1.15, 1.75) : rand(1.0, 1.55);
     const bw = Math.max(2, Math.round(base * rand(0.85, 1.25)));
@@ -289,7 +289,7 @@
           }
           pieces = [];
           spriteCache.clear();
-        }, 800); // Match transition duration
+        }, 800);
       }
     }
   };
