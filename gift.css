@@ -7,7 +7,9 @@
 .gift-overlay {
   position: fixed;
   inset: 0;
-  background: radial-gradient(ellipse at 50% 30%, #1a1a2e 0%, #0d0d1a 100%);
+  background: radial-gradient(circle at 100% 0%, white, cornflowerblue 100%);
+  background-repeat: no-repeat;
+  background-size: 100% 100vh;
   z-index: 999999;
   display: none;
   flex-direction: column;
@@ -21,27 +23,6 @@
 .gift-overlay.active {
   display: flex;
   opacity: 1;
-}
-
-/* Starfield background */
-.gift-overlay::before {
-  content: '';
-  position: absolute;
-  inset: 0;
-  background-image: 
-    radial-gradient(2px 2px at 20px 30px, rgba(255,255,255,0.3), transparent),
-    radial-gradient(2px 2px at 40px 70px, rgba(255,255,255,0.2), transparent),
-    radial-gradient(1px 1px at 90px 40px, rgba(255,255,255,0.4), transparent),
-    radial-gradient(2px 2px at 130px 80px, rgba(255,255,255,0.2), transparent),
-    radial-gradient(1px 1px at 160px 120px, rgba(255,255,255,0.3), transparent);
-  background-size: 200px 200px;
-  animation: twinkle 4s ease-in-out infinite;
-  pointer-events: none;
-}
-
-@keyframes twinkle {
-  0%, 100% { opacity: 0.5; }
-  50% { opacity: 1; }
 }
 
 /* ===== 3D SCENE CONTAINER ===== */
@@ -82,7 +63,7 @@
 /* ===== SHADOWS ===== */
 .gift-shadow {
   position: absolute;
-  background: linear-gradient(rgba(0,0,0,0.3), transparent);
+  background: linear-gradient(rgba(68,68,102,0.4), transparent);
   pointer-events: none;
 }
 
@@ -211,8 +192,8 @@
   position: absolute;
   font-size: 3em;
   font-weight: 700;
-  color: #ffeaa7;
-  text-shadow: 0 0 0.5em rgba(255, 234, 167, 0.8);
+  color: rgba(250,250,100,1);
+  text-shadow: 0em -0.2em 0.1em gold, 0 0 0.3em yellow;
   transform: translateZ(1em) translateX(0.8em) translateY(0.5em) rotateX(-90deg) rotateY(45deg);
   z-index: 20;
   transition: transform 0.3s ease;
@@ -274,7 +255,7 @@
   transform: translateX(-50%) rotateX(-45deg) rotateZ(-45deg);
   font-family: 'Roboto Mono', monospace;
   font-size: 0.8em;
-  color: rgba(255,255,255,0.5);
+  color: rgba(0,0,0,0.5);
   text-transform: uppercase;
   letter-spacing: 2px;
   animation: pulse-hint 2s infinite ease-in-out;
@@ -350,7 +331,7 @@
 /* Envelope container */
 .envelope-wrapper {
   position: relative;
-  width: min(90vw, 420px);
+  width: min(90vw, 400px);
   perspective: 1500px;
 }
 
@@ -358,7 +339,7 @@
 .envelope {
   position: relative;
   width: 100%;
-  aspect-ratio: 1.5 / 1;
+  height: 280px;
   transform-style: preserve-3d;
 }
 
@@ -366,6 +347,7 @@
 .envelope-body {
   position: absolute;
   inset: 0;
+  height: 100%;
   background: linear-gradient(145deg, #f5f0e8 0%, #e8e0d4 100%);
   border-radius: 8px;
   box-shadow: 
@@ -390,7 +372,7 @@
   top: 0;
   left: 0;
   right: 0;
-  height: 50%;
+  height: 140px;
   background: linear-gradient(180deg, #ebe5db 0%, #ddd5c8 100%);
   clip-path: polygon(0 0, 50% 100%, 100% 0);
   transform-origin: top center;
@@ -421,34 +403,35 @@
 /* Letter inside envelope */
 .letter-card {
   position: absolute;
-  top: 10%;
-  left: 5%;
-  right: 5%;
-  bottom: 5%;
+  top: 20px;
+  left: 20px;
+  right: 20px;
+  height: 220px;
   background: linear-gradient(180deg, #fff 0%, #fafafa 100%);
   border-radius: 6px;
   box-shadow: 0 2px 15px rgba(0,0,0,0.1);
   transform: translateY(0);
   transition: transform 1s cubic-bezier(0.4, 0, 0.2, 1) 0.3s;
-  overflow: hidden;
+  overflow: visible;
   z-index: 5;
 }
 
 /* Letter slides up when opened */
 .envelope.opened .letter-card {
-  transform: translateY(-85%);
+  transform: translateY(-240px);
 }
 
 /* Letter content */
 .letter-content {
-  padding: 25px 20px;
+  padding: 20px;
   font-family: 'Georgia', serif;
   color: #2d3436;
   height: 100%;
   display: flex;
   flex-direction: column;
   opacity: 0;
-  transition: opacity 0.5s ease 1s;
+  transition: opacity 0.5s ease 1.2s;
+  box-sizing: border-box;
 }
 
 .envelope.opened .letter-content {
@@ -458,50 +441,55 @@
 /* Letter header decoration */
 .letter-header {
   text-align: center;
-  padding-bottom: 15px;
-  margin-bottom: 15px;
+  padding-bottom: 12px;
+  margin-bottom: 10px;
   border-bottom: 1px solid rgba(0,0,0,0.1);
 }
 
 .letter-header .hearts {
-  font-size: 1.2em;
+  font-size: 1em;
   color: #e74c3c;
-  letter-spacing: 8px;
+  letter-spacing: 6px;
 }
 
 .letter-header .date {
   display: block;
-  font-size: 0.7em;
+  font-size: 0.65em;
   color: #95a5a6;
-  margin-top: 5px;
+  margin-top: 4px;
   font-family: 'Roboto Mono', monospace;
-  letter-spacing: 2px;
+  letter-spacing: 1px;
 }
 
 /* Letter greeting */
 .letter-greeting {
-  font-size: 1.1em;
+  font-size: 1.15em;
   font-style: italic;
   color: #6c5ce7;
-  margin-bottom: 12px;
+  margin: 0 0 8px 0;
+  text-align: center;
 }
 
 /* Letter body */
 .letter-body {
   flex: 1;
-  font-size: 0.95em;
-  line-height: 1.7;
+  font-size: 1em;
+  line-height: 1.6;
   color: #4a4a4a;
+  text-align: center;
+  display: flex;
+  align-items: center;
+  justify-content: center;
 }
 
 .letter-body p {
-  margin: 0 0 10px 0;
+  margin: 0;
 }
 
 /* Letter signature */
 .letter-signature {
-  text-align: right;
-  padding-top: 15px;
+  text-align: center;
+  padding-top: 10px;
   border-top: 1px solid rgba(0,0,0,0.05);
   margin-top: auto;
 }
@@ -509,15 +497,15 @@
 .letter-signature .closing {
   font-style: italic;
   color: #7f8c8d;
-  font-size: 0.9em;
+  font-size: 0.85em;
 }
 
 .letter-signature .name {
   display: block;
-  font-size: 1.3em;
+  font-size: 1.2em;
   font-family: 'Brush Script MT', 'Segoe Script', cursive;
   color: #6c5ce7;
-  margin-top: 5px;
+  margin-top: 3px;
 }
 
 /* Continue button */
@@ -586,19 +574,34 @@
 /* ===== MOBILE ADJUSTMENTS ===== */
 @media (max-width: 600px) {
   .gift-floor {
-    font-size: 12px;
+    font-size: 11px;
   }
   
   .envelope-wrapper {
     width: 95vw;
   }
   
+  .envelope {
+    height: 260px;
+  }
+  
+  .letter-card {
+    height: 200px;
+    left: 15px;
+    right: 15px;
+    top: 15px;
+  }
+  
+  .envelope.opened .letter-card {
+    transform: translateY(-220px);
+  }
+  
   .letter-content {
-    padding: 18px 15px;
+    padding: 20px 18px;
   }
   
   .letter-body {
-    font-size: 0.85em;
+    font-size: 1em;
   }
   
   .letter-signature .name {
