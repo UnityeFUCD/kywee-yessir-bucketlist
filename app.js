@@ -1407,16 +1407,21 @@ const DAILY_EMOTICONS = [
     
     // [NEW] Check if it's an image or video
     const isImage = clip.mediaType === 'image';
+    const isUpload = clip.source === 'upload';
+    
+    // Build edit button for uploads
+    const editBtn = isUpload ? `<button class="btn clip-edit-btn" style="margin-right:10px;"><i class="fas fa-edit"></i> Rename</button>` : '';
     
     if (isImage) {
       // Display image
       content.innerHTML = `
         <div class="medal-modal-info">
-          <h4>${escapeHtml(clip.title || 'Game Image')}</h4>
+          <h4 class="clip-title-display">${escapeHtml(clip.title || 'Game Image')}</h4>
           ${clip.date ? `<span style="color: var(--muted); font-size: 11px;">${escapeHtml(clip.date)}</span>` : ''}
         </div>
         <img src="${escapeHtml(clip.url)}" alt="${escapeHtml(clip.title || 'Image')}" style="width:100%;max-height:70vh;object-fit:contain;">
         <div class="medal-modal-actions" style="margin-top:15px;text-align:center;">
+          ${editBtn}
           <a href="${escapeHtml(clip.url)}" download class="btn"><i class="fas fa-download"></i> Download</a>
         </div>
       `;
@@ -1424,18 +1429,106 @@ const DAILY_EMOTICONS = [
       // Display video
       content.innerHTML = `
         <div class="medal-modal-info">
-          <h4>${escapeHtml(clip.title || 'Game Clip')}</h4>
+          <h4 class="clip-title-display">${escapeHtml(clip.title || 'Game Clip')}</h4>
           ${clip.date ? `<span style="color: var(--muted); font-size: 11px;">${escapeHtml(clip.date)}</span>` : ''}
         </div>
         <video controls autoplay playsinline style="width:100%;max-height:70vh;">
           <source src="${escapeHtml(clip.url)}" type="video/mp4">
           Your browser doesn't support video playback.
         </video>
+        <div class="medal-modal-actions" style="margin-top:15px;text-align:center;">
+          ${editBtn}
+        </div>
       `;
+    }
+    
+    // Add edit button handler for uploads
+    if (isUpload) {
+      const editBtnEl = content.querySelector('.clip-edit-btn');
+      if (editBtnEl) {
+        editBtnEl.addEventListener('click', () => {
+          showClipRenameModal(clip);
+        });
+      }
     }
     
     modal.classList.add("active");
     document.body.style.overflow = 'hidden';
+  }
+  
+  // [NEW] Show rename modal for game clips
+  function showClipRenameModal(clip) {
+    const existing = document.querySelector(".clip-rename-modal-overlay");
+    if (existing) existing.remove();
+    
+    const overlay = document.createElement("div");
+    overlay.className = "confirm-modal-overlay clip-rename-modal-overlay";
+    overlay.innerHTML = `
+      <div class="confirm-modal" style="max-width: 350px;">
+        <div class="confirm-modal-message" style="margin-bottom: 15px;">
+          <strong>Rename Clip</strong>
+        </div>
+        <input type="text" class="clip-rename-input" value="${escapeHtml(clip.title || '')}" placeholder="Enter new title" style="width: 100%; padding: 10px; border: 1px solid var(--border); border-radius: 6px; background: var(--bg); color: var(--text); font-family: inherit; margin-bottom: 15px;">
+        <div class="confirm-modal-buttons">
+          <button class="btn clip-rename-cancel">Cancel</button>
+          <button class="btn primary clip-rename-confirm">Save</button>
+        </div>
+      </div>
+    `;
+    
+    document.body.appendChild(overlay);
+    
+    const input = overlay.querySelector('.clip-rename-input');
+    input.focus();
+    input.select();
+    
+    // Handle Enter key
+    input.addEventListener('keydown', (e) => {
+      if (e.key === 'Enter') {
+        saveClipRename();
+      } else if (e.key === 'Escape') {
+        overlay.remove();
+      }
+    });
+    
+    overlay.querySelector('.clip-rename-cancel').addEventListener('click', () => {
+      overlay.remove();
+    });
+    
+    overlay.querySelector('.clip-rename-confirm').addEventListener('click', saveClipRename);
+    
+    // Close on backdrop click
+    overlay.addEventListener('click', (e) => {
+      if (e.target === overlay) overlay.remove();
+    });
+    
+    function saveClipRename() {
+      const newTitle = input.value.trim();
+      if (!newTitle) {
+        showToast("Title cannot be empty");
+        return;
+      }
+      
+      // Update the clip in storage
+      const clips = loadGameClips();
+      const clipIdx = clip.uploadIdx;
+      if (clips[clipIdx]) {
+        clips[clipIdx].title = newTitle;
+        saveGameClips(clips);
+        
+        // Update the display in the modal
+        const titleDisplay = document.querySelector('.clip-title-display');
+        if (titleDisplay) {
+          titleDisplay.textContent = newTitle;
+        }
+        
+        // Re-render the clips list
+        renderGameClips();
+        showToast("Clip renamed!");
+      }
+      
+      overlay.remove();
+    }
   }
 
   function closeMedalModal() {
