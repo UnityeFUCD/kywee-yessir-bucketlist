@@ -801,8 +801,16 @@ const DAILY_EMOTICONS = [
       clearUser(); // Clear any existing user
       applyGuestRestrictions();
       updateUserDuoPills(); // Update UI to show guest status
+      
+      // [FIX] Update LOG OFF button text
+      const logOffBtn = $("btnLogOff");
+      if (logOffBtn) logOffBtn.textContent = "EXIT GUEST MODE";
     } else {
       removeGuestRestrictions();
+      
+      // [FIX] Update LOG OFF button text
+      const logOffBtn = $("btnLogOff");
+      if (logOffBtn) logOffBtn.textContent = "LOG OFF";
     }
   }
 
@@ -2541,6 +2549,12 @@ const DAILY_EMOTICONS = [
     if (!modal) return;
     modal.classList.add("active");
     modal.setAttribute("aria-hidden", "false");
+    
+    // [FIX] Update LOG OFF button text based on guest mode
+    const logOffBtn = $("btnLogOff");
+    if (logOffBtn) {
+      logOffBtn.textContent = isGuestMode ? "EXIT GUEST MODE" : "LOG OFF";
+    }
     
     // [FIX] Check which users are active and update button states
     updateWhoModalButtons();
@@ -4482,6 +4496,16 @@ const DAILY_EMOTICONS = [
 
   // [FIX] NEW: Logout with proper cleanup
   async function logOffUser() {
+    // [FIX] If in guest mode, just exit guest mode (no device/presence cleanup needed)
+    if (isGuestMode) {
+      console.log("[GUEST] Exiting guest mode");
+      setGuestMode(false);
+      openWhoModal();
+      $("closeWhoModal").classList.add("hidden");
+      showToast("Exited guest mode");
+      return;
+    }
+    
     console.log("[DEVICE] LOGOUT starting");
     
     // Stop monitoring first
@@ -4621,6 +4645,15 @@ const DAILY_EMOTICONS = [
   const btnWhoYasirEl = $("btnWhoYasir");
   if (btnWhoYasirEl) {
     btnWhoYasirEl.addEventListener("click", async () => {
+      // [FIX] If switching from guest mode, refresh page after setting user
+      if (isGuestMode) {
+        setGuestMode(false); // Remove guest restrictions
+        saveUser("Yasir");
+        closeWhoModal();
+        showToast("Switching to YASIR... Refreshing...");
+        setTimeout(() => location.reload(), 500);
+        return;
+      }
       await setUserAndStart("Yasir");
     });
   }
@@ -4628,6 +4661,15 @@ const DAILY_EMOTICONS = [
   const btnWhoKyleeEl = $("btnWhoKylee");
   if (btnWhoKyleeEl) {
     btnWhoKyleeEl.addEventListener("click", async () => {
+      // [FIX] If switching from guest mode, refresh page after setting user
+      if (isGuestMode) {
+        setGuestMode(false); // Remove guest restrictions
+        saveUser("Kylee");
+        closeWhoModal();
+        showToast("Switching to KYLEE... Refreshing...");
+        setTimeout(() => location.reload(), 500);
+        return;
+      }
       await setUserAndStart("Kylee");
     });
   }
