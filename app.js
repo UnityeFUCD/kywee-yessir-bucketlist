@@ -5507,23 +5507,6 @@ ${completed.map(i => `[X] ${i.title}  ${i.desc} (#${i.tag})`).join("\n")}
       if (closeBtn) closeBtn.classList.add("hidden");
     });
   }
-  
-  // Reset gift experience (for testing) - shows gift immediately
-  const resetGiftBtn = $("resetGiftBtn");
-  if (resetGiftBtn) {
-    resetGiftBtn.addEventListener("click", () => {
-      // Close settings modal
-      if (settingsModal) settingsModal.classList.remove("active");
-      
-      // Reset the flag and show gift immediately
-      localStorage.removeItem("bucketlist_gift_shown_2025");
-      
-      // Show the gift experience right now
-      if (typeof window.showGiftExperience === 'function') {
-        window.showGiftExperience();
-      }
-    });
-  }
 
   // ---------- Init ----------
   (async function init() {
