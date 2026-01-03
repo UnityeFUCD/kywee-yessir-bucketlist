@@ -2293,7 +2293,7 @@ input[type="date"]::-webkit-calendar-picker-indicator {
 }
 
 /* ============================================
-   PHOTO BUNDLE STYLES (Mission-grouped)
+   PHOTO BUNDLE STYLES (Mission-grouped) - LEGACY
    ============================================ */
 
 .gallery-mission-bundle {
@@ -2358,6 +2358,214 @@ input[type="date"]::-webkit-calendar-picker-indicator {
   display: none;
 }
 
+/* ============================================
+   NEW MEMORY CARD STYLES
+   ============================================ */
+
+.gallery-section-header {
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 1.5px;
+  color: var(--accent);
+  padding: 16px 0 8px;
+  margin-top: 8px;
+  border-top: 1px dashed var(--border);
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.gallery-section-header:first-child {
+  margin-top: 0;
+  border-top: none;
+  padding-top: 8px;
+}
+
+.memory-card {
+  border: 2px solid var(--border);
+  margin-bottom: 12px;
+  background: var(--bg);
+  transition: border-color 0.15s ease;
+}
+
+.memory-card:hover {
+  border-color: var(--accent);
+}
+
+.memory-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 12px 16px;
+  gap: 12px;
+}
+
+.memory-header-left {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex: 1;
+  min-width: 0;
+  cursor: pointer;
+}
+
+.memory-title {
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--text);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 200px;
+}
+
+.memory-edit-title-btn {
+  background: none;
+  border: none;
+  color: var(--muted);
+  cursor: pointer;
+  padding: 4px;
+  font-size: 11px;
+  opacity: 0.5;
+  transition: all 0.15s ease;
+}
+
+.memory-edit-title-btn:hover {
+  color: var(--accent);
+  opacity: 1;
+}
+
+.memory-count {
+  font-size: 10px;
+  color: var(--muted);
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  white-space: nowrap;
+}
+
+.memory-header-right {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.memory-header-right button {
+  background: none;
+  border: none;
+  color: var(--muted);
+  cursor: pointer;
+  padding: 6px;
+  font-size: 12px;
+  transition: all 0.15s ease;
+}
+
+.memory-header-right button:hover {
+  color: var(--accent);
+}
+
+.memory-link-btn:hover {
+  color: var(--accent) !important;
+}
+
+.memory-delete-btn:hover {
+  color: #ff4444 !important;
+}
+
+.memory-expand {
+  color: var(--accent);
+  font-size: 14px;
+  cursor: pointer;
+}
+
+/* Mission badges */
+.memory-mission-badges {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  padding: 0 16px 10px;
+}
+
+.memory-mission-badge {
+  font-size: 9px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  padding: 3px 8px;
+  background: rgba(255,107,157,0.15);
+  color: var(--accent);
+  border: 1px solid var(--accent);
+  white-space: nowrap;
+  max-width: 120px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.memory-mission-badge.more {
+  background: var(--card-bg);
+  color: var(--muted);
+  border-color: var(--border);
+}
+
+/* Memory photos grid */
+.memory-photos {
+  padding: 0 16px 16px;
+  transition: all 0.2s ease;
+}
+
+.memory-photos.collapsed {
+  display: none;
+}
+
+.memory-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(100px, 1fr));
+  gap: 8px;
+}
+
+@media (min-width: 600px) {
+  .memory-grid {
+    grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
+    gap: 10px;
+  }
+}
+
+.memory-empty {
+  color: var(--muted);
+  font-size: 11px;
+  text-align: center;
+  padding: 20px;
+  font-style: italic;
+}
+
+/* Link modal checkbox styles */
+.memory-link-checkbox {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 12px;
+  cursor: pointer;
+  border: 1px solid var(--border);
+  margin-bottom: 6px;
+  transition: all 0.15s ease;
+}
+
+.memory-link-checkbox:hover {
+  border-color: var(--accent);
+  background: rgba(255,107,157,0.05);
+}
+
+.memory-link-checkbox input[type="checkbox"] {
+  width: 16px;
+  height: 16px;
+  accent-color: var(--accent);
+}
+
+.memory-link-checkbox span {
+  font-size: 12px;
+  color: var(--text);
+}
+
 .gallery-grid {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(100px, 1fr));
@@ -2391,7 +2599,7 @@ input[type="date"]::-webkit-calendar-picker-indicator {
 }
 
 /* ============================================
-   PHOTO LIGHTBOX (Mobile-Friendly)
+   PHOTO LIGHTBOX (Mobile-Friendly with Desktop improvements)
    ============================================ */
 
 .lightbox-modal {
@@ -2426,6 +2634,13 @@ input[type="date"]::-webkit-calendar-picker-indicator {
   display: flex;
   align-items: center;
   justify-content: center;
+  background: rgba(0,0,0,0.5);
+  border-radius: 50%;
+  transition: all 0.15s ease;
+}
+
+.lightbox-close:hover {
+  background: rgba(255,107,157,0.3);
 }
 
 .lightbox-nav {
@@ -2482,6 +2697,50 @@ input[type="date"]::-webkit-calendar-picker-indicator {
   font-size: 10px;
   text-transform: uppercase;
   letter-spacing: 1px;
+}
+
+/* Desktop: Move navigation to sides */
+@media (min-width: 768px) {
+  .lightbox-modal {
+    padding: 40px 80px;
+  }
+  
+  #lightboxImage {
+    max-width: calc(100vw - 200px);
+    max-height: calc(100vh - 120px);
+  }
+  
+  .lightbox-nav {
+    position: static;
+    transform: none;
+    width: 100%;
+    max-width: 900px;
+    justify-content: space-between;
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    padding: 0 20px;
+    pointer-events: none;
+  }
+  
+  .lightbox-btn {
+    pointer-events: all;
+    width: 60px;
+    height: 60px;
+    font-size: 22px;
+  }
+  
+  .lightbox-counter {
+    position: absolute;
+    bottom: 30px;
+    left: 50%;
+    transform: translateX(-50%);
+  }
+  
+  .lightbox-hint {
+    display: none;
+  }
 }
 
 /* ============================================

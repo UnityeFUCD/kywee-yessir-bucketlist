@@ -284,12 +284,12 @@
           <h2>[▸] MEMORIES_GALLERY</h2>
         </div>
         <div class="cardBody">
-          <p class="note">// Max 5 photos per mission. Upload multiple times. Unlinked photos = unlimited.</p>
+          <p class="note">// Each upload creates a new memory. Link memories to missions anytime.</p>
           
           <div class="photo-upload-section">
             <div class="photo-upload-row">
               <input type="file" id="photoInput" accept="image/*,video/*" multiple hidden>
-              <button class="btn" id="photoSelectBtn"><i class="fa-solid fa-upload"></i> Select Photos</button>
+              <button class="btn" id="photoSelectBtn"><i class="fa-solid fa-plus"></i> Add Memory</button>
               <span class="photo-count-hint" id="photoCountHint"></span>
             </div>
             
@@ -308,15 +308,14 @@
                   <input type="date" id="photoDate">
                 </div>
                 <div class="field">
-                  <label for="photoMission"><i class="fa-solid fa-link"></i> Link to Completed Mission</label>
+                  <label for="photoMission"><i class="fa-solid fa-link"></i> Link to Mission (optional)</label>
                   <select id="photoMission">
                     <option value="">No mission linked</option>
                   </select>
-                  <span class="mission-capacity" id="missionCapacity"></span>
                 </div>
               </div>
               
-              <button class="btn primary" id="photoSubmitBtn"><i class="fa-solid fa-check"></i> Submit Photos</button>
+              <button class="btn primary" id="photoSubmitBtn"><i class="fa-solid fa-check"></i> Create Memory</button>
             </div>
           </div>
           
@@ -340,7 +339,7 @@
                 </div>
               </div>
             </div>
-            <div class="gallery-empty-note">↑ Click to expand. Your memories will appear below.</div>
+            <div class="gallery-empty-note">No memories yet. Click "Add Memory" to upload photos!</div>
           </div>
         </div>
       </div>
@@ -522,7 +521,7 @@
             <i class="fas fa-comments"></i> Clear All Chat Messages
           </button>
           <button class="btn danger" id="clearPhotosBtn">
-            <i class="fas fa-images"></i> Clear All Photos
+            <i class="fas fa-images"></i> Clear All Memories
           </button>
           <button class="btn danger" id="clearClipsBtn">
             <i class="fas fa-video"></i> Clear Uploaded Clips

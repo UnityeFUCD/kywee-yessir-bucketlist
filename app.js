@@ -1069,9 +1069,121 @@ const DAILY_EMOTICONS = [
   function loadCustomTags() { return loadArray(KEY_CUSTOM_TAGS); }
   function saveCustomTags(tags) { saveArray(KEY_CUSTOM_TAGS, tags); }
 
-  // [OK] Photo Gallery functions
+  // [OK] Photo Gallery functions - LEGACY (for migration)
   function loadPhotos() { return loadArray(KEY_PHOTOS); }
   function savePhotos(photos) { saveArray(KEY_PHOTOS, photos); }
+  
+  // ============================================
+  // NEW: MEMORIES GALLERY DATA MODEL
+  // ============================================
+  const KEY_MEMORIES = "bucketlist_2026_memories";
+  
+  // Memory block structure:
+  // {
+  //   id: string,
+  //   title: string,           // user-editable title
+  //   autoTitle: string,       // auto-generated from linked missions
+  //   createdAt: string,
+  //   photos: [{ url, type, uploadedAt }],
+  //   linkedMissionIds: string[],  // many-to-many mission links
+  //   uploadedBy: string
+  // }
+  
+  function loadMemories() {
+    try {
+      return JSON.parse(localStorage.getItem(KEY_MEMORIES)) || [];
+    } catch { return []; }
+  }
+  
+  function saveMemories(memories) {
+    localStorage.setItem(KEY_MEMORIES, JSON.stringify(memories));
+    schedulePush();
+  }
+  
+  function generateMemoryId() {
+    return 'mem_' + Date.now() + '_' + Math.random().toString(36).substr(2, 9);
+  }
+  
+  // Generate auto-title from linked missions
+  function generateAutoTitle(linkedMissionIds) {
+    if (!linkedMissionIds || linkedMissionIds.length === 0) {
+      return "Untitled Memory";
+    }
+    const completed = loadCompleted();
+    const missionNames = linkedMissionIds
+      .map(id => {
+        const mission = completed.find(m => m.title === id);
+        return mission ? mission.title : null;
+      })
+      .filter(Boolean);
+    
+    if (missionNames.length === 0) return "Untitled Memory";
+    if (missionNames.length === 1) return missionNames[0];
+    return `${missionNames[0]} + ${missionNames.length - 1} more`;
+  }
+  
+  // Migrate old photos to new Memory format (run once)
+  function migratePhotosToMemories() {
+    const memories = loadMemories();
+    const oldPhotos = loadPhotos();
+    
+    // Skip if already migrated or no old photos
+    if (memories.length > 0 || oldPhotos.length === 0) {
+      return;
+    }
+    
+    console.log("[MIGRATION] Converting old photos to Memory format...");
+    
+    // Group old photos by upload batch (same uploadedAt timestamp within 5 seconds = same batch)
+    const batches = [];
+    let currentBatch = null;
+    
+    // Sort by uploadedAt first
+    const sorted = [...oldPhotos].sort((a, b) => 
+      new Date(a.uploadedAt || 0) - new Date(b.uploadedAt || 0)
+    );
+    
+    sorted.forEach(photo => {
+      const photoTime = new Date(photo.uploadedAt || 0).getTime();
+      
+      if (!currentBatch || 
+          Math.abs(photoTime - currentBatch.time) > 5000 || 
+          photo.mission !== currentBatch.mission) {
+        // Start new batch
+        currentBatch = {
+          time: photoTime,
+          mission: photo.mission,
+          photos: [photo],
+          uploadedBy: photo.uploadedBy
+        };
+        batches.push(currentBatch);
+      } else {
+        // Add to current batch
+        currentBatch.photos.push(photo);
+      }
+    });
+    
+    // Convert batches to Memory blocks
+    const newMemories = batches.map(batch => {
+      const linkedMissions = batch.mission ? [batch.mission] : [];
+      return {
+        id: generateMemoryId(),
+        title: "", // Will use autoTitle
+        autoTitle: generateAutoTitle(linkedMissions),
+        createdAt: batch.photos[0]?.uploadedAt || new Date().toISOString(),
+        photos: batch.photos.map(p => ({
+          url: p.url,
+          type: p.type || 'image',
+          uploadedAt: p.uploadedAt
+        })),
+        linkedMissionIds: linkedMissions,
+        uploadedBy: batch.uploadedBy || ""
+      };
+    });
+    
+    saveMemories(newMemories);
+    console.log(`[MIGRATION] Converted ${oldPhotos.length} photos into ${newMemories.length} memories`);
+  }
 
   async function uploadPhotoToSupabase(file) {
     const timestamp = Date.now();
@@ -1101,311 +1213,498 @@ const DAILY_EMOTICONS = [
     const container = $("photoGallery");
     if (!container) return;
     
-    const photos = loadPhotos();
+    // Run migration if needed
+    migratePhotosToMemories();
+    
+    const memories = loadMemories();
     
     // [OK] Save expanded state before re-render
-    const expandedBundles = {};
-    container.querySelectorAll('.gallery-mission-bundle').forEach(bundle => {
-      const missionKey = bundle.dataset.mission;
-      const photosDiv = bundle.querySelector('.bundle-photos');
-      if (missionKey && photosDiv && !photosDiv.classList.contains('collapsed')) {
-        expandedBundles[missionKey] = true;
+    const expandedMemories = {};
+    container.querySelectorAll('.memory-card').forEach(card => {
+      const memoryId = card.dataset.memoryId;
+      const photosDiv = card.querySelector('.memory-photos');
+      if (memoryId && photosDiv && !photosDiv.classList.contains('collapsed')) {
+        expandedMemories[memoryId] = true;
       }
     });
     
     // Keep the example bundle
     const exampleBundle = container.querySelector('.example-bundle');
-    const emptyNote = container.querySelector('.gallery-empty-note');
     container.innerHTML = "";
     if (exampleBundle) container.appendChild(exampleBundle);
     
-    if (photos.length === 0) {
-      if (emptyNote) container.appendChild(emptyNote);
-      else {
-        const note = document.createElement("div");
-        note.className = "gallery-empty-note";
-        note.textContent = "↑ Click to expand. Your memories will appear below.";
-        container.appendChild(note);
-      }
+    if (memories.length === 0) {
+      const note = document.createElement("div");
+      note.className = "gallery-empty-note";
+      note.textContent = "No memories yet. Click \"Add Memory\" to upload photos!";
+      container.appendChild(note);
       return;
     }
     
-    // Group photos by mission (or "Unlinked" if no mission)
-    const grouped = {};
-    photos.forEach(p => {
-      const key = p.mission || "_unlinked_";
-      if (!grouped[key]) grouped[key] = [];
-      grouped[key].push(p);
-    });
+    // Separate linked and unlinked memories
+    const linkedMemories = memories.filter(m => m.linkedMissionIds && m.linkedMissionIds.length > 0);
+    const unlinkedMemories = memories.filter(m => !m.linkedMissionIds || m.linkedMissionIds.length === 0);
     
-    // Render each mission bundle
-    Object.keys(grouped).forEach(missionKey => {
-      const missionPhotos = grouped[missionKey];
-      const isUnlinked = missionKey === "_unlinked_";
-      const displayName = isUnlinked ? "Unlinked Photos" : missionKey;
-      const photoCount = missionPhotos.length;
-      // [OK] Allow adding to unlinked photos too (no limit for unlinked)
-      const canAddMore = isUnlinked || photoCount < 5;
+    // Render section headers
+    if (linkedMemories.length > 0) {
+      const linkedHeader = document.createElement("div");
+      linkedHeader.className = "gallery-section-header";
+      linkedHeader.innerHTML = `<i class="fas fa-link"></i> Linked Memories (${linkedMemories.length})`;
+      container.appendChild(linkedHeader);
       
-      // [OK] Check if this bundle was expanded before re-render
-      const wasExpanded = expandedBundles[missionKey] === true;
+      linkedMemories.forEach(memory => {
+        container.appendChild(createMemoryCard(memory, expandedMemories[memory.id]));
+      });
+    }
+    
+    if (unlinkedMemories.length > 0) {
+      const unlinkedHeader = document.createElement("div");
+      unlinkedHeader.className = "gallery-section-header";
+      unlinkedHeader.innerHTML = `<i class="fas fa-images"></i> Unlinked Memories (${unlinkedMemories.length})`;
+      container.appendChild(unlinkedHeader);
       
-      const bundle = document.createElement("div");
-      bundle.className = "gallery-mission-bundle";
-      bundle.dataset.mission = missionKey;
-      bundle.innerHTML = `
-        <div class="bundle-header">
-          <div class="bundle-header-left">
-            <span class="bundle-mission"><i class="fa-solid fa-${isUnlinked ? 'images' : 'link'}"></i> ${escapeHtml(displayName)}</span>
-            <span class="bundle-count">${isUnlinked ? photoCount : photoCount + '/5'} photos</span>
-          </div>
-          <div class="bundle-actions">
-            ${canAddMore ? `<button class="bundle-add-btn" title="Add more photos${isUnlinked ? '' : ' to this mission'}"><i class="fas fa-plus"></i></button>` : ''}
-            ${isUnlinked ? `<button class="bundle-link-btn" title="Link these to a mission"><i class="fas fa-link"></i></button>` : ''}
-            <button class="bundle-delete-btn" title="Delete all photos"><i class="fas fa-trash"></i></button>
-            <span class="bundle-expand"><i class="fas fa-chevron-${wasExpanded ? 'up' : 'down'}"></i></span>
-          </div>
-        </div>
-        <div class="bundle-photos ${wasExpanded ? '' : 'collapsed'}">
-          <div class="gallery-grid"></div>
+      unlinkedMemories.forEach(memory => {
+        container.appendChild(createMemoryCard(memory, expandedMemories[memory.id]));
+      });
+    }
+    
+    // [GUEST] Re-apply restrictions after dynamic render
+    reapplyGuestRestrictions();
+  }
+  
+  // Create a Memory card element
+  function createMemoryCard(memory, wasExpanded = false) {
+    const card = document.createElement("div");
+    card.className = "memory-card";
+    card.dataset.memoryId = memory.id;
+    
+    const displayTitle = memory.title || memory.autoTitle || "Untitled Memory";
+    const photoCount = memory.photos ? memory.photos.length : 0;
+    const hasLinks = memory.linkedMissionIds && memory.linkedMissionIds.length > 0;
+    
+    // Build mission badges HTML
+    let missionBadgesHtml = '';
+    if (hasLinks) {
+      const maxShow = 2;
+      const badges = memory.linkedMissionIds.slice(0, maxShow).map(missionId => 
+        `<span class="memory-mission-badge" title="${escapeHtml(missionId)}">${escapeHtml(missionId)}</span>`
+      ).join('');
+      const remaining = memory.linkedMissionIds.length - maxShow;
+      missionBadgesHtml = `
+        <div class="memory-mission-badges">
+          ${badges}
+          ${remaining > 0 ? `<span class="memory-mission-badge more">+${remaining}</span>` : ''}
         </div>
       `;
-      
-      // [FIX] Use event listener for bundle toggle instead of inline onclick
-      const headerLeft = bundle.querySelector(".bundle-header-left");
-      const expandBtn = bundle.querySelector(".bundle-expand");
-      
-      if (headerLeft) {
-        headerLeft.style.cursor = "pointer";
-        headerLeft.addEventListener("click", (e) => {
-          e.stopPropagation();
-          toggleBundle(bundle);
-        });
+    }
+    
+    card.innerHTML = `
+      <div class="memory-header">
+        <div class="memory-header-left">
+          <span class="memory-title">${escapeHtml(displayTitle)}</span>
+          <button class="memory-edit-title-btn" title="Edit title"><i class="fas fa-pencil-alt"></i></button>
+          <span class="memory-count">${photoCount} photo${photoCount !== 1 ? 's' : ''}</span>
+        </div>
+        <div class="memory-header-right">
+          <button class="memory-link-btn" title="Link to missions"><i class="fas fa-link"></i></button>
+          <button class="memory-delete-btn" title="Delete memory"><i class="fas fa-trash"></i></button>
+          <span class="memory-expand"><i class="fas fa-chevron-${wasExpanded ? 'up' : 'down'}"></i></span>
+        </div>
+      </div>
+      ${missionBadgesHtml}
+      <div class="memory-photos ${wasExpanded ? '' : 'collapsed'}">
+        <div class="memory-grid"></div>
+      </div>
+    `;
+    
+    // Toggle expand/collapse
+    const headerLeft = card.querySelector(".memory-header-left");
+    const expandBtn = card.querySelector(".memory-expand");
+    
+    const toggleExpand = (e) => {
+      e.stopPropagation();
+      const photosDiv = card.querySelector(".memory-photos");
+      const icon = card.querySelector(".memory-expand i");
+      if (photosDiv.classList.contains("collapsed")) {
+        photosDiv.classList.remove("collapsed");
+        icon.className = "fas fa-chevron-up";
+      } else {
+        photosDiv.classList.add("collapsed");
+        icon.className = "fas fa-chevron-down";
       }
-      
-      if (expandBtn) {
-        expandBtn.style.cursor = "pointer";
-        expandBtn.addEventListener("click", (e) => {
-          e.stopPropagation();
-          toggleBundle(bundle);
-        });
+    };
+    
+    headerLeft.style.cursor = "pointer";
+    headerLeft.addEventListener("click", toggleExpand);
+    expandBtn.style.cursor = "pointer";
+    expandBtn.addEventListener("click", toggleExpand);
+    
+    // Edit title button
+    const editTitleBtn = card.querySelector(".memory-edit-title-btn");
+    editTitleBtn.addEventListener("click", (e) => {
+      e.stopPropagation();
+      if (!can('gallery:upload')) {
+        showToast("Guest mode: editing is disabled");
+        return;
       }
-      
-      // Add more photos to this mission or unlinked
-      const addBtn = bundle.querySelector(".bundle-add-btn");
-      if (addBtn) {
-        addBtn.addEventListener("click", (e) => {
-          e.stopPropagation();
-          // [GUEST GUARD] Block adding photos
-          if (!can('gallery:upload')) {
-            showToast("Guest mode: adding photos is disabled");
-            return;
-          }
-          const select = $("photoMission");
-          if (select) {
-            if (isUnlinked) {
-              // For unlinked photos, clear the mission select
-              select.value = "";
-            } else {
-              // Set the mission in the form
-              select.value = missionKey;
-            }
-            updateMissionCapacity();
-          }
-          
-          // [OK] Open the file picker immediately
-          const input = $("photoInput");
-          if (input) input.click();
-          
-          showToast(isUnlinked ? "Select photos to add" : `Select photos to add to "${displayName}"`);
-        });
+      showEditMemoryTitleModal(memory);
+    });
+    
+    // Link to missions button
+    const linkBtn = card.querySelector(".memory-link-btn");
+    linkBtn.addEventListener("click", (e) => {
+      e.stopPropagation();
+      if (!can('gallery:link')) {
+        showToast("Guest mode: linking is disabled");
+        return;
       }
-      
-      // Link unlinked photos to a mission
-      const linkBtn = bundle.querySelector(".bundle-link-btn");
-      if (linkBtn) {
-        linkBtn.addEventListener("click", (e) => {
-          e.stopPropagation();
-          // [GUEST GUARD] Block linking photos
-          if (!can('gallery:link')) {
-            showToast("Guest mode: linking photos is disabled");
-            return;
-          }
-          showLinkMissionModal(missionPhotos);
-        });
+      showMemoryLinkModal(memory);
+    });
+    
+    // Delete memory button
+    const deleteBtn = card.querySelector(".memory-delete-btn");
+    deleteBtn.addEventListener("click", (e) => {
+      e.stopPropagation();
+      if (!can('gallery:delete')) {
+        showToast("Guest mode: deleting is disabled");
+        return;
       }
-      
-      // Delete bundle handler
-      const deleteBtn = bundle.querySelector(".bundle-delete-btn");
-      if (deleteBtn) {
-        deleteBtn.addEventListener("click", (e) => {
-          e.stopPropagation();
-          // [GUEST GUARD] Block deleting photos
-          if (!can('gallery:delete')) {
-            showToast("Guest mode: deleting photos is disabled");
-            return;
-          }
-          showDeleteConfirm(missionKey, displayName);
-        });
-      }
-      
-      const grid = bundle.querySelector(".gallery-grid");
-      missionPhotos.forEach((photo, idx) => {
+      showDeleteMemoryConfirm(memory);
+    });
+    
+    // Render photos in grid
+    const grid = card.querySelector(".memory-grid");
+    if (memory.photos && memory.photos.length > 0) {
+      memory.photos.forEach((photo, idx) => {
         const item = document.createElement("div");
         item.className = "gallery-item";
+        
+        // Handle broken images with fallback
         item.innerHTML = `
-          <img src="${escapeHtml(photo.url)}" alt="Memory" loading="lazy">
+          <img src="${escapeHtml(photo.url)}" alt="Memory" loading="lazy" onerror="this.onerror=null;this.src='data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><rect fill=%22%231a1a2e%22 width=%22100%22 height=%22100%22/><text x=%2250%22 y=%2250%22 text-anchor=%22middle%22 dy=%22.3em%22 fill=%22%23666%22 font-size=%2212%22>Image not found</text></svg>';">
           <button class="gallery-item-delete" title="Delete this photo"><i class="fas fa-times"></i></button>
         `;
         
         // Click to open lightbox
         item.querySelector("img").addEventListener("click", () => {
-          const absIdx = photos.findIndex(p => p.url === photo.url);
-          openPhotoLightbox(photo.url, absIdx >= 0 ? absIdx : 0);
+          openMemoryPhotoLightbox(memory, idx);
         });
         
-        // Delete single photo
+        // Delete single photo from memory
         item.querySelector(".gallery-item-delete").addEventListener("click", (e) => {
           e.stopPropagation();
-          // [GUEST GUARD] Block deleting photos
           if (!can('gallery:delete')) {
-            showToast("Guest mode: deleting photos is disabled");
+            showToast("Guest mode: deleting is disabled");
             return;
           }
-          showDeleteConfirm("_single_", photo.url, photo);
+          deletePhotoFromMemory(memory.id, idx);
         });
         
         grid.appendChild(item);
       });
-      
-      container.appendChild(bundle);
+    } else {
+      grid.innerHTML = '<div class="memory-empty">No photos in this memory</div>';
+    }
+    
+    return card;
+  }
+  
+  // Edit Memory title modal
+  function showEditMemoryTitleModal(memory) {
+    const existing = document.querySelector(".memory-edit-modal");
+    if (existing) existing.remove();
+    
+    const modal = document.createElement("div");
+    modal.className = "confirm-modal-overlay memory-edit-modal";
+    modal.innerHTML = `
+      <div class="confirm-modal">
+        <div class="confirm-modal-header">
+          <strong>Edit Memory Title</strong>
+        </div>
+        <input type="text" class="memory-title-input" value="${escapeHtml(memory.title || memory.autoTitle || '')}" placeholder="Enter title..." style="width: 100%; padding: 10px; border: 1px solid var(--border); border-radius: 6px; background: var(--bg); color: var(--text); font-family: inherit; margin-bottom: 10px;">
+        <div class="memory-edit-hint" style="font-size: 11px; color: var(--muted); margin-bottom: 15px;">
+          Auto-title: ${escapeHtml(memory.autoTitle || 'Untitled Memory')}
+          <button class="btn btn-small memory-reset-title" style="margin-left: 10px; padding: 2px 8px; font-size: 10px;">Reset to Auto</button>
+        </div>
+        <div class="confirm-modal-actions">
+          <button class="btn memory-edit-cancel">Cancel</button>
+          <button class="btn primary memory-edit-save">Save</button>
+        </div>
+      </div>
+    `;
+    
+    document.body.appendChild(modal);
+    
+    const input = modal.querySelector('.memory-title-input');
+    input.focus();
+    input.select();
+    
+    modal.querySelector('.memory-reset-title').addEventListener('click', () => {
+      input.value = memory.autoTitle || 'Untitled Memory';
     });
     
-    // [GUEST] Re-apply restrictions after dynamic render
-    reapplyGuestRestrictions();
+    modal.querySelector('.memory-edit-cancel').addEventListener('click', () => modal.remove());
+    
+    modal.querySelector('.memory-edit-save').addEventListener('click', () => {
+      const newTitle = input.value.trim();
+      updateMemoryTitle(memory.id, newTitle);
+      modal.remove();
+    });
+    
+    input.addEventListener('keypress', (e) => {
+      if (e.key === 'Enter') {
+        const newTitle = input.value.trim();
+        updateMemoryTitle(memory.id, newTitle);
+        modal.remove();
+      }
+    });
+    
+    modal.addEventListener('click', (e) => {
+      if (e.target === modal) modal.remove();
+    });
   }
-
-  // [OK] Link unlinked photos to a mission
-  function showLinkMissionModal(photosToLink) {
-    const existing = document.querySelector(".link-mission-modal");
+  
+  function updateMemoryTitle(memoryId, newTitle) {
+    const memories = loadMemories();
+    const idx = memories.findIndex(m => m.id === memoryId);
+    if (idx >= 0) {
+      memories[idx].title = newTitle;
+      saveMemories(memories);
+      renderPhotoGallery();
+      showToast("Title updated");
+    }
+  }
+  
+  // Link Memory to missions modal (multi-select)
+  function showMemoryLinkModal(memory) {
+    const existing = document.querySelector(".memory-link-modal");
     if (existing) existing.remove();
     
     const completed = loadCompleted().filter(c => !c.isExample);
+    const currentLinks = memory.linkedMissionIds || [];
     
-    const modal = document.createElement("div");
-    modal.className = "link-mission-modal";
-    
-    let optionsHtml = '<option value="">Select a mission...</option>';
-    completed.forEach(m => {
-      const existingCount = loadPhotos().filter(p => p.mission === m.title).length;
-      const remaining = 5 - existingCount;
-      if (remaining > 0) {
-        optionsHtml += `<option value="${escapeHtml(m.title)}">${escapeHtml(m.title)} (${existingCount}/5)</option>`;
-      }
-    });
-    
-    modal.innerHTML = `
-      <div class="link-mission-content">
-        <h4><i class="fas fa-link"></i> Link Photos to Mission</h4>
-        <p>Link ${photosToLink.length} photo(s) to a completed mission:</p>
-        <select id="linkMissionSelect" class="link-mission-select">
-          ${optionsHtml}
-        </select>
-        <div class="link-mission-actions">
-          <button class="btn" id="cancelLinkBtn">Cancel</button>
-          <button class="btn primary" id="confirmLinkBtn"><i class="fas fa-check"></i> Link</button>
-        </div>
-      </div>
-    `;
-    
-    document.body.appendChild(modal);
-    
-    modal.querySelector("#cancelLinkBtn").addEventListener("click", () => modal.remove());
-    modal.querySelector("#confirmLinkBtn").addEventListener("click", () => {
-      const selectedMission = modal.querySelector("#linkMissionSelect").value;
-      if (!selectedMission) {
-        showToast("Please select a mission");
-        return;
-      }
-      
-      // Check capacity
-      const existingCount = loadPhotos().filter(p => p.mission === selectedMission).length;
-      const remaining = 5 - existingCount;
-      if (photosToLink.length > remaining) {
-        showToast(`Only ${remaining} slots available. Delete some photos first.`);
-        return;
-      }
-      
-      // Update photos
-      let photos = loadPhotos();
-      photosToLink.forEach(photoToLink => {
-        const idx = photos.findIndex(p => p.url === photoToLink.url);
-        if (idx >= 0) {
-          photos[idx].mission = selectedMission;
-        }
-      });
-      
-      savePhotos(photos);
-      renderPhotoGallery();
-      modal.remove();
-      showToast(`Linked ${photosToLink.length} photo(s) to "${selectedMission}"`);
-    });
-  }
-
-  // [OK] Delete photo confirmation modal
-  function showDeleteConfirm(type, identifier, photoObj = null) {
-    const existing = document.querySelector(".delete-confirm-modal");
-    if (existing) existing.remove();
-    
-    const isSingle = type === "_single_";
-    const displayName = isSingle ? "this photo" : `all photos in "${identifier}"`;
-    
-    const modal = document.createElement("div");
-    modal.className = "delete-confirm-modal";
-    modal.innerHTML = `
-      <div class="delete-confirm-content">
-        <h4><i class="fas fa-exclamation-triangle"></i> Delete ${displayName}?</h4>
-        <p>This action cannot be undone.</p>
-        <div class="delete-confirm-actions">
-          <button class="btn" id="cancelDeleteBtn">Cancel</button>
-          <button class="btn primary" id="confirmDeleteBtn" style="background:#ff3b3b;border-color:#ff3b3b;"><i class="fas fa-trash"></i> Delete</button>
-        </div>
-      </div>
-    `;
-    
-    document.body.appendChild(modal);
-    
-    modal.querySelector("#cancelDeleteBtn").addEventListener("click", () => modal.remove());
-    modal.querySelector("#confirmDeleteBtn").addEventListener("click", () => {
-      let photos = loadPhotos();
-      
-      if (isSingle && photoObj) {
-        // Delete single photo
-        photos = photos.filter(p => p.url !== photoObj.url);
-      } else if (type === "_unlinked_") {
-        // Delete all unlinked photos
-        photos = photos.filter(p => p.mission && p.mission !== "");
-      } else {
-        // Delete all photos linked to this mission
-        photos = photos.filter(p => p.mission !== type);
-      }
-      
-      savePhotos(photos);
-      renderPhotoGallery();
-      modal.remove();
-      showToast(isSingle ? "Photo deleted" : "Photos deleted");
-    });
-  }
-
-  // [OK] Toggle bundle expand/collapse - FIXED event handling
-  window.toggleBundle = function(headerOrBundleEl, e) {
-    // Prevent event bubbling issues
-    if (e) {
-      e.stopPropagation();
-      e.preventDefault();
+    let checkboxesHtml = '';
+    if (completed.length === 0) {
+      checkboxesHtml = '<p style="color: var(--muted);">No completed missions to link to.</p>';
+    } else {
+      checkboxesHtml = completed.map(m => `
+        <label class="memory-link-checkbox">
+          <input type="checkbox" value="${escapeHtml(m.title)}" ${currentLinks.includes(m.title) ? 'checked' : ''}>
+          <span>${escapeHtml(m.title)}</span>
+        </label>
+      `).join('');
     }
     
-    const bundle = headerOrBundleEl.closest('.gallery-mission-bundle') || headerOrBundleEl;
+    const modal = document.createElement("div");
+    modal.className = "confirm-modal-overlay memory-link-modal";
+    modal.innerHTML = `
+      <div class="confirm-modal" style="max-width: 400px;">
+        <div class="confirm-modal-header">
+          <strong><i class="fas fa-link"></i> Link to Missions</strong>
+        </div>
+        <p style="margin-bottom: 15px; color: var(--muted); font-size: 12px;">Select missions to link this memory to:</p>
+        <div class="memory-link-list" style="max-height: 250px; overflow-y: auto; margin-bottom: 15px;">
+          ${checkboxesHtml}
+        </div>
+        <div class="confirm-modal-actions">
+          <button class="btn memory-link-cancel">Cancel</button>
+          <button class="btn primary memory-link-save"><i class="fas fa-check"></i> Save</button>
+        </div>
+      </div>
+    `;
+    
+    document.body.appendChild(modal);
+    
+    modal.querySelector('.memory-link-cancel').addEventListener('click', () => modal.remove());
+    
+    modal.querySelector('.memory-link-save').addEventListener('click', () => {
+      const checkboxes = modal.querySelectorAll('.memory-link-checkbox input:checked');
+      const selectedMissions = Array.from(checkboxes).map(cb => cb.value);
+      updateMemoryLinks(memory.id, selectedMissions);
+      modal.remove();
+    });
+    
+    modal.addEventListener('click', (e) => {
+      if (e.target === modal) modal.remove();
+    });
+  }
+  
+  function updateMemoryLinks(memoryId, missionIds) {
+    const memories = loadMemories();
+    const idx = memories.findIndex(m => m.id === memoryId);
+    if (idx >= 0) {
+      memories[idx].linkedMissionIds = missionIds;
+      memories[idx].autoTitle = generateAutoTitle(missionIds);
+      // If user hasn't set a custom title, clear it so autoTitle shows
+      if (!memories[idx].title) {
+        memories[idx].title = "";
+      }
+      saveMemories(memories);
+      renderPhotoGallery();
+      showToast(missionIds.length > 0 ? `Linked to ${missionIds.length} mission(s)` : "Links removed");
+    }
+  }
+  
+  // Delete Memory confirmation
+  function showDeleteMemoryConfirm(memory) {
+    const photoCount = memory.photos ? memory.photos.length : 0;
+    showConfirmModal(`Delete this memory with ${photoCount} photo(s)? This cannot be undone.`, () => {
+      deleteMemory(memory.id);
+    });
+  }
+  
+  function deleteMemory(memoryId) {
+    let memories = loadMemories();
+    memories = memories.filter(m => m.id !== memoryId);
+    saveMemories(memories);
+    renderPhotoGallery();
+    showToast("Memory deleted");
+  }
+  
+  function deletePhotoFromMemory(memoryId, photoIndex) {
+    showConfirmModal("Delete this photo?", () => {
+      const memories = loadMemories();
+      const idx = memories.findIndex(m => m.id === memoryId);
+      if (idx >= 0 && memories[idx].photos) {
+        memories[idx].photos.splice(photoIndex, 1);
+        // If memory has no photos left, delete the whole memory
+        if (memories[idx].photos.length === 0) {
+          memories.splice(idx, 1);
+          showToast("Photo deleted (memory removed)");
+        } else {
+          showToast("Photo deleted");
+        }
+        saveMemories(memories);
+        renderPhotoGallery();
+      }
+    });
+  }
+  
+  // Open lightbox for memory photos
+  function openMemoryPhotoLightbox(memory, startIndex) {
+    if (!memory.photos || memory.photos.length === 0) return;
+    
+    // Store current memory context for navigation
+    window.currentLightboxMemory = memory;
+    window.currentLightboxIndex = startIndex;
+    
+    const lightbox = $("photoLightbox");
+    const img = $("lightboxImage");
+    const counter = $("lightboxCounter");
+    
+    if (!lightbox || !img) return;
+    
+    const photo = memory.photos[startIndex];
+    img.src = photo.url;
+    if (counter) counter.textContent = `${startIndex + 1} / ${memory.photos.length}`;
+    
+    lightbox.classList.add("active");
+    document.body.style.overflow = 'hidden';
+  }
+  
+  // Updated lightbox navigation for memory context
+  function lightboxPrev() {
+    if (window.currentLightboxMemory) {
+      const memory = window.currentLightboxMemory;
+      const photos = memory.photos || [];
+      if (photos.length === 0) return;
+      window.currentLightboxIndex = (window.currentLightboxIndex - 1 + photos.length) % photos.length;
+      const photo = photos[window.currentLightboxIndex];
+      $("lightboxImage").src = photo.url;
+      $("lightboxCounter").textContent = `${window.currentLightboxIndex + 1} / ${photos.length}`;
+    } else {
+      // Legacy fallback
+      const photos = loadPhotos();
+      if (photos.length === 0) return;
+      lightboxCurrentIndex = (lightboxCurrentIndex - 1 + photos.length) % photos.length;
+      const photo = photos[lightboxCurrentIndex];
+      $("lightboxImage").src = photo.url;
+      $("lightboxCounter").textContent = `${lightboxCurrentIndex + 1} / ${photos.length}`;
+    }
+  }
+
+  function lightboxNext() {
+    if (window.currentLightboxMemory) {
+      const memory = window.currentLightboxMemory;
+      const photos = memory.photos || [];
+      if (photos.length === 0) return;
+      window.currentLightboxIndex = (window.currentLightboxIndex + 1) % photos.length;
+      const photo = photos[window.currentLightboxIndex];
+      $("lightboxImage").src = photo.url;
+      $("lightboxCounter").textContent = `${window.currentLightboxIndex + 1} / ${photos.length}`;
+    } else {
+      // Legacy fallback
+      const photos = loadPhotos();
+      if (photos.length === 0) return;
+      lightboxCurrentIndex = (lightboxCurrentIndex + 1) % photos.length;
+      const photo = photos[lightboxCurrentIndex];
+      $("lightboxImage").src = photo.url;
+      $("lightboxCounter").textContent = `${lightboxCurrentIndex + 1} / ${photos.length}`;
+    }
+  }
+
+  function closeLightbox() {
+    const lightbox = $("photoLightbox");
+    if (lightbox) {
+      lightbox.classList.remove("active");
+      document.body.style.overflow = '';
+      // Clear memory context
+      window.currentLightboxMemory = null;
+      window.currentLightboxIndex = 0;
+    }
+  }
+
+  // Legacy functions kept for compatibility
+  function openPhotoLightbox(url, index) {
+    const lightbox = $("photoLightbox");
+    const img = $("lightboxImage");
+    const counter = $("lightboxCounter");
+    
+    if (!lightbox || !img) return;
+    
+    // Clear memory context for legacy mode
+    window.currentLightboxMemory = null;
+    
+    const photos = loadPhotos();
+    lightboxCurrentIndex = index;
+    
+    img.src = url;
+    if (counter) counter.textContent = `${index + 1} / ${photos.length}`;
+    
+    lightbox.classList.add("active");
+    document.body.style.overflow = 'hidden';
+  }
+
+  // LEGACY: Link unlinked photos to a mission (kept for old data)
+  function showLinkMissionModal(photosToLink) {
+    // Redirect to new memory system
+    showToast("Use the link button on individual memories");
+  }
+
+  // LEGACY: Delete photo confirmation modal (kept for old data)
+  function showDeleteConfirm(type, identifier, photoObj = null) {
+    // Redirect to new memory system
+    showToast("Use the delete button on individual memories");
+  }
+  
+  // LEGACY: Toggle bundle expand/collapse (for example bundle in HTML)
+  window.toggleBundle = function(el) {
+    const bundle = el.closest('.gallery-mission-bundle') || el;
+    if (!bundle) return;
+    
+    const photosDiv = bundle.querySelector('.bundle-photos');
+    const icon = bundle.querySelector('.bundle-expand i');
+    
+    if (photosDiv) {
+      if (photosDiv.classList.contains('collapsed')) {
+        photosDiv.classList.remove('collapsed');
+        if (icon) icon.className = 'fas fa-chevron-up';
+      } else {
+        photosDiv.classList.add('collapsed');
+        if (icon) icon.className = 'fas fa-chevron-down';
+      }
+    }
+  };
     if (!bundle) return;
     
     const photosDiv = bundle.querySelector('.bundle-photos');
@@ -1422,29 +1721,9 @@ const DAILY_EMOTICONS = [
     }
   };
 
-  // [OK] Mission capacity indicator
+  // [UPDATED] Mission capacity indicator - No longer shows limits (unlimited photos)
   function updateMissionCapacity() {
-    const select = $("photoMission");
-    const capacityEl = $("missionCapacity");
-    if (!select || !capacityEl) return;
-    
-    const mission = select.value;
-    if (!mission) {
-      capacityEl.textContent = "No limit for unlinked photos";
-      capacityEl.style.color = "var(--muted)";
-      return;
-    }
-    
-    const existingCount = loadPhotos().filter(p => p.mission === mission).length;
-    const remaining = 5 - existingCount;
-    
-    if (remaining <= 0) {
-      capacityEl.textContent = `Full (${existingCount}/5)`;
-      capacityEl.style.color = "#ff3b3b";
-    } else {
-      capacityEl.textContent = `${remaining} slot(s) remaining`;
-      capacityEl.style.color = remaining <= 2 ? "#ffe93b" : "var(--muted)";
-    }
+    // No capacity limits anymore - function kept for compatibility
   }
 
   // [OK] Photo lightbox state
@@ -3409,8 +3688,11 @@ const DAILY_EMOTICONS = [
       if (Number.isFinite(n)) readState[u] = n;
     });
 
-    // [OK] Build photos array
+    // [OK] Build photos array (legacy)
     const photos = loadPhotos();
+    
+    // [NEW] Build memories array
+    const memories = loadMemories();
     
     // [FIX] Build game clips array
     const gameClips = loadGameClips();
@@ -3444,6 +3726,7 @@ const DAILY_EMOTICONS = [
       readState,
       readSystemNotifs,
       photos,
+      memories,
       gameClips,
       activeDevices,
     };
@@ -3481,9 +3764,14 @@ const DAILY_EMOTICONS = [
       }
     }
 
-    // [OK] Apply photos from server
+    // [OK] Apply photos from server (legacy)
     if (Array.isArray(state.photos)) {
       localStorage.setItem(KEY_PHOTOS, JSON.stringify(state.photos));
+    }
+    
+    // [NEW] Apply memories from server
+    if (Array.isArray(state.memories)) {
+      localStorage.setItem(KEY_MEMORIES, JSON.stringify(state.memories));
     }
     
     // [FIX] Apply game clips from server
@@ -5393,7 +5681,7 @@ const DAILY_EMOTICONS = [
     });
   }
   
-  // Submit staged photos
+  // Submit staged photos - Creates a NEW Memory block
   if (photoSubmitBtn) {
     photoSubmitBtn.addEventListener("click", async () => {
       if (stagedFiles.length === 0) {
@@ -5404,49 +5692,48 @@ const DAILY_EMOTICONS = [
       // [FIX v1.4.4] Date is now optional
       const date = photoDateInput?.value || '';
       
-      const mission = photoMissionSelect?.value || "";
+      // Get selected missions (can be empty for unlinked)
+      const selectedMission = photoMissionSelect?.value || "";
+      const linkedMissions = selectedMission ? [selectedMission] : [];
       
-      // Check max 5 photos per mission
-      if (mission) {
-        const existingPhotos = loadPhotos().filter(p => p.mission === mission);
-        const remaining = 5 - existingPhotos.length;
-        if (remaining <= 0) {
-          showToast(`Mission full (5/5). Select "No mission linked" for unlimited.`);
-          return;
-        }
-        if (stagedFiles.length > remaining) {
-          showToast(`Only ${remaining} slot(s) left. Remove ${stagedFiles.length - remaining} or select "No mission linked".`);
-          return;
-        }
-      }
+      // NO LIMIT CHECK - unlimited photos allowed
       
       photoSubmitBtn.disabled = true;
       photoSubmitBtn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Uploading...';
       
-      let successCount = 0;
-      const photos = loadPhotos();
+      let uploadedPhotos = [];
       
       for (const file of stagedFiles) {
         try {
           const url = await uploadPhotoToSupabase(file);
-          photos.push({
+          uploadedPhotos.push({
             url,
-            date,
-            mission,
-            uploadedBy: loadUser(),
-            uploadedAt: new Date().toISOString(),
-            type: file.type.startsWith("video/") ? "video" : "image"
+            type: file.type.startsWith("video/") ? "video" : "image",
+            uploadedAt: new Date().toISOString()
           });
-          successCount++;
         } catch (err) {
           console.error("Photo upload error:", err);
           showToast(`Failed: ${file.name}`);
         }
       }
       
-      if (successCount > 0) {
-        savePhotos(photos);
-        showToast(`${successCount} photo(s) uploaded!`);
+      if (uploadedPhotos.length > 0) {
+        // CREATE NEW MEMORY BLOCK (never append to existing)
+        const newMemory = {
+          id: generateMemoryId(),
+          title: "", // Will use autoTitle
+          autoTitle: generateAutoTitle(linkedMissions),
+          createdAt: new Date().toISOString(),
+          photos: uploadedPhotos,
+          linkedMissionIds: linkedMissions,
+          uploadedBy: loadUser() || "Guest"
+        };
+        
+        const memories = loadMemories();
+        memories.unshift(newMemory); // Add to front (newest first)
+        saveMemories(memories);
+        
+        showToast(`Memory created with ${uploadedPhotos.length} photo(s)!`);
         renderPhotoGallery();
       }
       
@@ -5459,13 +5746,13 @@ const DAILY_EMOTICONS = [
       updateStagedCount();
       updateMissionCapacity();
       
-      // [FIX v1.4.4] Reset button text after submit
+      // [FIX] Reset button text after submit
       if (photoSelectBtn) {
-        photoSelectBtn.innerHTML = '<i class="fa-solid fa-upload"></i> Select Photos';
+        photoSelectBtn.innerHTML = '<i class="fa-solid fa-plus"></i> Add Memory';
       }
       
       photoSubmitBtn.disabled = false;
-      photoSubmitBtn.innerHTML = '<i class="fa-solid fa-check"></i> Submit Photos';
+      photoSubmitBtn.innerHTML = '<i class="fa-solid fa-check"></i> Create Memory';
     });
   }
   
@@ -5746,7 +6033,7 @@ ${completed.map(i => `[X] ${i.title}  ${i.desc} (#${i.tag})`).join("\n")}
     });
   }
   
-  // Clear photos
+  // Clear photos (and memories)
   const clearPhotosBtn = $("clearPhotosBtn");
   if (clearPhotosBtn) {
     clearPhotosBtn.addEventListener("click", () => {
@@ -5755,13 +6042,15 @@ ${completed.map(i => `[X] ${i.title}  ${i.desc} (#${i.tag})`).join("\n")}
         showToast("Guest mode: destructive actions disabled");
         return;
       }
-      showConfirmModal("Delete ALL photos? This cannot be undone.", async () => {
+      showConfirmModal("Delete ALL memories and photos? This cannot be undone.", async () => {
         localStorage.setItem(KEY_PHOTOS, JSON.stringify([]));
+        localStorage.setItem(KEY_MEMORIES, JSON.stringify([]));
         try {
           const resp = await fetch(`/.netlify/functions/room?room=${ROOM_CODE}`);
           const data = await resp.json();
           const payload = data.payload || {};
           payload.photos = [];
+          payload.memories = [];
           await fetch("/.netlify/functions/room", {
             method: "POST",
             headers: { "Content-Type": "application/json" },
@@ -5769,7 +6058,7 @@ ${completed.map(i => `[X] ${i.title}  ${i.desc} (#${i.tag})`).join("\n")}
           });
         } catch(e) { console.error("Clear photos server error:", e); }
         renderPhotoGallery();
-        showToast("All photos cleared");
+        showToast("All memories cleared");
         if (settingsModal) settingsModal.classList.remove("active");
       });
     });
@@ -5813,9 +6102,10 @@ ${completed.map(i => `[X] ${i.title}  ${i.desc} (#${i.tag})`).join("\n")}
         showToast("Guest mode: destructive actions disabled");
         return;
       }
-      showConfirmModal("Delete EVERYTHING? (Messages, photos, clips) This cannot be undone!", async () => {
+      showConfirmModal("Delete EVERYTHING? (Messages, memories, clips) This cannot be undone!", async () => {
         localStorage.setItem(KEY_MESSAGES, JSON.stringify([]));
         localStorage.setItem(KEY_PHOTOS, JSON.stringify([]));
+        localStorage.setItem(KEY_MEMORIES, JSON.stringify([]));
         localStorage.setItem(KEY_GAME_CLIPS, JSON.stringify([]));
         try {
           const resp = await fetch(`/.netlify/functions/room?room=${ROOM_CODE}`);
@@ -5823,6 +6113,7 @@ ${completed.map(i => `[X] ${i.title}  ${i.desc} (#${i.tag})`).join("\n")}
           const payload = data.payload || {};
           payload.messages = [];
           payload.photos = [];
+          payload.memories = [];
           payload.gameClips = [];
           await fetch("/.netlify/functions/room", {
             method: "POST",
