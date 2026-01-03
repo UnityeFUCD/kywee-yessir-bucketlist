@@ -1719,7 +1719,7 @@ const DAILY_EMOTICONS = [
       photosDiv.classList.add('collapsed');
       if (icon) icon.className = 'fas fa-chevron-down';
     }
-  };
+  
 
   // [UPDATED] Mission capacity indicator - No longer shows limits (unlimited photos)
   function updateMissionCapacity() {
