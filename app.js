@@ -12,6 +12,71 @@
 
   // [NEW] Guest mode flag - read-only access
   let isGuestMode = false;
+  
+  // ============================================
+  // GUEST MODE PERMISSION SYSTEM (Centralized)
+  // ============================================
+  const GUEST_PERMISSIONS = {
+    // Settings
+    'settings:clearChat': false,
+    'settings:clearPhotos': false,
+    'settings:clearClips': false,
+    'settings:clearAll': false,
+    
+    // Planning Board
+    'planningBoard:launch': false,
+    'planningBoard:add': false,
+    'planningBoard:edit': false,
+    'planningBoard:delete': false,
+    
+    // Missions
+    'missions:add': false,
+    'missions:edit': false,
+    'missions:delete': false,
+    'missions:undo': false,
+    'missions:complete': false,
+    'missions:import': false,
+    'missions:export': true, // Allowed!
+    'missions:view': true,   // Allowed!
+    
+    // Messages
+    'messages:send': false,
+    'messages:delete': false,
+    'messages:duoLetter': false,
+    'messages:importFromBoard': false,
+    'messages:view': true,   // Allowed!
+    
+    // Game Clips
+    'clips:upload': false,
+    'clips:delete': false,
+    'clips:rename': false,
+    'clips:view': true,      // Allowed!
+    
+    // Gallery
+    'gallery:upload': false,
+    'gallery:delete': false,
+    'gallery:link': false,
+    'gallery:unlink': false,
+    'gallery:view': true     // Allowed!
+  };
+  
+  // Check if guest can perform action
+  function can(action) {
+    if (!isGuestMode) return true;
+    return GUEST_PERMISSIONS[action] === true;
+  }
+  
+  // Guard function - blocks action and shows message if not allowed
+  function guard(action, callback, customMessage = null) {
+    if (can(action)) {
+      return callback();
+    } else {
+      const msg = customMessage || "Guest mode: this action is disabled";
+      showToast(msg);
+      console.log(`[GUEST] Blocked action: ${action}`);
+      return false;
+    }
+  }
 
   // [OK] VERSION HISTORY for system update notifications
   const VERSION_HISTORY = [
@@ -744,53 +809,195 @@ const DAILY_EMOTICONS = [
   function applyGuestRestrictions() {
     document.body.classList.add('guest-mode');
     
-    // List of elements to disable for guests
-    const writeElements = [
-      'btnAdd', 'btnSaveNote', 'photoSelectBtn', 'photoSubmitBtn',
-      'btnEditSystemMessage', 'attachmentInput', 'customNote',
-      'newTitle', 'newDesc', 'newTag', 'newDueDate',
-      'pbAddSimple', 'pbAddDetailed', 'pbQuickInput',
-      'refreshMedal' // This changes to upload button
-    ];
-    
-    writeElements.forEach(id => {
+    // ===== SETTINGS PANEL: Disable destructive actions =====
+    const destructiveButtons = ['clearChatBtn', 'clearPhotosBtn', 'clearClipsBtn', 'clearAllBtn'];
+    destructiveButtons.forEach(id => {
       const el = $(id);
       if (el) {
         el.disabled = true;
         el.classList.add('guest-disabled');
-        el.title = 'Login as a user to use this feature';
+        el.setAttribute('tabindex', '-1');
+        el.title = 'Guest mode: destructive actions disabled';
       }
     });
     
-    // Hide upload sections
+    // ===== PLANNING BOARD: Disable launch =====
+    const pbLaunchBtn = $('openPlanningBoard');
+    if (pbLaunchBtn) {
+      pbLaunchBtn.disabled = true;
+      pbLaunchBtn.classList.add('guest-disabled');
+      pbLaunchBtn.setAttribute('tabindex', '-1');
+      pbLaunchBtn.title = 'Guest mode: launching disabled';
+    }
+    
+    // ===== MISSIONS: Disable add/edit/delete/undo/import =====
+    const missionWriteElements = [
+      'btnAdd', 'newTitle', 'newDesc', 'newTag', 'newDueDate',
+      'btnImportFromPB', // Import from Planning Board
+      'btnAddSaved' // Add Saved Mission button
+    ];
+    missionWriteElements.forEach(id => {
+      const el = $(id);
+      if (el) {
+        el.disabled = true;
+        el.classList.add('guest-disabled');
+        el.setAttribute('tabindex', '-1');
+        el.title = 'Guest mode: editing disabled';
+      }
+    });
+    
+    // ===== MESSAGES: Disable duo letter and import =====
+    const envelopeBtn = $('envelopeBtn');
+    if (envelopeBtn) {
+      envelopeBtn.disabled = true;
+      envelopeBtn.classList.add('guest-disabled');
+      envelopeBtn.setAttribute('tabindex', '-1');
+      envelopeBtn.title = 'Guest mode: Duo Letter disabled';
+    }
+    
+    // Message send controls
+    const messageWriteElements = [
+      'btnSaveNote', 'customNote', 'attachmentInput', 'btnEditSystemMessage'
+    ];
+    messageWriteElements.forEach(id => {
+      const el = $(id);
+      if (el) {
+        el.disabled = true;
+        el.classList.add('guest-disabled');
+        el.setAttribute('tabindex', '-1');
+        el.title = 'Guest mode: editing disabled';
+      }
+    });
+    
+    // ===== GALLERY: Disable upload/delete/link =====
+    const galleryWriteElements = [
+      'photoSelectBtn', 'photoSubmitBtn', 'photoMission'
+    ];
+    galleryWriteElements.forEach(id => {
+      const el = $(id);
+      if (el) {
+        el.disabled = true;
+        el.classList.add('guest-disabled');
+        el.setAttribute('tabindex', '-1');
+        el.title = 'Guest mode: editing disabled';
+      }
+    });
+    
+    // Hide upload sections entirely
     const uploadSections = document.querySelectorAll('.photo-upload-section, .game-clip-upload-modal');
     uploadSections.forEach(section => section.classList.add('guest-hidden'));
     
-    // Disable all delete and edit buttons
+    // ===== PLANNING BOARD INTERNALS =====
+    const pbWriteElements = ['pbAddSimple', 'pbAddDetailed', 'pbQuickInput'];
+    pbWriteElements.forEach(id => {
+      const el = $(id);
+      if (el) {
+        el.disabled = true;
+        el.classList.add('guest-disabled');
+        el.setAttribute('tabindex', '-1');
+        el.title = 'Guest mode: editing disabled';
+      }
+    });
+    
+    // ===== GAME CLIPS: Disable upload =====
+    const refreshMedalBtn = $('refreshMedal');
+    if (refreshMedalBtn) {
+      refreshMedalBtn.disabled = true;
+      refreshMedalBtn.classList.add('guest-disabled');
+      refreshMedalBtn.setAttribute('tabindex', '-1');
+      refreshMedalBtn.title = 'Guest mode: uploading disabled';
+    }
+    
+    // Disable all delete/edit buttons in rendered lists (delayed to catch dynamic content)
     setTimeout(() => {
-      document.querySelectorAll('.item button, .medal-delete, .gallery-delete').forEach(btn => {
-        btn.disabled = true;
-        btn.classList.add('guest-disabled');
+      // Mission checkboxes and delete buttons
+      document.querySelectorAll('.item input[type="checkbox"], .item button').forEach(el => {
+        el.disabled = true;
+        el.classList.add('guest-disabled');
+        el.setAttribute('tabindex', '-1');
+      });
+      
+      // Gallery delete buttons
+      document.querySelectorAll('.gallery-delete, .gallery-link-btn, .gallery-unlink-btn').forEach(el => {
+        el.disabled = true;
+        el.classList.add('guest-disabled');
+        el.setAttribute('tabindex', '-1');
+      });
+      
+      // Game clip delete buttons
+      document.querySelectorAll('.medal-delete').forEach(el => {
+        el.disabled = true;
+        el.classList.add('guest-disabled');
+        el.setAttribute('tabindex', '-1');
       });
     }, 500);
+    
+    // Update warning text in settings
+    const warningNote = document.querySelector('#settingsModal .settings-section .note');
+    if (warningNote && warningNote.textContent.includes('cannot be undone')) {
+      warningNote.textContent = '// Guest mode: sensitive actions are disabled';
+      warningNote.classList.add('guest-warning');
+    }
+    
+    console.log('[GUEST] Restrictions applied');
   }
 
   function removeGuestRestrictions() {
     document.body.classList.remove('guest-mode');
+    
+    // Re-enable all guest-disabled elements
     document.querySelectorAll('.guest-disabled').forEach(el => {
       el.disabled = false;
       el.classList.remove('guest-disabled');
+      el.removeAttribute('tabindex');
       el.title = '';
     });
+    
+    // Show hidden sections
     document.querySelectorAll('.guest-hidden').forEach(el => {
       el.classList.remove('guest-hidden');
     });
+    
+    // Restore warning text in settings
+    const warningNote = document.querySelector('#settingsModal .settings-section .note.guest-warning');
+    if (warningNote) {
+      warningNote.textContent = '// Warning: These actions cannot be undone';
+      warningNote.classList.remove('guest-warning');
+    }
+    
+    console.log('[GUEST] Restrictions removed');
+  }
+  
+  // Re-apply guest restrictions to dynamically rendered content
+  function reapplyGuestRestrictions() {
+    if (!isGuestMode) return;
+    
+    // Disable all interactive elements in missions
+    document.querySelectorAll('.item input[type="checkbox"], .item button').forEach(el => {
+      el.disabled = true;
+      el.classList.add('guest-disabled');
+      el.setAttribute('tabindex', '-1');
+    });
+    
+    // Disable gallery action buttons
+    document.querySelectorAll('.gallery-item-delete, .bundle-add-btn, .bundle-link-btn, .bundle-delete-btn').forEach(el => {
+      el.disabled = true;
+      el.classList.add('guest-disabled');
+      el.setAttribute('tabindex', '-1');
+    });
+    
+    // Disable game clip delete buttons
+    document.querySelectorAll('.medal-delete').forEach(el => {
+      el.disabled = true;
+      el.classList.add('guest-disabled');
+      el.setAttribute('tabindex', '-1');
+    });
   }
 
-  // Check if action is allowed (not in guest mode)
+  // Check if action is allowed (not in guest mode) - LEGACY, use can() or guard() instead
   function isActionAllowed(showMessage = true) {
     if (isGuestMode) {
-      if (showMessage) showToast("Login as a user to use this feature");
+      if (showMessage) showToast("Guest mode: this action is disabled");
       return false;
     }
     return true;
@@ -981,6 +1188,11 @@ const DAILY_EMOTICONS = [
       if (addBtn) {
         addBtn.addEventListener("click", (e) => {
           e.stopPropagation();
+          // [GUEST GUARD] Block adding photos
+          if (!can('gallery:upload')) {
+            showToast("Guest mode: adding photos is disabled");
+            return;
+          }
           const select = $("photoMission");
           if (select) {
             if (isUnlinked) {
@@ -1006,6 +1218,11 @@ const DAILY_EMOTICONS = [
       if (linkBtn) {
         linkBtn.addEventListener("click", (e) => {
           e.stopPropagation();
+          // [GUEST GUARD] Block linking photos
+          if (!can('gallery:link')) {
+            showToast("Guest mode: linking photos is disabled");
+            return;
+          }
           showLinkMissionModal(missionPhotos);
         });
       }
@@ -1015,6 +1232,11 @@ const DAILY_EMOTICONS = [
       if (deleteBtn) {
         deleteBtn.addEventListener("click", (e) => {
           e.stopPropagation();
+          // [GUEST GUARD] Block deleting photos
+          if (!can('gallery:delete')) {
+            showToast("Guest mode: deleting photos is disabled");
+            return;
+          }
           showDeleteConfirm(missionKey, displayName);
         });
       }
@@ -1037,6 +1259,11 @@ const DAILY_EMOTICONS = [
         // Delete single photo
         item.querySelector(".gallery-item-delete").addEventListener("click", (e) => {
           e.stopPropagation();
+          // [GUEST GUARD] Block deleting photos
+          if (!can('gallery:delete')) {
+            showToast("Guest mode: deleting photos is disabled");
+            return;
+          }
           showDeleteConfirm("_single_", photo.url, photo);
         });
         
@@ -1045,6 +1272,9 @@ const DAILY_EMOTICONS = [
       
       container.appendChild(bundle);
     });
+    
+    // [GUEST] Re-apply restrictions after dynamic render
+    reapplyGuestRestrictions();
   }
 
   // [OK] Link unlinked photos to a mission
@@ -1386,6 +1616,11 @@ const DAILY_EMOTICONS = [
         if (deleteBtn) {
           deleteBtn.addEventListener("click", (e) => {
             e.stopPropagation();
+            // [GUEST GUARD] Block deleting clips
+            if (!can('clips:delete')) {
+              showToast("Guest mode: deleting clips is disabled");
+              return;
+            }
             showConfirmModal("Delete this game clip?", () => {
               const clipsNow = loadGameClips();
               clipsNow.splice(clip.uploadIdx, 1);
@@ -1399,6 +1634,9 @@ const DAILY_EMOTICONS = [
       
       container.appendChild(card);
     });
+    
+    // [GUEST] Re-apply restrictions after dynamic render
+    reapplyGuestRestrictions();
   }
   function openGameClipModal(clip) {
     const modal = $("medalModal");
@@ -2135,6 +2373,11 @@ const DAILY_EMOTICONS = [
   let duoLetters = [];
 
   function openLetterViewer() {
+    // [GUEST GUARD] Block Duo Letter access
+    if (!can('messages:duoLetter')) {
+      showToast("Guest mode: Duo Letter is disabled");
+      return;
+    }
     const messages = loadMessages();
     const userLower = loadUser().trim().toLowerCase();
     
@@ -3649,6 +3892,12 @@ const DAILY_EMOTICONS = [
       if (!it.isExample) {
         const cb = el.querySelector("input");
         cb.addEventListener("change", () => {
+          // [GUEST GUARD] Block completing missions
+          if (!can('missions:complete')) {
+            cb.checked = !cb.checked; // Revert checkbox
+            showToast("Guest mode: completing missions is disabled");
+            return;
+          }
           const itemsNow = loadActive();
           const actualIdx = idx - 1;
           const mission = itemsNow[actualIdx];
@@ -3670,6 +3919,11 @@ const DAILY_EMOTICONS = [
 
         const rm = el.querySelector("button");
         rm.addEventListener("click", () => {
+          // [GUEST GUARD] Block deleting missions
+          if (!can('missions:delete')) {
+            showToast("Guest mode: deleting missions is disabled");
+            return;
+          }
           // [FIX] Show confirmation before removing
           showConfirmModal("Are you sure you want to remove this mission?", () => {
             const itemsNow = loadActive();
@@ -3684,6 +3938,9 @@ const DAILY_EMOTICONS = [
 
       container.appendChild(el);
     });
+    
+    // [GUEST] Re-apply restrictions after dynamic render
+    reapplyGuestRestrictions();
   }
 
   // [OK] Format mission date nicely
@@ -3764,6 +4021,11 @@ const DAILY_EMOTICONS = [
         const undo = el.querySelector("button");
         undo.addEventListener("click", (e) => {
           e.stopPropagation();
+          // [GUEST GUARD] Block undo
+          if (!can('missions:undo')) {
+            showToast("Guest mode: undo is disabled");
+            return;
+          }
           // [FIX] Show confirmation before undoing
           showConfirmModal("Are you sure you want to undo this mission?", () => {
             const completedNow = loadCompleted();
@@ -3790,6 +4052,9 @@ const DAILY_EMOTICONS = [
     if (typeof populatePhotoMissionSelect === 'function') {
       populatePhotoMissionSelect();
     }
+    
+    // [GUEST] Re-apply restrictions after dynamic render
+    reapplyGuestRestrictions();
   }
 
   let lastMsgCount = 0;
@@ -4459,8 +4724,11 @@ const DAILY_EMOTICONS = [
   const btnAddEl = $("btnAdd");
   if (btnAddEl) {
     btnAddEl.addEventListener("click", () => {
-      // [NEW] Guest mode check
-      if (!isActionAllowed()) return;
+      // [GUEST GUARD] Block adding missions
+      if (!can('missions:add')) {
+        showToast("Guest mode: adding missions is disabled");
+        return;
+      }
       
       const titleEl = $("newTitle");
       const descEl = $("newDesc");
@@ -4562,6 +4830,11 @@ const DAILY_EMOTICONS = [
   // [FIX] Saved missions modal with DELETE functionality - with null check
   const btnAddSavedEl = $("btnAddSaved");
   if (btnAddSavedEl) btnAddSavedEl.addEventListener("click", () => {
+    // [GUEST GUARD] Block Add Saved Mission modal
+    if (!can('missions:add')) {
+      showToast("Guest mode: adding missions is disabled");
+      return;
+    }
     const saved = loadSaved();
     const container = $("savedMissionsList");
     container.innerHTML = "";
@@ -4792,8 +5065,11 @@ const DAILY_EMOTICONS = [
   const btnSaveNoteEl = $("btnSaveNote");
   if (btnSaveNoteEl) {
     btnSaveNoteEl.addEventListener("click", () => {
-      // [NEW] Guest mode check
-      if (!isActionAllowed()) return;
+      // [GUEST GUARD] Block sending messages
+      if (!can('messages:send')) {
+        showToast("Guest mode: sending messages is disabled");
+        return;
+      }
       
       if (!hasUser()) { showToast("Pick USER first"); return; }
       
@@ -5396,6 +5672,11 @@ ${completed.map(i => `[X] ${i.title}  ${i.desc} (#${i.tag})`).join("\n")}
   const clearChatBtn = $("clearChatBtn");
   if (clearChatBtn) {
     clearChatBtn.addEventListener("click", () => {
+      // [GUEST GUARD] Block destructive action
+      if (!can('settings:clearChat')) {
+        showToast("Guest mode: destructive actions disabled");
+        return;
+      }
       showConfirmModal("Delete ALL chat messages? This cannot be undone.", async () => {
         localStorage.setItem(KEY_MESSAGES, JSON.stringify([]));
         // Also clear from server
@@ -5421,6 +5702,11 @@ ${completed.map(i => `[X] ${i.title}  ${i.desc} (#${i.tag})`).join("\n")}
   const clearPhotosBtn = $("clearPhotosBtn");
   if (clearPhotosBtn) {
     clearPhotosBtn.addEventListener("click", () => {
+      // [GUEST GUARD] Block destructive action
+      if (!can('settings:clearPhotos')) {
+        showToast("Guest mode: destructive actions disabled");
+        return;
+      }
       showConfirmModal("Delete ALL photos? This cannot be undone.", async () => {
         localStorage.setItem(KEY_PHOTOS, JSON.stringify([]));
         try {
@@ -5445,6 +5731,11 @@ ${completed.map(i => `[X] ${i.title}  ${i.desc} (#${i.tag})`).join("\n")}
   const clearClipsBtn = $("clearClipsBtn");
   if (clearClipsBtn) {
     clearClipsBtn.addEventListener("click", () => {
+      // [GUEST GUARD] Block destructive action
+      if (!can('settings:clearClips')) {
+        showToast("Guest mode: destructive actions disabled");
+        return;
+      }
       showConfirmModal("Delete all UPLOADED clips? (Medal clips won't be affected)", async () => {
         localStorage.setItem(KEY_GAME_CLIPS, JSON.stringify([]));
         try {
@@ -5469,6 +5760,11 @@ ${completed.map(i => `[X] ${i.title}  ${i.desc} (#${i.tag})`).join("\n")}
   const clearAllBtn = $("clearAllBtn");
   if (clearAllBtn) {
     clearAllBtn.addEventListener("click", () => {
+      // [GUEST GUARD] Block destructive action
+      if (!can('settings:clearAll')) {
+        showToast("Guest mode: destructive actions disabled");
+        return;
+      }
       showConfirmModal("Delete EVERYTHING? (Messages, photos, clips) This cannot be undone!", async () => {
         localStorage.setItem(KEY_MESSAGES, JSON.stringify([]));
         localStorage.setItem(KEY_PHOTOS, JSON.stringify([]));
@@ -6067,6 +6363,11 @@ ${completed.map(i => `[X] ${i.title}  ${i.desc} (#${i.tag})`).join("\n")}
   
   // Open Planning Board
   function pbOpen() {
+    // [GUEST GUARD] Block launching Planning Board
+    if (!can('planningBoard:launch')) {
+      showToast("Guest mode: launching is disabled");
+      return;
+    }
     pbShowBootScreen().then(function() {
       const overlay = $('planningBoardOverlay');
       if (overlay) {
@@ -6507,6 +6808,11 @@ ${completed.map(i => `[X] ${i.title}  ${i.desc} (#${i.tag})`).join("\n")}
     
     if (importBtn && importModal) {
       importBtn.addEventListener('click', function() {
+        // [GUEST GUARD] Block import from board
+        if (!can('missions:import')) {
+          showToast("Guest mode: importing is disabled");
+          return;
+        }
         // Load ideas from localStorage
         var storedIdeas = JSON.parse(localStorage.getItem('planning_board_ideas') || '[]');
         

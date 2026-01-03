@@ -7908,16 +7908,57 @@ html[data-theme="marathon"] .calendar-day-mission-tag {
   color: #cde47a;
 }
 /* ============================================
-   FIX 7: Guest Mode Styles
+   FIX 7: Guest Mode Styles (Comprehensive)
    ============================================ */
 .guest-mode .guest-disabled {
-  opacity: 0.5;
-  cursor: not-allowed;
-  pointer-events: none;
+  opacity: 0.4 !important;
+  cursor: not-allowed !important;
+  pointer-events: none !important;
+  user-select: none;
+  filter: grayscale(30%);
+}
+
+.guest-mode .guest-disabled:focus {
+  outline: none !important;
 }
 
 .guest-mode .guest-hidden {
   display: none !important;
+}
+
+/* Settings warning text update */
+.guest-mode .guest-warning {
+  color: var(--accent) !important;
+  font-style: italic;
+}
+
+/* Danger buttons when disabled */
+.guest-mode .btn.danger.guest-disabled {
+  background: var(--card-bg) !important;
+  border-color: var(--border) !important;
+  color: var(--muted) !important;
+}
+
+/* Planning board button when disabled */
+.guest-mode .planning-board-btn.guest-disabled {
+  opacity: 0.35 !important;
+  background: var(--card-bg) !important;
+  border-color: var(--border) !important;
+}
+
+.guest-mode .planning-board-btn.guest-disabled::before {
+  display: none;
+}
+
+/* Envelope button when disabled */
+.guest-mode #envelopeBtn.guest-disabled {
+  opacity: 0.4 !important;
+  filter: grayscale(50%);
+}
+
+/* Checkboxes in missions when disabled */
+.guest-mode .item input[type="checkbox"].guest-disabled {
+  opacity: 0.3 !important;
 }
 
 /* Guest button in who modal */
