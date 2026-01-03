@@ -1647,8 +1647,9 @@ const DAILY_EMOTICONS = [
     const isImage = clip.mediaType === 'image';
     const isUpload = clip.source === 'upload';
     
-    // Build edit button for uploads
-    const editBtn = isUpload ? `<button class="btn clip-edit-btn" style="margin-right:10px;"><i class="fas fa-edit"></i> Rename</button>` : '';
+    // Build edit button for uploads (hidden for guests)
+    const canRename = isUpload && can('clips:rename');
+    const editBtn = canRename ? `<button class="btn clip-edit-btn" style="margin-right:10px;"><i class="fas fa-edit"></i> Rename</button>` : '';
     
     if (isImage) {
       // Display image
@@ -1696,6 +1697,11 @@ const DAILY_EMOTICONS = [
   
   // [NEW] Show rename modal for game clips
   function showClipRenameModal(clip) {
+    // [GUEST GUARD] Block renaming clips
+    if (!can('clips:rename')) {
+      showToast("Guest mode: renaming is disabled");
+      return;
+    }
     const existing = document.querySelector(".clip-rename-modal-overlay");
     if (existing) existing.remove();
     
