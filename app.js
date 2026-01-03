@@ -1705,21 +1705,6 @@ const DAILY_EMOTICONS = [
       }
     }
   };
-    if (!bundle) return;
-    
-    const photosDiv = bundle.querySelector('.bundle-photos');
-    const icon = bundle.querySelector('.bundle-expand i');
-    
-    if (!photosDiv) return;
-    
-    if (photosDiv.classList.contains('collapsed')) {
-      photosDiv.classList.remove('collapsed');
-      if (icon) icon.className = 'fas fa-chevron-up';
-    } else {
-      photosDiv.classList.add('collapsed');
-      if (icon) icon.className = 'fas fa-chevron-down';
-    }
-  
 
   // [UPDATED] Mission capacity indicator - No longer shows limits (unlimited photos)
   function updateMissionCapacity() {
