@@ -1127,8 +1127,22 @@ const DAILY_EMOTICONS = [
     const memories = loadMemories();
     const oldPhotos = loadPhotos();
     
-    // Skip if already migrated or no old photos
-    if (memories.length > 0 || oldPhotos.length === 0) {
+    // Check if migration was already done (flag set)
+    const migrationDone = localStorage.getItem('bucketlist_2026_migration_done');
+    if (migrationDone === 'true') {
+      return; // Already migrated, don't redo
+    }
+    
+    // Skip if no old photos to migrate
+    if (oldPhotos.length === 0) {
+      // Mark as done even if there's nothing to migrate
+      localStorage.setItem('bucketlist_2026_migration_done', 'true');
+      return;
+    }
+    
+    // Skip if already have memories (manual migration happened)
+    if (memories.length > 0) {
+      localStorage.setItem('bucketlist_2026_migration_done', 'true');
       return;
     }
     
@@ -1182,6 +1196,8 @@ const DAILY_EMOTICONS = [
     });
     
     saveMemories(newMemories);
+    // Mark migration as done so it won't run again
+    localStorage.setItem('bucketlist_2026_migration_done', 'true');
     console.log(`[MIGRATION] Converted ${oldPhotos.length} photos into ${newMemories.length} memories`);
   }
 
@@ -1469,7 +1485,8 @@ const DAILY_EMOTICONS = [
     const idx = memories.findIndex(m => m.id === memoryId);
     if (idx >= 0) {
       memories[idx].title = newTitle;
-      saveMemories(memories);
+      localStorage.setItem(KEY_MEMORIES, JSON.stringify(memories));
+      pushRemoteState();
       renderPhotoGallery();
       showToast("Title updated");
     }
@@ -1539,7 +1556,8 @@ const DAILY_EMOTICONS = [
       if (!memories[idx].title) {
         memories[idx].title = "";
       }
-      saveMemories(memories);
+      localStorage.setItem(KEY_MEMORIES, JSON.stringify(memories));
+      pushRemoteState();
       renderPhotoGallery();
       showToast(missionIds.length > 0 ? `Linked to ${missionIds.length} mission(s)` : "Links removed");
     }
@@ -1556,7 +1574,9 @@ const DAILY_EMOTICONS = [
   function deleteMemory(memoryId) {
     let memories = loadMemories();
     memories = memories.filter(m => m.id !== memoryId);
-    saveMemories(memories);
+    localStorage.setItem(KEY_MEMORIES, JSON.stringify(memories));
+    // Push immediately to prevent sync race condition
+    pushRemoteState();
     renderPhotoGallery();
     showToast("Memory deleted");
   }
@@ -1574,7 +1594,9 @@ const DAILY_EMOTICONS = [
         } else {
           showToast("Photo deleted");
         }
-        saveMemories(memories);
+        localStorage.setItem(KEY_MEMORIES, JSON.stringify(memories));
+        // Push immediately to prevent sync race condition
+        pushRemoteState();
         renderPhotoGallery();
       }
     });
@@ -4146,7 +4168,7 @@ const DAILY_EMOTICONS = [
       
       el.innerHTML = `
         <input type="checkbox" ${it.done ? "checked" : ""} class="guest-disabled">
-        <div class="itext active-clickable" title="Click to expand">
+        <div class="itext active-clickable">
           <div class="ititle">
             <span>${escapeHtml(it.title)}</span>
             <span class="itag">${escapeHtml(it.tag || "idea")}</span>
@@ -4276,7 +4298,7 @@ const DAILY_EMOTICONS = [
       const completedInfo = it.completedAt ? `<div class="expanded-detail"><i class="fas fa-check-circle"></i> Completed: ${it.completedAt}</div>` : '';
       
       el.innerHTML = `
-        <div class="itext completed-clickable" title="Click to expand">
+        <div class="itext completed-clickable">
           <div class="ititle">
             <span>${escapeHtml(it.title)}</span>
             <span class="itag">${escapeHtml(it.tag || "idea")}</span>
