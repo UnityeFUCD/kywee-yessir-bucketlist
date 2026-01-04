@@ -3794,7 +3794,6 @@ html[data-theme="light"] .item::before {
 html[data-theme="light"] .item:hover {
   border-left-color: var(--accent-secondary);
   background: var(--bg-card);
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
   transform: translateX(4px);
 }
 
