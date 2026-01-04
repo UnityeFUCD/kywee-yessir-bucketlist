@@ -4480,7 +4480,7 @@ const DAILY_EMOTICONS = [
       <div class="calendar__footer">
         <div class="calendar__footer-text">
           <span class="marker">[*]</span>
-          <span>SYSTEM.LOG: Calendar interface operational. Date selection enabled for mission planning. <span class="highlight">UESC</span> protocol active.</span>
+          <span>SYSTEM.LOG: Calendar interface operational. Date selection enabled for mission planning. <span class="highlight"></span> protocol active.</span>
         </div>
         <div class="calendar__legend-wrap" style="position: relative;">
           <button class="calendar__legend-btn" id="calLegendBtn" title="Show legend">
