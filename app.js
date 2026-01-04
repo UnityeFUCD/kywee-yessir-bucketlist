@@ -4480,7 +4480,7 @@ const DAILY_EMOTICONS = [
       <div class="calendar__footer">
         <div class="calendar__footer-text">
           <span class="marker">[*]</span>
-          <span>SYSTEM.LOG: Calendar interface operational. Date selection enabled for mission planning. <span class="highlight"></span> protocol active.</span>
+          <span>SYSTEM.LOG: Calendar interface operational. Date selection enabled for mission planning. <span class="highlight">UESC</span> protocol active.</span>
         </div>
         <div class="calendar__legend-wrap" style="position: relative;">
           <button class="calendar__legend-btn" id="calLegendBtn" title="Show legend">
@@ -6600,10 +6600,9 @@ ${completed.map(i => `[X] ${i.title}  ${i.desc} (#${i.tag})`).join("\n")}
     if (!idea) return;
     
     const expanded = $('pbIdeaExpanded');
-    const codeStream = $('pbCodeStream');
     const content = $('pbExpandedContent');
     
-    if (!expanded || !codeStream || !content) return;
+    if (!expanded || !content) return;
     
     // Build content HTML
     let contentHtml = '<h2 class="pb-expanded-title">' + idea.title + '</h2>' +
@@ -6656,22 +6655,34 @@ ${completed.map(i => `[X] ${i.title}  ${i.desc} (#${i.tag})`).join("\n")}
       contentHtml += '</div>';
     }
     
-    // [NEW] Add delete button for non-example ideas
+    // Add Edit and Delete buttons for non-example ideas
     if (!idea.isExample) {
       contentHtml += '<div class="pb-expanded-actions">' +
+        '<button class="btn pb-edit-idea" data-idea-id="' + idea.id + '">' +
+        '<i class="fas fa-pencil-alt"></i> Edit</button>' +
         '<button class="btn danger pb-delete-idea" data-idea-id="' + idea.id + '">' +
-        '<i class="fas fa-trash"></i> Delete Idea</button>' +
+        '<i class="fas fa-trash"></i> Delete</button>' +
         '</div>';
     }
     
     content.innerHTML = contentHtml;
     
-    // [NEW] Add delete button handler with confirmation
+    // Add edit button handler
+    const editBtn = content.querySelector('.pb-edit-idea');
+    if (editBtn) {
+      editBtn.addEventListener('click', function() {
+        pbCloseExpandedIdea();
+        setTimeout(function() {
+          pbOpenEditModal(ideaId);
+        }, 250);
+      });
+    }
+    
+    // Add delete button handler with confirmation
     const deleteBtn = content.querySelector('.pb-delete-idea');
     if (deleteBtn) {
       deleteBtn.addEventListener('click', function() {
         showConfirmModal('Are you sure you want to delete this idea? This cannot be undone.', function() {
-          // Find and remove the idea
           const ideaIdx = pbIdeas.findIndex(function(i) { return i.id === ideaId; });
           if (ideaIdx !== -1) {
             pbIdeas.splice(ideaIdx, 1);
@@ -6685,36 +6696,78 @@ ${completed.map(i => `[X] ${i.title}  ${i.desc} (#${i.tag})`).join("\n")}
       });
     }
     
-    // Show overlay
+    // Show overlay with simple fade (no code stream animation)
     expanded.classList.remove('hidden');
     
-    // Start code stream
-    pbCreateCodeStream(codeStream);
-    
-    // Show content after code stream
-    setTimeout(function() {
+    // Show content immediately
+    requestAnimationFrame(function() {
       expanded.classList.add('content-visible');
-    }, 400);
+    });
   }
   
   // Close expanded idea
   function pbCloseExpandedIdea() {
     const expanded = $('pbIdeaExpanded');
-    const codeStream = $('pbCodeStream');
     
-    if (!expanded || !codeStream) return;
+    if (!expanded) return;
     
-    // Remove content visibility first
+    // Remove content visibility
     expanded.classList.remove('content-visible');
     
-    // Start exit code stream
-    pbCreateCodeStream(codeStream);
-    
-    // Then hide
+    // Hide after transition
     setTimeout(function() {
-      pbStopCodeStream(codeStream);
       expanded.classList.add('hidden');
-    }, 600);
+    }, 200);
+  }
+  
+  // Open edit modal for an idea
+  function pbOpenEditModal(ideaId) {
+    const idea = pbIdeas.find(function(i) { return i.id === ideaId; });
+    if (!idea) return;
+    
+    const modal = $('pbAddModal');
+    if (!modal) return;
+    
+    // Store current editing ID
+    modal.dataset.editingId = ideaId;
+    
+    // Populate form with existing values
+    const titleInput = $('pbDetailedTitle');
+    const descInput = $('pbDetailedDesc');
+    const monthSelect = $('pbDetailedMonth');
+    const prioritySelect = $('pbDetailedPriority');
+    const tagSelect = $('pbDetailedTag');
+    const locationInput = $('pbDetailedLocation');
+    const datetimeInput = $('pbDetailedDatetime');
+    
+    if (titleInput) titleInput.value = idea.title || '';
+    if (descInput) descInput.value = idea.desc || '';
+    if (monthSelect) monthSelect.value = idea.targetMonth || '';
+    if (prioritySelect) prioritySelect.value = idea.priority || 'medium';
+    if (tagSelect) tagSelect.value = idea.tag || 'fun';
+    if (locationInput) locationInput.value = idea.location || '';
+    if (datetimeInput) datetimeInput.value = idea.datetime || '';
+    
+    // Set up people list
+    pbPeopleList = idea.people ? [...idea.people] : [];
+    pbRenderPeopleTags();
+    
+    // Set up photos list
+    pbPhotosList = idea.photos ? [...idea.photos] : [];
+    pbRenderPhotoPreviews();
+    
+    // Change modal title to Edit
+    const modalTitle = modal.querySelector('.pb-modal-header h2');
+    if (modalTitle) modalTitle.textContent = 'Edit Idea';
+    
+    // Change submit button text
+    const submitBtn = $('pbAddDetailedIdea');
+    if (submitBtn) {
+      submitBtn.innerHTML = '<i class="fas fa-save"></i> Save Changes';
+    }
+    
+    modal.classList.remove('hidden');
+    modal.classList.add('active');
   }
   
   // Open Planning Board
@@ -6828,10 +6881,24 @@ ${completed.map(i => `[X] ${i.title}  ${i.desc} (#${i.tag})`).join("\n")}
     if (modal) {
       modal.classList.add('hidden');
       modal.classList.remove('active');
+      // Reset edit state
+      delete modal.dataset.editingId;
+      
+      // Reset modal title
+      const modalTitle = modal.querySelector('.pb-modal-header h2');
+      if (modalTitle) modalTitle.textContent = 'Add New Idea';
+      
+      // Reset submit button
+      const submitBtn = $('pbFormSubmit');
+      if (submitBtn) {
+        submitBtn.innerHTML = '<i class="fas fa-plus"></i> Add Idea';
+      }
     }
     if (form) form.reset();
     pbPeopleList = [];
     pbPhotosList = [];
+    pbRenderPeopleTags();
+    pbRenderPhotoPreviews();
   }
   
   // Render people tags
@@ -6864,6 +6931,9 @@ ${completed.map(i => `[X] ${i.title}  ${i.desc} (#${i.tag})`).join("\n")}
   function pbHandleFormSubmit(e) {
     e.preventDefault();
     
+    const modal = $('pbAddModal');
+    const editingId = modal ? modal.dataset.editingId : null;
+    
     const titleEl = $('pbFormTitle');
     const title = titleEl ? titleEl.value.trim() : '';
     if (!title) return;
@@ -6875,22 +6945,43 @@ ${completed.map(i => `[X] ${i.title}  ${i.desc} (#${i.tag})`).join("\n")}
     const locationEl = $('pbFormLocation');
     const datetimeEl = $('pbFormDatetime');
     
-    const newIdea = {
-      id: 'idea-' + Date.now(),
-      title: title,
-      desc: descEl ? descEl.value.trim() : '',
-      targetMonth: monthEl ? monthEl.value : '',
-      priority: priorityEl ? priorityEl.value : 'low',
-      tag: tagEl ? tagEl.value : '',
-      location: locationEl ? locationEl.value.trim() : '',
-      datetime: datetimeEl ? datetimeEl.value : '',
-      people: pbPeopleList.slice(),
-      photos: pbPhotosList.slice(),
-      createdAt: new Date().toISOString(),
-      updatedAt: new Date().toISOString()
-    };
+    if (editingId) {
+      // Edit existing idea
+      const ideaIdx = pbIdeas.findIndex(function(i) { return i.id === editingId; });
+      if (ideaIdx !== -1) {
+        pbIdeas[ideaIdx].title = title;
+        pbIdeas[ideaIdx].desc = descEl ? descEl.value.trim() : '';
+        pbIdeas[ideaIdx].targetMonth = monthEl ? monthEl.value : '';
+        pbIdeas[ideaIdx].priority = priorityEl ? priorityEl.value : 'low';
+        pbIdeas[ideaIdx].tag = tagEl ? tagEl.value : '';
+        pbIdeas[ideaIdx].location = locationEl ? locationEl.value.trim() : '';
+        pbIdeas[ideaIdx].datetime = datetimeEl ? datetimeEl.value : '';
+        pbIdeas[ideaIdx].people = pbPeopleList.slice();
+        pbIdeas[ideaIdx].photos = pbPhotosList.slice();
+        pbIdeas[ideaIdx].updatedAt = new Date().toISOString();
+        showToast('Idea updated');
+      }
+    } else {
+      // Create new idea
+      const newIdea = {
+        id: 'idea-' + Date.now(),
+        title: title,
+        desc: descEl ? descEl.value.trim() : '',
+        targetMonth: monthEl ? monthEl.value : '',
+        priority: priorityEl ? priorityEl.value : 'low',
+        tag: tagEl ? tagEl.value : '',
+        location: locationEl ? locationEl.value.trim() : '',
+        datetime: datetimeEl ? datetimeEl.value : '',
+        people: pbPeopleList.slice(),
+        photos: pbPhotosList.slice(),
+        createdAt: new Date().toISOString(),
+        updatedAt: new Date().toISOString()
+      };
+      
+      pbIdeas.push(newIdea);
+      showToast('Idea added');
+    }
     
-    pbIdeas.push(newIdea);
     pbSaveIdeas();
     pbUpdateStats();
     pbRenderInitialCard();
