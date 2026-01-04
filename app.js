@@ -1480,13 +1480,13 @@ const DAILY_EMOTICONS = [
     });
   }
   
-  function updateMemoryTitle(memoryId, newTitle) {
+  async function updateMemoryTitle(memoryId, newTitle) {
     const memories = loadMemories();
     const idx = memories.findIndex(m => m.id === memoryId);
     if (idx >= 0) {
       memories[idx].title = newTitle;
       localStorage.setItem(KEY_MEMORIES, JSON.stringify(memories));
-      pushRemoteState();
+      await pushRemoteState();
       renderPhotoGallery();
       showToast("Title updated");
     }
@@ -1546,7 +1546,7 @@ const DAILY_EMOTICONS = [
     });
   }
   
-  function updateMemoryLinks(memoryId, missionIds) {
+  async function updateMemoryLinks(memoryId, missionIds) {
     const memories = loadMemories();
     const idx = memories.findIndex(m => m.id === memoryId);
     if (idx >= 0) {
@@ -1557,7 +1557,7 @@ const DAILY_EMOTICONS = [
         memories[idx].title = "";
       }
       localStorage.setItem(KEY_MEMORIES, JSON.stringify(memories));
-      pushRemoteState();
+      await pushRemoteState();
       renderPhotoGallery();
       showToast(missionIds.length > 0 ? `Linked to ${missionIds.length} mission(s)` : "Links removed");
     }
@@ -1566,23 +1566,23 @@ const DAILY_EMOTICONS = [
   // Delete Memory confirmation
   function showDeleteMemoryConfirm(memory) {
     const photoCount = memory.photos ? memory.photos.length : 0;
-    showConfirmModal(`Delete this memory with ${photoCount} photo(s)? This cannot be undone.`, () => {
-      deleteMemory(memory.id);
+    showConfirmModal(`Delete this memory with ${photoCount} photo(s)? This cannot be undone.`, async () => {
+      await deleteMemory(memory.id);
     });
   }
   
-  function deleteMemory(memoryId) {
+  async function deleteMemory(memoryId) {
     let memories = loadMemories();
     memories = memories.filter(m => m.id !== memoryId);
     localStorage.setItem(KEY_MEMORIES, JSON.stringify(memories));
-    // Push immediately to prevent sync race condition
-    pushRemoteState();
+    // Push immediately and wait for completion to prevent sync race condition
+    await pushRemoteState();
     renderPhotoGallery();
     showToast("Memory deleted");
   }
   
   function deletePhotoFromMemory(memoryId, photoIndex) {
-    showConfirmModal("Delete this photo?", () => {
+    showConfirmModal("Delete this photo?", async () => {
       const memories = loadMemories();
       const idx = memories.findIndex(m => m.id === memoryId);
       if (idx >= 0 && memories[idx].photos) {
@@ -1595,8 +1595,8 @@ const DAILY_EMOTICONS = [
           showToast("Photo deleted");
         }
         localStorage.setItem(KEY_MEMORIES, JSON.stringify(memories));
-        // Push immediately to prevent sync race condition
-        pushRemoteState();
+        // Push immediately and wait for completion to prevent sync race condition
+        await pushRemoteState();
         renderPhotoGallery();
       }
     });
@@ -3466,6 +3466,7 @@ const DAILY_EMOTICONS = [
   // ---------- Shared sync ----------
   let suppressSync = false;
   let syncDebounce = null;
+  let pushInProgress = false; // [FIX] Block pulls during push to prevent race conditions
 
   // [FIX] Device ID is now defined earlier using localStorage
   // Track active devices per user (from server)
@@ -4016,6 +4017,12 @@ const DAILY_EMOTICONS = [
   async function pullRemoteState(opts = {}) {
     const silent = !!opts.silent;
 
+    // [FIX] Skip pull if push is in progress to prevent race conditions
+    if (pushInProgress) {
+      console.log("[SYNC] Skipping pull - push in progress");
+      return;
+    }
+
     try {
       const remote = await remoteGetState();
       if (!remote || !remote.payload) {
@@ -4086,6 +4093,7 @@ const DAILY_EMOTICONS = [
 
   async function pushRemoteState() {
     if (suppressSync) return;
+    pushInProgress = true; // [FIX] Block pulls during push
     try {
       setSyncStatus("saving");
       const data = await remoteSetState(getLocalState());
@@ -4097,6 +4105,8 @@ const DAILY_EMOTICONS = [
       updateUserDuoPills();
     } catch {
       setSyncStatus("error");
+    } finally {
+      pushInProgress = false; // [FIX] Allow pulls again
     }
   }
 
