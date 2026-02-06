@@ -1573,12 +1573,36 @@ const DAILY_EMOTICONS = [
   
   async function deleteMemory(memoryId) {
     let memories = loadMemories();
+    const memToDelete = memories.find(m => m.id === memoryId);
     memories = memories.filter(m => m.id !== memoryId);
     localStorage.setItem(KEY_MEMORIES, JSON.stringify(memories));
-    // Push immediately and wait for completion to prevent sync race condition
+    // [FIX v2] Lock sync to prevent pull from restoring deleted memory
+    setSyncLock(8000);
     await pushRemoteState();
     renderPhotoGallery();
     showToast("Memory deleted");
+    // [FIX v2] Clean up photos from Supabase storage in background
+    if (memToDelete?.photos) {
+      for (const photo of memToDelete.photos) {
+        deletePhotoFromSupabase(photo.url).catch(() => {});
+      }
+    }
+  }
+
+  // [FIX v2] Delete photo file from Supabase storage bucket
+  async function deletePhotoFromSupabase(photoUrl) {
+    if (!photoUrl || !photoUrl.includes(SUPABASE_URL)) return;
+    // Extract path after /public/photos/
+    const marker = `/public/${PHOTOS_BUCKET}/`;
+    const idx = photoUrl.indexOf(marker);
+    if (idx < 0) return;
+    const filePath = photoUrl.substring(idx + marker.length);
+    if (!filePath) return;
+    const res = await fetch(`${SUPABASE_URL}/storage/v1/object/${PHOTOS_BUCKET}/${filePath}`, {
+      method: 'DELETE',
+      headers: { 'Authorization': `Bearer ${SUPABASE_ANON_KEY}` }
+    });
+    if (res.ok) console.log('[CLEANUP] Deleted from storage:', filePath);
   }
   
   function deletePhotoFromMemory(memoryId, photoIndex) {
@@ -1586,8 +1610,8 @@ const DAILY_EMOTICONS = [
       const memories = loadMemories();
       const idx = memories.findIndex(m => m.id === memoryId);
       if (idx >= 0 && memories[idx].photos) {
+        const removedPhoto = memories[idx].photos[photoIndex];
         memories[idx].photos.splice(photoIndex, 1);
-        // If memory has no photos left, delete the whole memory
         if (memories[idx].photos.length === 0) {
           memories.splice(idx, 1);
           showToast("Photo deleted (memory removed)");
@@ -1595,9 +1619,14 @@ const DAILY_EMOTICONS = [
           showToast("Photo deleted");
         }
         localStorage.setItem(KEY_MEMORIES, JSON.stringify(memories));
-        // Push immediately and wait for completion to prevent sync race condition
+        // [FIX v2] Lock sync + push
+        setSyncLock(8000);
         await pushRemoteState();
         renderPhotoGallery();
+        // [FIX v2] Clean up from Supabase storage
+        if (removedPhoto?.url) {
+          deletePhotoFromSupabase(removedPhoto.url).catch(() => {});
+        }
       }
     });
   }
@@ -2215,30 +2244,52 @@ const DAILY_EMOTICONS = [
   let takeoverGraceUntil = 0;
   let kickCheckTimer = null;
   
-  // [FIX] Device active timeout (3 seconds for fast detection)
-  const DEVICE_ACTIVE_TIMEOUT = 3000;
+  // [FIX v2] Device active timeout - 15s (was 3s which caused constant false offlines)
+  const DEVICE_ACTIVE_TIMEOUT = 15000;
 
-  // [OK] Presence visibility based on WebSocket
+  // [FIX v2] Presence - track last-seen timestamps for smoother UI
+  let lastSeenTimestamps = {};
+
   function isOnlineLive(user) {
     if (!user) return false;
     const u = user.toLowerCase();
-    
-    // Check WebSocket presence first (most reliable)
+
+    // Check WebSocket presence first (most reliable when connected)
     if (livePresenceState && Object.keys(livePresenceState).length > 0) {
       for (const [key, presences] of Object.entries(livePresenceState)) {
         for (const p of presences) {
-          if (p.user === u) return true;
+          if (p.user === u) {
+            lastSeenTimestamps[u] = Date.now();
+            return true;
+          }
         }
       }
     }
-    
+
     // Fallback to activeDevices from database
     if (activeDevices[u]) {
-      const age = Date.now() - (activeDevices[u].lastActive || 0);
-      return age < DEVICE_ACTIVE_TIMEOUT;
+      const serverLastActive = activeDevices[u].lastActive || 0;
+      const age = Date.now() - serverLastActive;
+      if (age < DEVICE_ACTIVE_TIMEOUT) {
+        lastSeenTimestamps[u] = serverLastActive;
+        return true;
+      }
     }
-    
+
     return false;
+  }
+
+  // Human-readable last seen text
+  function getLastSeenText(user) {
+    if (!user) return '';
+    const u = user.toLowerCase();
+    const ts = lastSeenTimestamps[u];
+    if (!ts) return '';
+    const ago = Date.now() - ts;
+    if (ago < 60000) return 'just now';
+    if (ago < 3600000) return `${Math.floor(ago / 60000)}m ago`;
+    if (ago < 86400000) return `${Math.floor(ago / 3600000)}h ago`;
+    return `${Math.floor(ago / 86400000)}d ago`;
   }
 
   function getUserColorClass(user) {
@@ -2249,7 +2300,7 @@ const DAILY_EMOTICONS = [
   }
 
   function updateUserDuoPills() {
-    // [NEW] Handle guest mode display
+    // Handle guest mode display
     if (isGuestMode) {
       const userTextEl = $("userText");
       const duoTextEl = $("duoText");
@@ -2257,9 +2308,9 @@ const DAILY_EMOTICONS = [
       const duoIcon = $("duoIcon");
       const userDot = $("userDot");
       const duoDot = $("duoDot");
-      
-      if (userTextEl) userTextEl.textContent = "USER: GUEST";
-      if (duoTextEl) duoTextEl.textContent = "DUO: --";
+
+      if (userTextEl) userTextEl.textContent = "GUEST";
+      if (duoTextEl) duoTextEl.textContent = "--";
       if (userIcon) {
         userIcon.classList.remove('fa-regular', 'fa-solid', 'user-yasir', 'user-kylee');
         userIcon.classList.add('fa-regular');
@@ -2272,18 +2323,30 @@ const DAILY_EMOTICONS = [
       if (duoDot) duoDot.className = 'dot gray';
       return;
     }
-    
+
     const user = loadUser().trim().toLowerCase();
     const duo = getDuoName(user)?.toLowerCase();
 
     const userIcon = $("userIcon");
     const duoIcon = $("duoIcon");
 
-    // [FIX v1.4.4] Add null checks to prevent crash during init
     const userTextEl = $("userText");
     const duoTextEl = $("duoText");
-    if (userTextEl) userTextEl.textContent = user ? `USER: ${user.toUpperCase()}` : "USER: --";
-    if (duoTextEl) duoTextEl.textContent = duo ? `DUO: ${duo.toUpperCase()}` : "DUO: --";
+    if (userTextEl) userTextEl.textContent = user ? user.toUpperCase() : "--";
+
+    // [FIX v2] Show last-seen in duo pill when offline
+    const duoOnline = isOnlineLive(duo);
+    const duoLastSeen = getLastSeenText(duo);
+    if (duoTextEl) {
+      const duoName = duo ? duo.toUpperCase() : "--";
+      if (duoOnline) {
+        duoTextEl.textContent = duoName;
+      } else if (duoLastSeen) {
+        duoTextEl.textContent = `${duoName} · ${duoLastSeen}`;
+      } else {
+        duoTextEl.textContent = duoName;
+      }
+    }
 
     const userClass = getUserColorClass(user);
     const duoClass = getUserColorClass(duo);
@@ -2291,24 +2354,19 @@ const DAILY_EMOTICONS = [
     if (userIcon) {
       userIcon.classList.remove('fa-regular', 'fa-solid', 'user-yasir', 'user-kylee');
       if (userClass) userIcon.classList.add(userClass);
-      // If logged in, show solid; otherwise outline
       userIcon.classList.add(user ? 'fa-solid' : 'fa-regular');
     }
     if (duoIcon) {
       duoIcon.classList.remove('fa-regular', 'fa-solid', 'user-yasir', 'user-kylee');
       if (duoClass) duoIcon.classList.add(duoClass);
-      const duoOnline = isOnlineLive(duo?.toLowerCase());
       duoIcon.classList.add(duoOnline ? 'fa-solid' : 'fa-regular');
     }
 
-    // Dots reflect sync status if desired; keep visible but color by online
+    // [FIX v2] Dots: pulse green when online, gray when offline
     const userDot = $("userDot");
     const duoDot = $("duoDot");
-    if (userDot) { userDot.className = 'dot ' + (user ? 'green' : 'gray'); }
-    if (duoDot) {
-      const duoOnline = isOnlineLive(duo?.toLowerCase());
-      duoDot.className = 'dot ' + (duoOnline ? 'green' : 'gray');
-    }
+    if (userDot) userDot.className = 'dot ' + (user ? 'green pulse' : 'gray');
+    if (duoDot) duoDot.className = 'dot ' + (duoOnline ? 'green pulse' : 'gray');
   }
 
   async function presencePing() {
@@ -2466,7 +2524,7 @@ const DAILY_EMOTICONS = [
   function startPresence() {
     if (presenceTimer) return;
     presencePing();
-    presenceTimer = setInterval(presencePing, 2000); // [FIX] FASTER: 2s instead of 15s
+    presenceTimer = setInterval(presencePing, 10000); // [FIX v2] 10s (was 2s - too aggressive)
     // Also start WebSocket presence
     initLivePresence();
   }
@@ -3449,6 +3507,8 @@ const DAILY_EMOTICONS = [
       $("trackerRemaining").textContent = `${days}d UNTIL 2026`;
       $("trackerElapsed").textContent = "NOT STARTED";
       $("trackerFill").style.width = "0%";
+      const pctEl = $("trackerPercent");
+      if (pctEl) pctEl.textContent = "0%";
       return;
     }
 
@@ -3457,16 +3517,35 @@ const DAILY_EMOTICONS = [
     const pct = Math.max(0, Math.min(1, elapsedMs / totalMs));
     const daysElapsed = Math.floor(elapsedMs / (24*60*60*1000));
     const daysLeft = Math.max(0, Math.floor((end2026.getTime() - now.getTime()) / (24*60*60*1000)));
+    const pctDisplay = Math.round(pct * 1000) / 10;
 
     $("trackerRemaining").textContent = `${daysLeft}d LEFT`;
     $("trackerElapsed").textContent = `${daysElapsed}d`;
-    $("trackerFill").style.width = `${Math.round(pct * 1000) / 10}%`;
+    $("trackerFill").style.width = `${pctDisplay}%`;
+
+    // [FIX v2] Show percentage on tracker bar
+    const pctEl = $("trackerPercent");
+    if (pctEl) pctEl.textContent = `${pctDisplay}%`;
+
+    // [FIX v2] Show mission completion stats
+    const statsEl = $("trackerMissionStats");
+    if (statsEl) {
+      const active = loadActive().filter(m => !m.isExample).length;
+      const completed = loadCompleted().filter(m => !m.isExample).length;
+      const total = active + completed;
+      const completionPct = total > 0 ? Math.round((completed / total) * 100) : 0;
+      statsEl.textContent = `${completed}/${total} MISSIONS COMPLETE (${completionPct}%)`;
+    }
   }
 
   // ---------- Shared sync ----------
   let suppressSync = false;
   let syncDebounce = null;
-  let pushInProgress = false; // [FIX] Block pulls during push to prevent race conditions
+  let pushInProgress = false; // Block pulls during push
+  // [FIX v2] Sync lock - prevents pull from overwriting recent local deletes
+  let syncLockUntil = 0;
+  function setSyncLock(ms = 6000) { syncLockUntil = Date.now() + ms; }
+  function isSyncLocked() { return Date.now() < syncLockUntil; }
 
   // [FIX] Device ID is now defined earlier using localStorage
   // Track active devices per user (from server)
@@ -3593,8 +3672,8 @@ const DAILY_EMOTICONS = [
   function startDeviceMonitoring() {
     stopDeviceMonitoring(); // Clear any existing
     
-    // Regular kick check (every 2 seconds)
-    kickCheckTimer = setInterval(checkIfKicked, 2000);
+    // Regular kick check (every 8s - WebSocket handles instant detection)
+    kickCheckTimer = setInterval(checkIfKicked, 8000);
     console.log("[DEVICE] Monitoring started");
   }
 
@@ -4022,6 +4101,11 @@ const DAILY_EMOTICONS = [
       console.log("[SYNC] Skipping pull - push in progress");
       return;
     }
+    // [FIX v2] Skip pull if sync is locked (recent delete operation)
+    if (isSyncLocked()) {
+      console.log("[SYNC] Skipping pull - sync locked after delete");
+      return;
+    }
 
     try {
       const remote = await remoteGetState();
@@ -4112,6 +4196,7 @@ const DAILY_EMOTICONS = [
 
   function schedulePush() {
     if (suppressSync) return;
+    if (isGuestMode) return; // [FIX v2] Guests are read-only
     if (syncDebounce) clearTimeout(syncDebounce);
     syncDebounce = setTimeout(() => pushRemoteState(), 500);
   }

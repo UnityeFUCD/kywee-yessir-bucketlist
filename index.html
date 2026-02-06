@@ -74,13 +74,13 @@
         <span class="pill clickable" id="userPill" data-testid="user-pill" title="Click to switch user">
           <i id="userIcon" class="fa-regular fa-user"></i>
           <span class="dot gray" id="userDot"></span>
-          <span id="userText" data-testid="current-user">USER: --</span>
+          <span id="userText" data-testid="current-user">--</span>
         </span>
 
         <span class="pill clickable" id="duoPill" title="Click to view letters from duo">
           <i id="duoIcon" class="fa-regular fa-user"></i>
           <span class="dot gray" id="duoDot"></span>
-          <span id="duoText">DUO: --</span>
+          <span id="duoText">--</span>
         </span>
 
         <span class="pill" id="syncPill" title="Sync status">
@@ -149,9 +149,13 @@
               <div class="tracker-value" id="trackerElapsed">--</div>
             </div>
           </div>
-          <div class="tracker-bar" aria-hidden="true">
-            <div class="tracker-fill" id="trackerFill"></div>
+          <div class="tracker-bar-wrap">
+            <div class="tracker-bar" aria-hidden="true">
+              <div class="tracker-fill" id="trackerFill"></div>
+            </div>
+            <span class="tracker-pct" id="trackerPercent">0%</span>
           </div>
+          <div class="tracker-mission-stats" id="trackerMissionStats">0/0 MISSIONS COMPLETE (0%)</div>
         </div>
       </div>
 

@@ -147,15 +147,17 @@
       text-transform: uppercase;
       font-weight: 700;
       letter-spacing: 0.5px;
-      transition: all 0.3s ease;
+      transition: all 0.2s ease;
       user-select: none;
       display: inline-flex;
       align-items: center;
       gap: 8px;
       cursor: default;
+      border-radius: 2px;
     }
 
     .pill.clickable { cursor: pointer; }
+    .pill.clickable:hover { border-color: var(--accent); background: rgba(255,107,157,.05); }
 
     .dot {
       width: 9px;
@@ -163,12 +165,13 @@
       border-radius: 999px;
       background: rgba(255,255,255,.25);
       box-shadow: 0 0 0 rgba(0,0,0,0);
+      transition: background 0.3s ease, box-shadow 0.3s ease;
     }
 
     .dot.green { background: #3bff6b; box-shadow: 0 0 12px rgba(59,255,107,.35); }
     .dot.yellow { background: #ffe93b; box-shadow: 0 0 12px rgba(255,233,59,.35); }
     .dot.red { background: #ff3b3b; box-shadow: 0 0 12px rgba(255,59,59,.35); }
-    .dot.gray { background: rgba(255,255,255,.25); box-shadow: none; }
+    .dot.gray { background: rgba(255,255,255,.2); box-shadow: none; }
 
     .dot.pulse {
       animation: pulseDot 1.1s infinite ease-in-out;
@@ -519,15 +522,15 @@
       .topbar { position: static; }
     }
 
-    /* ✅ Mobile topbar alignment fix (doesn't touch desktop) */
+    /* ✅ Mobile topbar — compact row layout */
     @media (max-width: 620px) {
-      .wrap { width: min(1100px, 96vw); }
+      .wrap { width: min(1100px, 96vw); padding: 12px 0 60px; }
 
       .topbar {
         flex-direction: column;
         align-items: stretch;
-        padding: 14px;
-        gap: 12px;
+        padding: 12px;
+        gap: 10px;
       }
 
       .brand {
@@ -536,30 +539,35 @@
         text-align: center;
         font-size: 11px;
         white-space: normal;
-        word-break: break-word;
-        overflow-wrap: break-word;
         line-height: 1.4;
       }
 
       .topbar-right {
         width: 100%;
-        flex-direction: column;
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 6px;
         align-items: stretch;
-        justify-content: center;
-        gap: 8px;
       }
 
-      .topbar .pill,
-      .topbar .btn {
+      .topbar .pill {
         width: 100%;
         justify-content: center;
         text-align: center;
+        padding: 8px 6px;
+        font-size: 10px;
+        min-height: 36px;
+      }
+
+      /* Sync pill spans full row */
+      .topbar #syncPill {
+        grid-column: 1 / -1;
       }
 
       .notif-wrap {
-        width: 100%;
         display: flex;
         justify-content: center;
+        grid-column: 1 / -1;
       }
 
       .notification-bell {
@@ -577,8 +585,10 @@
         max-width: 340px;
       }
 
-      .theme-switcher { width: 100%; }
-      .theme-btn { width: 100%; }
+      .theme-switcher {
+        grid-column: 1 / -1;
+      }
+      .theme-btn { width: 100%; font-size: 10px; padding: 8px; }
 
       .theme-dropdown {
         left: 50%;
@@ -586,6 +596,61 @@
         transform: translateX(-50%);
         width: min(92vw, 220px);
       }
+
+      .settings-btn {
+        grid-column: 1 / -1;
+        width: 100%;
+      }
+    }
+
+    /* ✅ Mobile: cards, forms, items breathe better */
+    @media (max-width: 620px) {
+      .card { border-width: 1px; }
+
+      .cardHeader {
+        padding: 14px 16px;
+        flex-wrap: wrap;
+      }
+      .cardHeader h2 { font-size: 13px; letter-spacing: 1px; }
+      .cardBody { padding: 16px; }
+
+      .item { padding: 12px; gap: 10px; }
+      .ititle { font-size: 12px; flex-wrap: wrap; }
+      .idesc { font-size: 11px; }
+
+      input[type="text"],
+      textarea,
+      select {
+        padding: 14px 12px;
+        font-size: 16px; /* prevents iOS zoom on focus */
+      }
+
+      .btn {
+        padding: 12px 14px;
+        font-size: 11px;
+        min-height: 44px; /* touch target */
+      }
+
+      .tracker-grid { gap: 8px; }
+      .tracker-box { padding: 10px 12px; }
+      .tracker-value { font-size: 15px; }
+
+      .mission-tabs { gap: 4px; overflow-x: auto; -webkit-overflow-scrolling: touch; }
+      .mission-tab { padding: 8px 10px; font-size: 10px; white-space: nowrap; flex-shrink: 0; }
+
+      .form { gap: 12px; }
+      label { font-size: 10px; }
+    }
+
+    /* ✅ Very small screens */
+    @media (max-width: 380px) {
+      .wrap { width: 100%; padding: 8px 0 60px; }
+      .topbar { padding: 10px; gap: 8px; }
+      .brand { font-size: 10px; }
+      .topbar .pill { font-size: 9px; padding: 6px 4px; }
+      .cardBody { padding: 12px; }
+      .modal-content { padding: 16px; max-height: 85vh; }
+      .modal-header h3 { font-size: 14px; }
     }
 
     .card {
@@ -1230,8 +1295,15 @@
       line-height: 1.2;
     }
 
-    .tracker-bar {
+    .tracker-bar-wrap {
+      display: flex;
+      align-items: center;
+      gap: 12px;
       margin-top: 14px;
+    }
+
+    .tracker-bar {
+      flex: 1;
       height: 10px;
       border: 1px solid var(--border);
       background: var(--bg);
@@ -1245,6 +1317,25 @@
       background: var(--accent);
       box-shadow: 0 0 14px rgba(255,107,157,.25);
       transition: width 0.25s ease;
+    }
+
+    .tracker-pct {
+      font-size: 12px;
+      font-weight: 700;
+      color: var(--accent);
+      letter-spacing: 0.5px;
+      white-space: nowrap;
+      min-width: 42px;
+      text-align: right;
+    }
+
+    .tracker-mission-stats {
+      margin-top: 10px;
+      font-size: 11px;
+      color: var(--muted);
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      text-align: center;
     }
 
     .who-grid {
@@ -3674,6 +3765,10 @@ html[data-theme="light"] body::before {
   );
   opacity: 0.5;
 }
+
+/* Light theme dot fix - gray dot visible on white */
+html[data-theme="light"] .dot.gray { background: rgba(0,0,0,.15); }
+html[data-theme="light"] .tracker-pct { color: var(--accent); }
 
 /* Light theme cards with corner brackets */
 /* Light theme calendar selects */
